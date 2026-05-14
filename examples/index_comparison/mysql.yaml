@@ -1,0 +1,100 @@
+globals:
+  rows: 100000
+  batch_size: 5000
+  categories: 50
+
+up:
+
+  - name: create_event_indexed
+    query: |-
+      CREATE TABLE IF NOT EXISTS event_indexed (
+        id CHAR(36) PRIMARY KEY,
+        category INT NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_event_category (category)
+      )
+
+  - name: create_event_unindexed
+    query: |-
+      CREATE TABLE IF NOT EXISTS event_unindexed (
+        id CHAR(36) PRIMARY KEY,
+        category INT NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+
+seed:
+
+  - name: populate_event_indexed
+    type: exec_batch
+    count: rows
+    size: batch_size
+    args:
+      - gen('uuid')
+      - gen('number:1,' + string(categories))
+      - gen('sentence:5,10')
+    query: |-
+      INSERT INTO event_indexed (id, category, payload)
+      __values__
+
+  - name: populate_event_unindexed
+    type: exec_batch
+    count: rows
+    size: batch_size
+    args:
+      - gen('uuid')
+      - gen('number:1,' + string(categories))
+      - gen('sentence:5,10')
+    query: |-
+      INSERT INTO event_unindexed (id, category, payload)
+      __values__
+
+deseed:
+
+  - name: truncate_event_indexed
+    type: exec
+    query: TRUNCATE TABLE event_indexed
+
+  - name: truncate_event_unindexed
+    type: exec
+    query: TRUNCATE TABLE event_unindexed
+
+down:
+
+  - name: drop_event_indexed
+    type: exec
+    query: DROP TABLE IF EXISTS event_indexed
+
+  - name: drop_event_unindexed
+    type: exec
+    query: DROP TABLE IF EXISTS event_unindexed
+
+run_weights:
+  lookup_with_index: 50
+  lookup_without_index: 50
+
+run:
+
+  - name: lookup_with_index
+    type: query
+    args:
+      - gen('number:1,' + string(categories))
+    query: |-
+      SELECT id, payload, created_at
+      FROM event_indexed
+      WHERE category = ?
+
+  - name: lookup_without_index
+    type: query
+    args:
+      - gen('number:1,' + string(categories))
+    query: |-
+      SELECT id, payload, created_at
+      FROM event_unindexed
+      WHERE category = ?
+
+expectations:
+  - error_rate < 1
+  - lookup_with_index.avg < lookup_without_index.avg
+  - lookup_with_index.p99 < lookup_without_index.p99

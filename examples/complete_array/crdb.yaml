@@ -1,0 +1,99 @@
+globals:
+  products: 5
+
+reference:
+  product_catalog: !include products.yaml
+
+complete:
+  tools:
+    - name: review
+      system: |-
+        You are a product review generator. Generate realistic reviews
+        for consumer electronics. IMPORTANT: vary ratings across the full
+        1-5 range. Most products should get 2-4 stars. 5-star and 1-star
+        reviews should be rare. Match sentiment and review_text to the
+        rating you choose.
+      properties:
+        review_text:
+          type: string
+          description: "A 2-3 sentence product review from a customer"
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+          description: "Overall sentiment of the review"
+        rating:
+          type: integer
+          description: "Star rating from 1 to 5"
+      required: [review_text, sentiment, rating]
+
+up:
+
+  - name: create_product
+    query: |-
+      CREATE TABLE IF NOT EXISTS product (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name STRING NOT NULL,
+        description STRING NOT NULL
+      )
+
+  - name: create_review
+    query: |-
+      CREATE TABLE IF NOT EXISTS review (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_name STRING NOT NULL,
+        review_text STRING NOT NULL,
+        sentiment STRING NOT NULL,
+        rating INT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT now()
+      )
+
+# complete_array() generates all reviews in a single API call.
+# ref_each() iterates through the returned array, pairing each
+# review with the corresponding product from the catalog.
+seed:
+
+  - name: populate_product
+    type: exec_batch
+    count: products
+    size: products
+    args:
+      - ref_each(product_catalog).name
+      - ref_each(product_catalog).description
+    query: |-
+      INSERT INTO product (name, description)
+      __values__
+
+  - name: populate_review
+    type: exec_batch
+    count: products
+    size: products
+    locals:
+      reviews: 'complete_array("review", "Generate " + string(products) + " product reviews for consumer electronics. Vary ratings across the full 1-5 range.", products)'
+    args:
+      - ref_each(product_catalog).name
+      - ref_each(local("reviews")).review_text
+      - ref_each(local("reviews")).sentiment
+      - ref_each(local("reviews")).rating
+    query: |-
+      INSERT INTO review (product_name, review_text, sentiment, rating)
+      __values__
+
+deseed:
+
+  - name: truncate_review
+    type: exec
+    query: TRUNCATE TABLE review
+
+  - name: truncate_product
+    type: exec
+    query: TRUNCATE TABLE product
+
+down:
+
+  - name: drop_review
+    type: exec
+    query: DROP TABLE IF EXISTS review
+
+  - name: drop_product
+    type: exec
+    query: DROP TABLE IF EXISTS product

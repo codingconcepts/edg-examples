@@ -1,0 +1,85 @@
+globals:
+  num_a: 10
+  num_b: 20
+
+up:
+
+  - name: create a
+    query: |-
+      CREATE TABLE IF NOT EXISTS a (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name STRING NOT NULL
+      )
+
+  - name: create b
+    query: |-
+      CREATE TABLE IF NOT EXISTS b (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email STRING NOT NULL
+      )
+  
+  # c is the cartesian product of a and b.
+  - name: create c
+    query: |-
+      CREATE TABLE IF NOT EXISTS c (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        a_id UUID NOT NULL REFERENCES a(id),
+        b_id UUID NOT NULL REFERENCES b(id)
+      )
+
+seed:
+
+  - name: populate a
+    type: exec_batch
+    count: num_a
+    size: 1
+    args:
+      - gen('company')
+    query: |-
+      INSERT INTO a (name)
+      __values__
+
+  - name: populate b
+    type: exec_batch
+    count: num_b
+    size: 1
+    args:
+      - gen('email')
+    query: |-
+      INSERT INTO b (email)
+      __values__
+
+  - name: populate c
+    args:
+      - ref_each('SELECT id FROM a ORDER BY id')
+      - ref_each('SELECT id FROM b ORDER BY id')
+    query: |-
+      INSERT INTO c (a_id, b_id) VALUES ($1, $2)
+
+deseed:
+
+  - name: truncate_c
+    type: exec
+    query: TRUNCATE TABLE c CASCADE
+  
+  - name: truncate_b
+    type: exec
+    query: TRUNCATE TABLE b CASCADE
+  
+  - name: truncate_a
+    type: exec
+    query: TRUNCATE TABLE a CASCADE
+
+down:
+
+  - name: drop_c
+    type: exec
+    query: DROP TABLE IF EXISTS c
+  
+  - name: drop_b
+    type: exec
+    query: DROP TABLE IF EXISTS b
+  
+  - name: drop_a
+    type: exec
+    query: DROP TABLE IF EXISTS a

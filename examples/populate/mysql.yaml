@@ -1,0 +1,75 @@
+# Populate workload for MySQL
+#
+# Connection URL format:
+#   user:password@tcp(host:port)/database?parseTime=true
+#
+# Example:
+#   edg up --driver mysql --config _examples/populate/mysql.yaml \
+#     --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
+
+globals:
+  customers: 1000000 # 1 million
+  initial_balance: 10000
+  batch_size: 10000 # 10K rows per batch insert
+
+up:
+
+  - name: create_customer
+    query: |-
+      CREATE TABLE IF NOT EXISTS customer (
+        id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+        email VARCHAR(255) NOT NULL
+      )
+
+  - name: create_account
+    query: |-
+      CREATE TABLE IF NOT EXISTS account (
+        id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+        balance DOUBLE NOT NULL,
+        customer_id CHAR(36) NOT NULL,
+        FOREIGN KEY (customer_id) REFERENCES customer(id)
+      )
+
+seed:
+
+  - name: populate_customer
+    type: exec_batch
+    count: customers
+    size: batch_size
+    args:
+      - gen('email')
+    query: |-
+      INSERT INTO customer (email)
+      __values__
+
+  - name: populate_account
+    args:
+      - batch(customers / batch_size, batch_size)
+      - initial_balance
+      - batch_size
+    query: |-
+      INSERT INTO account (balance, customer_id)
+      SELECT $2, c.id
+      FROM customer c
+      ORDER BY c.id
+      LIMIT $3 OFFSET $1
+
+deseed:
+
+  - name: delete_account
+    type: exec
+    query: DELETE FROM account
+
+  - name: delete_customer
+    type: exec
+    query: DELETE FROM customer
+
+down:
+
+  - name: drop_account
+    type: exec
+    query: DROP TABLE IF EXISTS account
+
+  - name: drop_customer
+    type: exec
+    query: DROP TABLE IF EXISTS customer

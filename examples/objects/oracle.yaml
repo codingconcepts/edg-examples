@@ -1,0 +1,118 @@
+# Objects workload for Oracle
+#
+# Connection URL format:
+#   oracle://user:password@host:port/service
+
+globals:
+  orders: 1000
+
+objects:
+  order:
+    email: gen('email')
+    product: gen('productname')
+    quantity: int(uniform(1, 100))
+    ordered_at: timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z')
+
+up:
+
+  - name: create_order
+    type: exec
+    query: |-
+      BEGIN
+        EXECUTE IMMEDIATE '
+          CREATE TABLE order_tbl (
+            id NUMBER GENERATED ALWAYS AS IDENTITY,
+            email VARCHAR2(255) NOT NULL,
+            product VARCHAR2(255) NOT NULL,
+            quantity NUMBER NOT NULL,
+            ordered_at TIMESTAMP NOT NULL,
+            PRIMARY KEY (id)
+          )
+        ';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN RAISE; END IF;
+      END;
+
+seed:
+
+  - name: clear_order
+    type: exec
+    query: TRUNCATE TABLE order_tbl
+
+  - name: populate_order
+    type: exec_batch
+    count: orders
+    size: 100
+    object: order
+    query: |-
+      INSERT ALL __values__(order_tbl(email, product, quantity, ordered_at))
+
+init:
+
+  - name: fetch_orders
+    type: query
+    query: SELECT id FROM order_tbl
+
+run:
+
+  # object: expands all object fields as positional args
+  - name: insert_order_row
+    type: exec
+    object: order
+    query: |-
+      INSERT INTO order_tbl (email, product, quantity, ordered_at)
+      VALUES (:1, :2, :3, :4)
+
+  # field() cherry-picks fields from the object context, mixable with other expressions
+  - name: insert_order_field
+    type: exec
+    object: order
+    args:
+      - field('email')
+      - field('product')
+      - field('quantity')
+      - field('ordered_at')
+    query: |-
+      INSERT INTO order_tbl (email, product, quantity, ordered_at)
+      VALUES (:1, :2, :3, :4)
+
+  # obj() with two args references a specific field, no object: needed
+  - name: insert_order_obj
+    type: exec
+    args:
+      - obj('order', 'email')
+      - obj('order', 'product')
+      - obj('order', 'quantity')
+      - obj('order', 'ordered_at')
+    query: |-
+      INSERT INTO order_tbl (email, product, quantity, ordered_at)
+      VALUES (:1, :2, :3, :4)
+
+  # obj() with dot-access evaluates all fields, picks via dot notation
+  - name: insert_order_dot
+    type: exec
+    args:
+      - obj('order').email
+      - obj('order').product
+      - obj('order').quantity
+      - obj('order').ordered_at
+    query: |-
+      INSERT INTO order_tbl (email, product, quantity, ordered_at)
+      VALUES (:1, :2, :3, :4)
+
+deseed:
+
+  - name: truncate_order
+    type: exec
+    query: TRUNCATE TABLE order_tbl
+
+down:
+
+  - name: drop_order
+    type: exec
+    query: |-
+      BEGIN
+        EXECUTE IMMEDIATE 'DROP TABLE order_tbl CASCADE CONSTRAINTS PURGE';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLCODE != -942 THEN RAISE; END IF;
+      END;

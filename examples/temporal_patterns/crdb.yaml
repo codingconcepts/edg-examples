@@ -1,0 +1,186 @@
+globals:
+  total_iters: 10000
+  products: 100
+  initial_skew: 1.2
+  final_skew: 3.0
+  base_price: 50.0
+  traffic_period: 50000
+  traffic_amplitude: 100.0
+  base_traffic: 100.0
+  spike_interval: 25000
+
+up:
+
+  - name: create_product_views
+    query: |-
+      CREATE TABLE IF NOT EXISTS product_views (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_id INT NOT NULL,
+        skew_at_time FLOAT8 NOT NULL,
+        iteration INT8 NOT NULL,
+        viewed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+
+  - name: create_price_history
+    query: |-
+      CREATE TABLE IF NOT EXISTS price_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_id INT NOT NULL,
+        price FLOAT8 NOT NULL,
+        iteration INT8 NOT NULL,
+        recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+
+  - name: create_traffic_log
+    query: |-
+      CREATE TABLE IF NOT EXISTS traffic_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        endpoint STRING NOT NULL,
+        request_count INT NOT NULL,
+        iteration INT8 NOT NULL,
+        recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+
+  - name: create_error_events
+    query: |-
+      CREATE TABLE IF NOT EXISTS error_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        error_code INT NOT NULL,
+        severity FLOAT8 NOT NULL,
+        iteration INT8 NOT NULL,
+        recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+
+  - name: create_sensor_calibration
+    query: |-
+      CREATE TABLE IF NOT EXISTS sensor_calibration (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        sensor_id INT NOT NULL,
+        reading FLOAT8 NOT NULL,
+        drift_offset FLOAT8 NOT NULL,
+        iteration INT8 NOT NULL,
+        recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+
+run:
+
+  # Zipf skew drift: product popularity concentrates over time.
+  # Linear interpolation of the skew parameter from nearly
+  # uniform (1.2) to heavily concentrated (3.0).
+  - name: insert_view
+    type: exec
+    args:
+      - zipf(initial_skew + (final_skew - initial_skew) * global_iter() / total_iters, 1, products - 1)
+      - initial_skew + (final_skew - initial_skew) * global_iter() / total_iters
+      - global_iter()
+    query: |-
+      INSERT INTO product_views (product_id, skew_at_time, iteration)
+      VALUES ($1::INT, $2::FLOAT8, $3::INT8)
+
+  # Logarithmic price growth: prices rise quickly at first then
+  # plateau. Demonstrates log() for dampened growth and floor()
+  # for rounding to cents.
+  #   price = base * (1 + log(1 + iter/1000))
+  - name: insert_price
+    type: exec
+    args:
+      - uniform(1, products)
+      - floor(base_price * (1.0 + log(1.0 + global_iter() / 1000.0)) * 100.0) / 100.0
+      - global_iter()
+    query: |-
+      INSERT INTO price_history (product_id, price, iteration)
+      VALUES ($1::INT, $2::FLOAT8, $3::INT8)
+
+  # Seasonal traffic with linear trend: a sine wave riding on
+  # a slowly growing baseline. Demonstrates sin(), pi, sqrt().
+  #   traffic = base + 2*sqrt(iter) + amplitude*sin(2*pi*iter/period)
+  - name: insert_traffic
+    type: exec
+    args:
+      - set_rand(['GET /products', 'GET /orders', 'POST /checkout', 'GET /search'], [])
+      - floor(abs(base_traffic + 0.5 * sqrt(global_iter()) + traffic_amplitude * sin(2.0 * pi * global_iter() / traffic_period)))
+      - global_iter()
+    query: |-
+      INSERT INTO traffic_log (endpoint, request_count, iteration)
+      VALUES ($1, $2::INT, $3::INT8)
+
+  # Periodic error spikes: a cosine pulse that fires every
+  # spike_interval iterations. Errors are calm between spikes
+  # and surge during them. Demonstrates cos(), mod(), pow(), abs().
+  #   spike = pow(cos(pi * mod(iter, interval) / interval), 2)
+  - name: insert_error
+    type: exec
+    args:
+      - uniform(500, 599)
+      - pow(cos(pi * mod(global_iter(), spike_interval) / spike_interval), 2.0) * 10.0
+      - global_iter()
+    query: |-
+      INSERT INTO error_events (error_code, severity, iteration)
+      VALUES ($1::INT, $2::FLOAT8, $3::INT8)
+
+  # Sensor calibration drift: readings slowly wander from true
+  # value via a sqrt curve (models a random-walk envelope).
+  # Demonstrates sqrt(), pow(), atan() for bounded drift.
+  #   drift = 2 * atan(sqrt(iter) / 100) / pi  (bounded 0..1)
+  #   reading = 100 + drift * 15 + noise
+  - name: insert_sensor
+    type: exec
+    args:
+      - uniform(1, 50)
+      - 100.0 + (2.0 * atan(sqrt(global_iter()) / 100.0) / pi) * 15.0 + norm_f(0, 0.5, -2, 2, 2)
+      - 2.0 * atan(sqrt(global_iter()) / 100.0) / pi * 15.0
+      - global_iter()
+    query: |-
+      INSERT INTO sensor_calibration (sensor_id, reading, drift_offset, iteration)
+      VALUES ($1::INT, $2::FLOAT8, $3::FLOAT8, $4::INT8)
+
+run_weights:
+  insert_view: 25
+  insert_price: 20
+  insert_traffic: 25
+  insert_error: 15
+  insert_sensor: 15
+
+deseed:
+
+  - name: truncate_product_views
+    type: exec
+    query: TRUNCATE TABLE product_views
+
+  - name: truncate_price_history
+    type: exec
+    query: TRUNCATE TABLE price_history
+
+  - name: truncate_traffic_log
+    type: exec
+    query: TRUNCATE TABLE traffic_log
+
+  - name: truncate_error_events
+    type: exec
+    query: TRUNCATE TABLE error_events
+
+  - name: truncate_sensor_calibration
+    type: exec
+    query: TRUNCATE TABLE sensor_calibration
+
+down:
+
+  - name: drop_product_views
+    type: exec
+    query: DROP TABLE IF EXISTS product_views
+
+  - name: drop_price_history
+    type: exec
+    query: DROP TABLE IF EXISTS price_history
+
+  - name: drop_traffic_log
+    type: exec
+    query: DROP TABLE IF EXISTS traffic_log
+
+  - name: drop_error_events
+    type: exec
+    query: DROP TABLE IF EXISTS error_events
+
+  - name: drop_sensor_calibration
+    type: exec
+    query: DROP TABLE IF EXISTS sensor_calibration

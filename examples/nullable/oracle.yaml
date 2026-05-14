@@ -1,0 +1,63 @@
+# Nullable columns workload for Oracle
+#
+# Connection URL format:
+#   oracle://user:password@host:port/service
+
+globals:
+  users: 10000
+  batch_size: 1000
+
+up:
+
+  - name: create_user
+    type: exec
+    query: |-
+      BEGIN
+        EXECUTE IMMEDIATE '
+          CREATE TABLE "user" (
+            id NUMBER GENERATED ALWAYS AS IDENTITY,
+            email VARCHAR2(255) NOT NULL,
+            phone VARCHAR2(50),
+            bio VARCHAR2(4000),
+            referred_by VARCHAR2(36),
+            PRIMARY KEY (id)
+          )
+        ';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN RAISE; END IF;
+      END;
+
+seed:
+
+  - name: clear_user
+    type: exec
+    query: TRUNCATE TABLE "user"
+
+  - name: populate_user
+    type: exec_batch
+    count: users
+    size: 100
+    args:
+      - gen('email')
+      - nullable(gen('phone'), 0.3)
+      - nullable(gen('sentence:5'), 0.5)
+      - nullable(uuid_v4(), 0.8)
+    query: |-
+      INSERT ALL __values__("user"(email, phone, bio, referred_by))
+
+deseed:
+
+  - name: truncate_user
+    type: exec
+    query: TRUNCATE TABLE "user"
+
+down:
+
+  - name: drop_user
+    type: exec
+    query: |-
+      BEGIN
+        EXECUTE IMMEDIATE 'DROP TABLE "user" CASCADE CONSTRAINTS PURGE';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLCODE != -942 THEN RAISE; END IF;
+      END;

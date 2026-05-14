@@ -1,0 +1,120 @@
+globals:
+  products: 5
+  batch_size: 1
+
+reference:
+  product_catalog: !include products.yaml
+
+complete:
+  tools:
+    - name: review
+      system: |-
+        You are a product review generator. Generate realistic reviews
+        for consumer electronics. IMPORTANT: vary ratings across the full
+        1-5 range. Most products should get 2-4 stars. 5-star and 1-star
+        reviews should be rare. Match sentiment and review_text to the
+        rating you choose.
+      properties:
+        review_text:
+          type: string
+          description: "A 2-3 sentence product review from a customer"
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+          description: "Overall sentiment of the review"
+        rating:
+          type: integer
+          description: "Star rating from 1 to 5"
+      required: [review_text, sentiment, rating]
+
+up:
+
+  - name: create_product
+    query: |-
+      CREATE TABLE IF NOT EXISTS product (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name STRING NOT NULL,
+        description STRING NOT NULL
+      )
+
+  - name: create_review
+    query: |-
+      CREATE TABLE IF NOT EXISTS review (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_name STRING NOT NULL,
+        review_text STRING NOT NULL,
+        sentiment STRING NOT NULL,
+        rating INT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT now()
+      )
+
+# Deferred mode: batch queries collect all complete() calls as
+# placeholders, then resolve them concurrently after all rows
+# are evaluated. Same (tool, prompt) within a row hits the
+# memo cache, so the three field accesses below make one API call
+# per row, not three.
+seed:
+
+  - name: populate_product
+    type: exec_batch
+    count: products
+    size: batch_size
+    args:
+      - ref_each(product_catalog).name
+      - ref_each(product_catalog).description
+    query: |-
+      INSERT INTO product (name, description)
+      __values__
+
+  - name: populate_review
+    type: exec_batch
+    count: products
+    size: batch_size
+    locals:
+      review: 'complete("review", "Review: " + ref_each(product_catalog).name + " - " + ref_each(product_catalog).description)'
+    args:
+      - ref_each(product_catalog).name
+      - local("review").review_text
+      - local("review").sentiment
+      - local("review").rating
+    query: |-
+      INSERT INTO review (product_name, review_text, sentiment, rating)
+      __values__
+
+deseed:
+
+  - name: truncate_review
+    type: exec
+    query: TRUNCATE TABLE review
+
+  - name: truncate_product
+    type: exec
+    query: TRUNCATE TABLE product
+
+down:
+
+  - name: drop_review
+    type: exec
+    query: DROP TABLE IF EXISTS review
+
+  - name: drop_product
+    type: exec
+    query: DROP TABLE IF EXISTS product
+
+# Immediate mode: single-row queries call the LLM API directly.
+# oneCache memoization ensures the three field accesses below
+# still make only one API call per iteration.
+run:
+
+  - name: insert_review
+    type: exec
+    locals:
+      review: 'complete("review", "Review: " + ref_rand("product_catalog").name + " - " + ref_rand("product_catalog").description)'
+    args:
+      - ref_rand("product_catalog").name
+      - local("review").review_text
+      - local("review").sentiment
+      - local("review").rating
+    query: |-
+      INSERT INTO review (product_name, review_text, sentiment, rating)
+      VALUES ($1, $2, $3, $4)

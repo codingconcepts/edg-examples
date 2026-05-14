@@ -1,0 +1,66 @@
+# Exclusive columns workload for Oracle
+#
+# Connection URL format:
+#   oracle://user:password@host:port/service
+
+globals:
+  contacts: 10000
+  batch_size: 1000
+
+up:
+
+  - name: create_contact
+    type: exec
+    query: |-
+      BEGIN
+        EXECUTE IMMEDIATE '
+          CREATE TABLE contact (
+            id NUMBER GENERATED ALWAYS AS IDENTITY,
+            name VARCHAR2(255) NOT NULL,
+            email VARCHAR2(255),
+            phone VARCHAR2(50),
+            PRIMARY KEY (id),
+            CHECK (
+              (email IS NOT NULL AND phone IS NULL) OR
+              (email IS NULL AND phone IS NOT NULL)
+            )
+          )
+        ';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN RAISE; END IF;
+      END;
+
+seed:
+
+  - name: clear_contact
+    type: exec
+    query: TRUNCATE TABLE contact
+
+  - name: populate_contact
+    type: exec_batch
+    count: contacts
+    size: 100
+    args:
+      - gen('name')
+      - bool()
+      - cond(arg(1), gen('email'), nil)
+      - cond(!arg(1), gen('phone'), nil)
+    query: |-
+      INSERT ALL __values__(contact(name, email, phone))
+
+deseed:
+
+  - name: truncate_contact
+    type: exec
+    query: TRUNCATE TABLE contact
+
+down:
+
+  - name: drop_contact
+    type: exec
+    query: |-
+      BEGIN
+        EXECUTE IMMEDIATE 'DROP TABLE contact CASCADE CONSTRAINTS PURGE';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLCODE != -942 THEN RAISE; END IF;
+      END;

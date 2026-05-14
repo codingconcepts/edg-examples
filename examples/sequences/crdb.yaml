@@ -1,0 +1,64 @@
+globals:
+  rows: 100
+  batch_size: 50
+
+seq:
+  - name: global_num_1
+    start: 1
+    step: 1
+  - name: global_num_10
+    start: 1
+    step: 10
+  - name: global_alpha_3
+    length: 3
+  - name: global_alpha_4
+    length: 4
+
+up:
+
+  - name: create_table
+    query: |-
+      CREATE TABLE IF NOT EXISTS sequences (
+        id INT PRIMARY KEY DEFAULT unique_rowid(),
+        worker_num INT NOT NULL,
+        worker_alpha STRING NOT NULL,
+        global_num_1 INT NOT NULL,
+        global_num_10 INT NOT NULL,
+        global_alpha_3 STRING NOT NULL,
+        global_alpha_4 STRING NOT NULL
+      )
+
+seed:
+
+  - name: seed_sequences
+    type: exec_batch
+    count: rows
+    size: batch_size
+    args:
+      - seq(1, 1)
+      - seq_alpha(3)
+      - seq_global("global_num_1")
+      - seq_global("global_num_10")
+      - seq_alpha_global("global_alpha_3")
+      - upper(seq_alpha_global("global_alpha_4"))
+    query: |-
+      INSERT INTO sequences (
+        worker_num,
+        worker_alpha,
+        global_num_1,
+        global_num_10,
+        global_alpha_3,
+        global_alpha_4
+      )
+      __values__
+
+deseed:
+
+  - name: delete_sequences
+    type: exec
+    query: DELETE FROM sequences WHERE true
+
+down:
+
+  - name: drop_table
+    query: DROP TABLE IF EXISTS sequences
