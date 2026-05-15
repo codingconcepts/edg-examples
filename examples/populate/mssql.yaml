@@ -4,7 +4,7 @@
 #   sqlserver://user:password@host:port?database=database&encrypt=disable
 #
 # Example:
-#   edg up --driver sqlserver --config _examples/populate/sqlserver.yaml \
+#   edg up --driver sqlserver --config examples/populate/sqlserver.yaml \
 #     --url "sqlserver://sa:Password123!@localhost:1433?database=populate&encrypt=disable"
 
 globals:

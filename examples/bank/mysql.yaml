@@ -4,7 +4,7 @@
 #   user:password@tcp(host:port)/database?parseTime=true
 #
 # Example:
-#   edg up --driver mysql --config _examples/bank/mysql.yaml \
+#   edg up --driver mysql --config examples/bank/mysql.yaml \
 #     --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 globals:

@@ -13,26 +13,26 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 # Check the data.
 cockroach sql --insecure -e "SELECT COUNT(*) FROM c"
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

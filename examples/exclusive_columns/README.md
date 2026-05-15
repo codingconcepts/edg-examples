@@ -38,9 +38,9 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/exclusive_columns/crdb.yaml \
+--config examples/exclusive_columns/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -55,9 +55,9 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mysql \
---config _examples/exclusive_columns/mysql.yaml \
+--config examples/exclusive_columns/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -72,9 +72,9 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver oracle \
---config _examples/exclusive_columns/oracle.yaml \
+--config examples/exclusive_columns/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -89,8 +89,8 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mssql \
---config _examples/exclusive_columns/mssql.yaml \
+--config examples/exclusive_columns/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=exclusive_columns&encrypt=disable"
 ```

@@ -22,16 +22,16 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Single file
 
 ```sh
-go run ./cmd/edg up \
+edg up \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --csv-file _examples/csv/data/regions.csv \
   --csv-file _examples/csv/data/translations.csv \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --csv-file _examples/csv/data/regions.csv \
   --csv-file _examples/csv/data/translations.csv \
   --url "postgres://root@localhost:26257?sslmode=disable"
@@ -47,29 +47,29 @@ cockroach sql --insecure \
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
 ### Directory
 
 ```sh
-go run ./cmd/edg up \
+edg up \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --csv-directory _examples/csv/data \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --csv-directory _examples/csv/data \
   --url "postgres://root@localhost:26257?sslmode=disable"
 ```
@@ -84,14 +84,14 @@ cockroach sql --insecure \
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
   --driver pgx \
-  --config _examples/csv/config.yaml \
+  --config examples/csv/config.yaml \
   --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -103,7 +103,7 @@ go run ./cmd/edg down \
 Explore CSV reference data interactively without a database:
 
 ```sh
-go run ./cmd/edg repl \
+edg repl \
   --csv-directory _examples/csv/data
 
 >> ref_rand('regions')

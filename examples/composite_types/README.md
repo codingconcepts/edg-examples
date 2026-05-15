@@ -13,38 +13,38 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/composite_types/crdb.yaml \
+--config examples/composite_types/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 10s
 
 # Or separately.
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/composite_types/crdb.yaml \
+--config examples/composite_types/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/composite_types/crdb.yaml \
+--config examples/composite_types/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/composite_types/crdb.yaml \
+--config examples/composite_types/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 1m
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/composite_types/crdb.yaml \
+--config examples/composite_types/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/composite_types/crdb.yaml \
+--config examples/composite_types/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

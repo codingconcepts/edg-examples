@@ -40,19 +40,19 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/vector/crdb.yaml \
+--config examples/vector/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/vector/crdb.yaml \
+--config examples/vector/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/vector/crdb.yaml \
+--config examples/vector/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 30s
@@ -85,14 +85,14 @@ LIMIT 5;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/vector/crdb.yaml \
+--config examples/vector/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/vector/crdb.yaml \
+--config examples/vector/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -107,9 +107,9 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mysql \
---config _examples/vector/mysql.yaml \
+--config examples/vector/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -124,9 +124,9 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver oracle \
---config _examples/vector/oracle.yaml \
+--config examples/vector/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -141,8 +141,8 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mssql \
---config _examples/vector/mssql.yaml \
+--config examples/vector/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=vector&encrypt=disable"
 ```

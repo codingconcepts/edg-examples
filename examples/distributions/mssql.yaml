@@ -89,9 +89,18 @@ run:
       INSERT INTO distributions (dist_type, value)
       VALUES ('lognormal', @p1)
 
+  - name: insert_pareto
+    type: exec
+    args:
+      - pareto(2.0, 99)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('pareto', @p1)
+
 run_weights:
   insert_uniform: 20
   insert_zipfian: 20
   insert_normal: 20
   insert_exponential: 20
   insert_lognormal: 20
+  insert_pareto: 20

@@ -67,9 +67,9 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/expectations/crdb.yaml \
+--config examples/expectations/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -84,9 +84,9 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mysql \
---config _examples/expectations/mysql.yaml \
+--config examples/expectations/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -101,9 +101,9 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver oracle \
---config _examples/expectations/oracle.yaml \
+--config examples/expectations/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -118,8 +118,8 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mssql \
---config _examples/expectations/mssql.yaml \
+--config examples/expectations/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=expectations&encrypt=disable"
 ```

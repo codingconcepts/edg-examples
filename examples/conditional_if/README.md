@@ -67,9 +67,9 @@ docker compose -f infra/compose_crdb.yml up -d
 Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 -d 10s
 ```
@@ -79,19 +79,19 @@ go run ./cmd/edg all \
 Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 -d 10s
 ```
@@ -132,13 +132,13 @@ SELECT currency, COUNT(*) AS orders FROM order_log GROUP BY currency ORDER BY cu
 Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

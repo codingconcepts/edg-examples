@@ -9,23 +9,23 @@ Generates a config file based on an existing database.
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
 
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/normal/crdb.yaml \
+--config examples/normal/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
 ### Init
 
 ```sh
-go run ./cmd/edg init \
+edg init \
 --driver pgx \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 --schema public > _examples/init/crdb.yaml
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/init/crdb.yaml \
+--config examples/init/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -40,14 +40,14 @@ UNION ALL SELECT 'rides', count(*) FROM rides;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/init/crdb.yaml \
+--config examples/init/crdb.yaml \
 --url "postgres://root@localhost:26257/movr?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/init/crdb.yaml \
+--config examples/init/crdb.yaml \
 --url "postgres://root@localhost:26257/movr?sslmode=disable"
 ```
 
@@ -58,16 +58,16 @@ go run ./cmd/edg down \
 ```sh
 docker compose -f infra/compose_mysql.yml up -d
 
-go run ./cmd/edg up \
+edg up \
 --driver mysql \
---config _examples/normal/mysql.yaml \
+--config examples/normal/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
 ### Init
 
 ```sh
-go run ./cmd/edg init \
+edg init \
 --driver mysql \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 --database defaultdb > _examples/init/mysql.yaml
@@ -76,9 +76,9 @@ go run ./cmd/edg init \
 ### Seed
 
 ```sh
-go run ./cmd/edg seed \
+edg seed \
 --driver mysql \
---config _examples/init/mysql.yaml \
+--config examples/init/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -92,14 +92,14 @@ UNION ALL SELECT 'review', count(*) FROM review;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mysql \
---config _examples/init/mysql.yaml \
+--config examples/init/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg down \
+edg down \
 --driver mysql \
---config _examples/init/mysql.yaml \
+--config examples/init/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -110,16 +110,16 @@ go run ./cmd/edg down \
 ```sh
 docker compose -f infra/compose_mssql.yml up -d
 
-go run ./cmd/edg up \
+edg up \
 --driver mssql \
---config _examples/normal/mssql.yaml \
+--config examples/normal/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 ```
 
 ### Init
 
 ```sh
-go run ./cmd/edg init \
+edg init \
 --driver mssql \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable" \
 --schema dbo > _examples/init/mssql.yaml
@@ -128,9 +128,9 @@ go run ./cmd/edg init \
 ### Seed
 
 ```sh
-go run ./cmd/edg seed \
+edg seed \
 --driver mssql \
---config _examples/init/mssql.yaml \
+--config examples/init/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 ```
 
@@ -144,14 +144,14 @@ UNION ALL SELECT 'review', count(*) FROM review;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mssql \
---config _examples/init/mssql.yaml \
+--config examples/init/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver mssql \
---config _examples/init/mssql.yaml \
+--config examples/init/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 ```
 
@@ -162,16 +162,16 @@ go run ./cmd/edg down \
 ```sh
 docker compose -f infra/compose_oracle.yml up -d
 
-go run ./cmd/edg up \
+edg up \
 --driver oracle \
---config _examples/normal/oracle.yaml \
+--config examples/normal/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
 ### Init
 
 ```sh
-go run ./cmd/edg init \
+edg init \
 --driver oracle \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 --schema SYSTEM > _examples/init/oracle.yaml
@@ -180,9 +180,9 @@ go run ./cmd/edg init \
 ### Seed
 
 ```sh
-go run ./cmd/edg seed \
+edg seed \
 --driver oracle \
---config _examples/init/oracle.yaml \
+--config examples/init/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -196,13 +196,13 @@ UNION ALL SELECT 'review', count(*) FROM review;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver oracle \
---config _examples/init/oracle.yaml \
+--config examples/init/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg down \
+edg down \
 --driver oracle \
---config _examples/init/oracle.yaml \
+--config examples/init/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```

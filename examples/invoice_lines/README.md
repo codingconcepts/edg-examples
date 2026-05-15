@@ -25,14 +25,14 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -66,14 +66,14 @@ WHERE total != subtotal + tax + shipping;
 ```
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -88,23 +88,23 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mysql \
---config _examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver mysql \
---config _examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mysql \
---config _examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg down \
+edg down \
 --driver mysql \
---config _examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```

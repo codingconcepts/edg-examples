@@ -96,19 +96,19 @@ source .env # Or similar...
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/complete/crdb.yaml \
+--config examples/complete/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/complete/crdb.yaml \
+--config examples/complete/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/complete/crdb.yaml \
+--config examples/complete/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 10s
@@ -130,28 +130,28 @@ LIMIT 10;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/complete/crdb.yaml \
+--config examples/complete/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/complete/crdb.yaml \
+--config examples/complete/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
 ## Using with Ollama
 
 ```sh
-go run ./cmd/edg up \
+edg up \
   --driver pgx \
-  --config _examples/complete/crdb.yaml \
+  --config examples/complete/crdb.yaml \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
   --driver pgx \
-  --config _examples/complete/crdb.yaml \
+  --config examples/complete/crdb.yaml \
   --url "postgres://root@localhost:26257?sslmode=disable" \
   --complete-api-key ollama \
   --complete-url http://localhost:11434/v1/chat/completions \

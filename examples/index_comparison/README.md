@@ -20,9 +20,9 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/index_comparison/crdb.yaml \
+--config examples/index_comparison/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 \
 -d 10s
@@ -39,9 +39,9 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mysql \
---config _examples/index_comparison/mysql.yaml \
+--config examples/index_comparison/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -56,8 +56,8 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mssql \
---config _examples/index_comparison/mssql.yaml \
+--config examples/index_comparison/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=index_comparison&encrypt=disable"
 ```

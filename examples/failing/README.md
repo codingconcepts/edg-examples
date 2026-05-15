@@ -23,15 +23,15 @@ docker compose -f infra/compose_crdb.yml up -d
 With a valid region, events are inserted with the mapped AWS region:
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/failing/crdb.yaml \
+--config examples/failing/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 FLY_REGION=fra \
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/failing/crdb.yaml \
+--config examples/failing/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 5s
@@ -46,9 +46,9 @@ With an unrecognized region, `fail()` stops the worker:
 
 ```sh
 FLY_REGION=unknown \
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/failing/crdb.yaml \
+--config examples/failing/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 5s
@@ -57,13 +57,13 @@ go run ./cmd/edg run \
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/failing/crdb.yaml \
+--config examples/failing/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/failing/crdb.yaml \
+--config examples/failing/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

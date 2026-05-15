@@ -42,9 +42,9 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/transaction/crdb.yaml \
+--config examples/transaction/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -59,9 +59,9 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mysql \
---config _examples/transaction/mysql.yaml \
+--config examples/transaction/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -76,9 +76,9 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver oracle \
---config _examples/transaction/oracle.yaml \
+--config examples/transaction/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -93,9 +93,9 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mssql \
---config _examples/transaction/mssql.yaml \
+--config examples/transaction/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=transaction&encrypt=disable"
 ```
 
@@ -112,9 +112,9 @@ docker compose -f infra/compose_mongodb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mongodb \
---config _examples/transaction/mongodb.yaml \
+--config examples/transaction/mongodb.yaml \
 --url "mongodb://localhost:27017/edg?replicaSet=rs0"
 ```
 
@@ -131,8 +131,8 @@ docker compose -f infra/compose_cassandra.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver cassandra \
---config _examples/transaction/cassandra.yaml \
+--config examples/transaction/cassandra.yaml \
 --url "localhost:9042"
 ```

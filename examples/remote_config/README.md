@@ -18,7 +18,7 @@ docker compose -f infra/compose_crdb.yml up -d
 python3 -m http.server 8000 -d _examples/tpcc
 
 # Terminal 2: run edg against it
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
 --config "http://localhost:8000/crdb.yaml" \
 --url "postgres://root@localhost:26257?sslmode=disable" \

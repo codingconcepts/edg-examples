@@ -13,9 +13,9 @@ docker compose -f _examples/observability/compose.yml up -d
 ## Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/observability/workload.yaml \
+--config examples/observability/workload.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 --metrics-addr :9090
 ```

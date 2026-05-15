@@ -19,13 +19,13 @@ until mysql -u root -ppassword -h 127.0.0.1 -e "SELECT 1" &>/dev/null 2>&1; do s
 Seed both databases with the same data (deterministic via `--rng-seed`), then verify:
 
 ```sh
-go run ./cmd/edg sync run \
+edg sync run \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---source-config _examples/sync/mysql.yaml \
+--source-config examples/sync/mysql.yaml \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config _examples/sync/crdb.yaml \
+--target-config examples/sync/crdb.yaml \
 --rng-seed 42
 ```
 
@@ -40,7 +40,7 @@ mysql -u root -ppassword -h 127.0.0.1 defaultdb -e "SELECT * FROM orders LIMIT 5
 ```
 
 ```sh
-go run ./cmd/edg sync verify \
+edg sync verify \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 --target-driver pgx \
@@ -57,20 +57,20 @@ Seed the source only. Create schema on the target manually, then use an external
 Create schema on both, seed source only:
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mysql \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---config _examples/sync/mysql.yaml
+--config examples/sync/mysql.yaml
 
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
 --url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---config _examples/sync/crdb.yaml
+--config examples/sync/crdb.yaml
 
-go run ./cmd/edg sync run \
+edg sync run \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---source-config _examples/sync/mysql.yaml \
+--source-config examples/sync/mysql.yaml \
 --rng-seed 42
 ```
 
@@ -85,7 +85,7 @@ molt fetch \
 Verify:
 
 ```sh
-go run ./cmd/edg sync verify \
+edg sync verify \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 --target-driver pgx \
@@ -99,13 +99,13 @@ go run ./cmd/edg sync verify \
 ### Teardown
 
 ```sh
-go run ./cmd/edg sync down \
+edg sync down \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---source-config _examples/sync/mysql.yaml \
+--source-config examples/sync/mysql.yaml \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config _examples/sync/crdb.yaml
+--target-config examples/sync/crdb.yaml
 
 docker compose -f infra/compose_crdb.yml down
 docker compose -f infra/compose_mysql.yml down
@@ -126,20 +126,20 @@ until mongosh --quiet --eval "rs.initiate()" &>/dev/null; do sleep 1; done
 ### Dual-write and verify
 
 ```sh
-go run ./cmd/edg sync run \
+edg sync run \
 --source-driver mongodb \
 --source-url "mongodb://localhost:27017/edg?directConnection=true" \
---source-config _examples/sync/mongodb.yaml \
+--source-config examples/sync/mongodb.yaml \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config _examples/sync/crdb.yaml \
+--target-config examples/sync/crdb.yaml \
 --rng-seed 42
 ```
 
 Columns unique to one side (`created_at` in CockroachDB, `_id` in MongoDB) are automatically excluded from comparison:
 
 ```sh
-go run ./cmd/edg sync verify \
+edg sync verify \
 --source-driver mongodb \
 --source-url "mongodb://localhost:27017/edg?directConnection=true" \
 --target-driver pgx \
@@ -151,13 +151,13 @@ go run ./cmd/edg sync verify \
 ### Teardown
 
 ```sh
-go run ./cmd/edg sync down \
+edg sync down \
 --source-driver mongodb \
 --source-url "mongodb://localhost:27017/edg?directConnection=true" \
---source-config _examples/sync/mongodb.yaml \
+--source-config examples/sync/mongodb.yaml \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config _examples/sync/crdb.yaml
+--target-config examples/sync/crdb.yaml
 
 docker compose -f infra/compose_crdb.yml down
 docker compose -f infra/compose_mongo.yml down
@@ -180,18 +180,18 @@ until cqlsh -e "DESCRIBE CLUSTER" &>/dev/null; do sleep 2; done
 ### Dual-write and verify
 
 ```sh
-go run ./cmd/edg sync run \
+edg sync run \
 --source-driver cassandra \
 --source-url "cassandra://127.0.0.1:9042" \
---source-config _examples/sync/cassandra.yaml \
+--source-config examples/sync/cassandra.yaml \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config _examples/sync/crdb.yaml \
+--target-config examples/sync/crdb.yaml \
 --rng-seed 42
 ```
 
 ```sh
-go run ./cmd/edg sync verify \
+edg sync verify \
 --source-driver cassandra \
 --source-url "cassandra://127.0.0.1:9042/edg" \
 --target-driver pgx \
@@ -203,13 +203,13 @@ go run ./cmd/edg sync verify \
 ### Teardown
 
 ```sh
-go run ./cmd/edg sync down \
+edg sync down \
 --source-driver cassandra \
 --source-url "cassandra://127.0.0.1:9042" \
---source-config _examples/sync/cassandra.yaml \
+--source-config examples/sync/cassandra.yaml \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config _examples/sync/crdb.yaml
+--target-config examples/sync/crdb.yaml
 
 docker compose -f infra/compose_crdb.yml down
 docker compose -f infra/compose_cassandra.yml down

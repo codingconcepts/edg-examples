@@ -26,14 +26,14 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -91,13 +91,13 @@ ORDER BY 1;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

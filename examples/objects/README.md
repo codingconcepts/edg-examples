@@ -18,9 +18,9 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/objects/crdb.yaml \
+--config examples/objects/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 \
 -d 10s
@@ -37,9 +37,9 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mysql \
---config _examples/objects/mysql.yaml \
+--config examples/objects/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 -w 4 \
 -d 10s
@@ -56,9 +56,9 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver oracle \
---config _examples/objects/oracle.yaml \
+--config examples/objects/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 -w 4 \
 -d 10s
@@ -75,9 +75,9 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver mssql \
---config _examples/objects/mssql.yaml \
+--config examples/objects/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=objects&encrypt=disable" \
 -w 4 \
 -d 10s

@@ -21,14 +21,14 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/org_tree/crdb.yaml \
+--config examples/org_tree/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/org_tree/crdb.yaml \
+--config examples/org_tree/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -66,13 +66,13 @@ LIMIT 30;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/org_tree/crdb.yaml \
+--config examples/org_tree/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/org_tree/crdb.yaml \
+--config examples/org_tree/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

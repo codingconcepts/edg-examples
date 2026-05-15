@@ -32,26 +32,26 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/expression/crdb.yaml \
+--config examples/expression/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/expression/crdb.yaml \
+--config examples/expression/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 5s
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/expression/crdb.yaml \
+--config examples/expression/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/expression/crdb.yaml \
+--config examples/expression/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -66,26 +66,26 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mysql \
---config _examples/expression/mysql.yaml \
+--config examples/expression/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg run \
+edg run \
 --driver mysql \
---config _examples/expression/mysql.yaml \
+--config examples/expression/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 -w 1 \
 -d 5s
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mysql \
---config _examples/expression/mysql.yaml \
+--config examples/expression/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg down \
+edg down \
 --driver mysql \
---config _examples/expression/mysql.yaml \
+--config examples/expression/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -100,26 +100,26 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver oracle \
---config _examples/expression/oracle.yaml \
+--config examples/expression/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg run \
+edg run \
 --driver oracle \
---config _examples/expression/oracle.yaml \
+--config examples/expression/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 -w 1 \
 -d 5s
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver oracle \
---config _examples/expression/oracle.yaml \
+--config examples/expression/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg down \
+edg down \
 --driver oracle \
---config _examples/expression/oracle.yaml \
+--config examples/expression/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -134,25 +134,25 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mssql \
---config _examples/expression/mssql.yaml \
+--config examples/expression/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=expression&encrypt=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver mssql \
---config _examples/expression/mssql.yaml \
+--config examples/expression/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=expression&encrypt=disable" \
 -w 1 \
 -d 5s
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mssql \
---config _examples/expression/mssql.yaml \
+--config examples/expression/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=expression&encrypt=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver mssql \
---config _examples/expression/mssql.yaml \
+--config examples/expression/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=expression&encrypt=disable"
 ```

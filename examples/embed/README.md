@@ -47,19 +47,19 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/embed/crdb.yaml \
+--config examples/embed/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/embed/crdb.yaml \
+--config examples/embed/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/embed/crdb.yaml \
+--config examples/embed/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 \
 -d 30s
@@ -89,23 +89,23 @@ LIMIT 5;
 ### Teardown
 
 ```sh
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/embed/crdb.yaml \
+--config examples/embed/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/embed/crdb.yaml \
+--config examples/embed/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
 ## Using with Ollama
 
 ```sh
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/embed/crdb.yaml \
+--config examples/embed/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 --embed-api-key ollama \
 --embed-url http://localhost:11434/v1/embeddings \

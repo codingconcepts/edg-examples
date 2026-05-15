@@ -37,26 +37,194 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
--d 30s
+-d 10s
+```
 
-go run ./cmd/edg deseed \
+### Check
+
+Exponential
+
+```sql
+SELECT
+  floor(d.value / 7) * 7 AS bucket,
+  count(*) AS total,
+  repeat('█', (count(*) * 50 / max(count(*)) OVER ())::INT) AS histogram
+FROM distributions d
+WHERE d.dist_type = 'exponential'
+GROUP BY 1
+ORDER BY 1;
+
+  bucket | total |                     histogram
+---------+-------+-----------------------------------------------------
+       0 |     3 |
+       7 |    17 | ██
+      14 |    46 | ██████
+      21 |   100 | █████████████
+      28 |   167 | ██████████████████████
+      35 |   308 | ████████████████████████████████████████
+      42 |   382 | ██████████████████████████████████████████████████
+      49 |   362 | ███████████████████████████████████████████████
+      56 |   322 | ██████████████████████████████████████████
+      63 |   236 | ███████████████████████████████
+      70 |   115 | ███████████████
+      77 |    49 | ██████
+      84 |    21 | ███
+      91 |     2 |
+```
+
+Log normal
+
+```sql
+SELECT
+  floor(d.value / 7) * 7 AS bucket,
+  count(*) AS total,
+  repeat('█', (count(*) * 50 / max(count(*)) OVER ())::INT) AS histogram
+FROM distributions d
+WHERE d.dist_type = 'lognormal'
+GROUP BY 1
+ORDER BY 1;
+
+  bucket | total |                     histogram
+---------+-------+-----------------------------------------------------
+       0 |  1002 | ██████████████████████████████████████████████████
+       7 |   926 | ██████████████████████████████████████████████
+      14 |   175 | █████████
+      21 |    35 | ██
+      28 |     6 |
+      35 |     1 |
+      42 |     1 |
+```
+
+Normal
+
+```sql
+SELECT
+  floor(d.value / 7) * 7 AS bucket,
+  count(*) AS total,
+  repeat('█', (count(*) * 50 / max(count(*)) OVER ())::INT) AS histogram
+FROM distributions d
+WHERE d.dist_type = 'normal'
+GROUP BY 1
+ORDER BY 1;
+
+  bucket | total |                     histogram
+---------+-------+-----------------------------------------------------
+       0 |     3 |
+       7 |    17 | ██
+      14 |    46 | ██████
+      21 |   100 | █████████████
+      28 |   167 | ██████████████████████
+      35 |   308 | ████████████████████████████████████████
+      42 |   382 | ██████████████████████████████████████████████████
+      49 |   362 | ███████████████████████████████████████████████
+      56 |   322 | ██████████████████████████████████████████
+      63 |   236 | ███████████████████████████████
+      70 |   115 | ███████████████
+      77 |    49 | ██████
+      84 |    21 | ███
+      91 |     2 |
+```
+
+Pareto
+
+```sql
+SELECT
+  floor(d.value / 7) * 7 AS bucket,
+  count(*) AS total,
+  repeat('█', (count(*) * 50 / max(count(*)) OVER ())::INT) AS histogram
+FROM distributions d
+WHERE d.dist_type = 'pareto'
+GROUP BY 1
+ORDER BY 1;
+
+  bucket | total |                     histogram
+---------+-------+-----------------------------------------------------
+       0 |  2125 | ██████████████████████████████████████████████████
+       7 |    24 | █
+      14 |     4 |
+      21 |     1 |
+```
+
+Uniform
+
+```sql
+SELECT
+  div(d.value - 1, 50) * 50 + 1 AS bucket,
+  count(*) AS total,
+  repeat('█', (count(*) * 50 / max(count(*)) OVER ())::INT) AS histogram
+FROM distributions d
+WHERE d.dist_type = 'uniform'
+GROUP BY 1
+ORDER BY 1;
+
+  bucket | total |                     histogram
+---------+-------+-----------------------------------------------------
+       0 |   152 | ███████████████████████████████████████████
+       7 |   156 | ████████████████████████████████████████████
+      14 |   158 | █████████████████████████████████████████████
+      21 |   140 | ████████████████████████████████████████
+      28 |   152 | ███████████████████████████████████████████
+      35 |   145 | █████████████████████████████████████████
+      42 |   151 | ███████████████████████████████████████████
+      49 |   137 | ███████████████████████████████████████
+      56 |   163 | ██████████████████████████████████████████████
+      63 |   140 | ████████████████████████████████████████
+      70 |   176 | ██████████████████████████████████████████████████
+      77 |   173 | █████████████████████████████████████████████████
+      84 |   129 | █████████████████████████████████████
+      91 |   148 | ██████████████████████████████████████████
+      98 |    35 | ██████████
+```
+
+Zipfian
+
+```sql
+SELECT
+  floor(d.value / 7) * 7 AS bucket,
+  count(*) AS total,
+  repeat('█', (count(*) * 50 / max(count(*)) OVER ())::INT) AS histogram
+FROM distributions d
+WHERE d.dist_type = 'zipfian'
+GROUP BY 1
+ORDER BY 1;
+
+  bucket | total |                     histogram
+---------+-------+-----------------------------------------------------
+       0 |  1940 | ██████████████████████████████████████████████████
+       7 |    90 | ██
+      14 |    37 | █
+      21 |    19 |
+      28 |    11 |
+      35 |     7 |
+      42 |     7 |
+      49 |     6 |
+      56 |     1 |
+      63 |     2 |
+      77 |     1 |
+      84 |     1 |
+```
+
+### Teardown
+
+```sh
+edg deseed \
 --driver pgx \
---config _examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -71,26 +239,26 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mysql \
---config _examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg run \
+edg run \
 --driver mysql \
---config _examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 -w 10 \
 -d 30s
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mysql \
---config _examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg down \
+edg down \
 --driver mysql \
---config _examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -105,26 +273,26 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver oracle \
---config _examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg run \
+edg run \
 --driver oracle \
---config _examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 -w 10 \
 -d 30s
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver oracle \
---config _examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg down \
+edg down \
 --driver oracle \
---config _examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -139,25 +307,25 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mssql \
---config _examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver mssql \
---config _examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable" \
 -w 10 \
 -d 30s
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mssql \
---config _examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver mssql \
---config _examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable"
 ```

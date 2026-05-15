@@ -48,8 +48,8 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg all \
+edg all \
 --driver pgx \
---config _examples/stages_run_weights/crdb.yaml \
+--config examples/stages_run_weights/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

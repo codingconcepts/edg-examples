@@ -13,31 +13,31 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/saas/crdb.yaml \
+--config examples/saas/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/saas/crdb.yaml \
+--config examples/saas/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver pgx \
---config _examples/saas/crdb.yaml \
+--config examples/saas/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 100 \
 -d 1m
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/saas/crdb.yaml \
+--config examples/saas/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/saas/crdb.yaml \
+--config examples/saas/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -52,31 +52,31 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mysql \
---config _examples/saas/mysql.yaml \
+--config examples/saas/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver mysql \
---config _examples/saas/mysql.yaml \
+--config examples/saas/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg run \
+edg run \
 --driver mysql \
---config _examples/saas/mysql.yaml \
+--config examples/saas/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 -w 100 \
 -d 1m
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mysql \
---config _examples/saas/mysql.yaml \
+--config examples/saas/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg down \
+edg down \
 --driver mysql \
---config _examples/saas/mysql.yaml \
+--config examples/saas/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -91,31 +91,31 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver oracle \
---config _examples/saas/oracle.yaml \
+--config examples/saas/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver oracle \
---config _examples/saas/oracle.yaml \
+--config examples/saas/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg run \
+edg run \
 --driver oracle \
---config _examples/saas/oracle.yaml \
+--config examples/saas/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 -w 100 \
 -d 1m
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver oracle \
---config _examples/saas/oracle.yaml \
+--config examples/saas/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg down \
+edg down \
 --driver oracle \
---config _examples/saas/oracle.yaml \
+--config examples/saas/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -130,30 +130,30 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mssql \
---config _examples/saas/mssql.yaml \
+--config examples/saas/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=saas&encrypt=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver mssql \
---config _examples/saas/mssql.yaml \
+--config examples/saas/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=saas&encrypt=disable"
 
-go run ./cmd/edg run \
+edg run \
 --driver mssql \
---config _examples/saas/mssql.yaml \
+--config examples/saas/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=saas&encrypt=disable" \
 -w 100 \
 -d 1m
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mssql \
---config _examples/saas/mssql.yaml \
+--config examples/saas/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=saas&encrypt=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver mssql \
---config _examples/saas/mssql.yaml \
+--config examples/saas/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=saas&encrypt=disable"
 ```

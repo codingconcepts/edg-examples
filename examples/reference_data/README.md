@@ -15,24 +15,24 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver pgx \
---config _examples/reference_data/crdb.yaml \
+--config examples/reference_data/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver pgx \
---config _examples/reference_data/crdb.yaml \
+--config examples/reference_data/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver pgx \
---config _examples/reference_data/crdb.yaml \
+--config examples/reference_data/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver pgx \
---config _examples/reference_data/crdb.yaml \
+--config examples/reference_data/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -47,24 +47,24 @@ docker compose -f infra/compose_mysql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mysql \
---config _examples/reference_data/mysql.yaml \
+--config examples/reference_data/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver mysql \
---config _examples/reference_data/mysql.yaml \
+--config examples/reference_data/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mysql \
---config _examples/reference_data/mysql.yaml \
+--config examples/reference_data/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
-go run ./cmd/edg down \
+edg down \
 --driver mysql \
---config _examples/reference_data/mysql.yaml \
+--config examples/reference_data/mysql.yaml \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -79,24 +79,24 @@ docker compose -f infra/compose_oracle.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver oracle \
---config _examples/reference_data/oracle.yaml \
+--config examples/reference_data/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver oracle \
---config _examples/reference_data/oracle.yaml \
+--config examples/reference_data/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver oracle \
---config _examples/reference_data/oracle.yaml \
+--config examples/reference_data/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
-go run ./cmd/edg down \
+edg down \
 --driver oracle \
---config _examples/reference_data/oracle.yaml \
+--config examples/reference_data/oracle.yaml \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -111,23 +111,23 @@ docker compose -f infra/compose_mssql.yml up -d
 ### Run
 
 ```sh
-go run ./cmd/edg up \
+edg up \
 --driver mssql \
---config _examples/reference_data/mssql.yaml \
+--config examples/reference_data/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=reference_data&encrypt=disable"
 
-go run ./cmd/edg seed \
+edg seed \
 --driver mssql \
---config _examples/reference_data/mssql.yaml \
+--config examples/reference_data/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=reference_data&encrypt=disable"
 
-go run ./cmd/edg deseed \
+edg deseed \
 --driver mssql \
---config _examples/reference_data/mssql.yaml \
+--config examples/reference_data/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=reference_data&encrypt=disable"
 
-go run ./cmd/edg down \
+edg down \
 --driver mssql \
---config _examples/reference_data/mssql.yaml \
+--config examples/reference_data/mssql.yaml \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=reference_data&encrypt=disable"
 ```

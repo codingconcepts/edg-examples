@@ -12,14 +12,14 @@ Generates locale-aware personal data with optional masking for non-production en
 
 ```bash
 # Generate to CSV.
-go run ./cmd/edg stage \
---config _examples/locale/crdb.yaml \
+edg stage \
+--config examples/locale/crdb.yaml \
 --format csv \
 --output-dir _examples/locale/csv/
 
 # With deterministic output.
-go run ./cmd/edg stage \
---config _examples/locale/crdb.yaml \
+edg stage \
+--config examples/locale/crdb.yaml \
 --format csv \
 --output-dir _examples/locale/csv/ \
 --rng-seed 42

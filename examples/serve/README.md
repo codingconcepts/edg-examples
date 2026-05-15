@@ -13,16 +13,16 @@ docker compose -f infra/compose_crdb.yml up -d
 ### Start the server
 
 ```sh
-go run ./cmd/edg jobs serve
+edg jobs serve
 ```
 
 ### Submit a workload
 
 ```sh
-response=$(go run ./cmd/edg jobs submit \
+response=$(edg jobs submit \
   --url "postgres://root@localhost:26257?sslmode=disable" \
   --driver pgx \
-  --config _examples/serve/crdb.yaml \
+  --config examples/serve/crdb.yaml \
   --duration 10s \
   --workers 4)
 
@@ -34,16 +34,16 @@ job_id=$(echo ${response} | jq -r .id)
 Stream separately using the returned job ID:
 
 ```sh
-go run ./cmd/edg jobs stream ${job_id}
+edg jobs stream ${job_id}
 ```
 
 Or stream automatically by adding `--stream` to submit:
 
 ```sh
-go run ./cmd/edg jobs submit \
+edg jobs submit \
   --url "postgres://root@localhost:26257?sslmode=disable" \
   --driver pgx \
-  --config _examples/serve/crdb.yaml \
+  --config examples/serve/crdb.yaml \
   --duration 10s \
   --workers 4 \
   --stream \
@@ -53,13 +53,13 @@ go run ./cmd/edg jobs submit \
 ### Check job status
 
 ```sh
-go run ./cmd/edg jobs status
+edg jobs status
 ```
 
 ### Health check
 
 ```sh
-go run ./cmd/edg jobs health
+edg jobs health
 ```
 
 ### Teardown
