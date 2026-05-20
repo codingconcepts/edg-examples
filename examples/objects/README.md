@@ -13,6 +13,7 @@ This example defines an **order** object with email, product, quantity, and time
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

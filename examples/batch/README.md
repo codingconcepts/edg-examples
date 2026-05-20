@@ -16,6 +16,7 @@ Both types use the `__values__` token to produce a single `INSERT ... VALUES (..
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

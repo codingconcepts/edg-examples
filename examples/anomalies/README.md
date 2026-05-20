@@ -51,6 +51,7 @@ Generates traffic patterns that provoke classic read/write anomalies under weak 
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

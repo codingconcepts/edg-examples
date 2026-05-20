@@ -21,6 +21,7 @@ The `seq` section defines named sequences with a start value and step. `seq_glob
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

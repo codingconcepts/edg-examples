@@ -35,6 +35,7 @@ The first call lazily generates `clusters` random unit-vector centroids. Each su
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

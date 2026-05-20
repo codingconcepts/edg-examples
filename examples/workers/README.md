@@ -37,6 +37,7 @@ The `rate` field uses the format `times/interval`. For example, `1/5s` means onc
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

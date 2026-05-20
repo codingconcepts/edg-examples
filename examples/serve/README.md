@@ -8,6 +8,7 @@ Run edg as an HTTP server and submit workloads via CLI or API.
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Start the server (without token)

@@ -8,6 +8,7 @@ A TPC-C benchmark implementation with all 5 transaction profiles (New-Order, Pay
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

@@ -10,6 +10,7 @@ The `--config` flag (and `EDG_CONFIG` env var) accepts HTTP and HTTPS URLs. edg 
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Serve a local config over HTTP

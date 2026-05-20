@@ -120,6 +120,7 @@ Both `print` and `post_print` can be used on the same query - `print` for input 
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

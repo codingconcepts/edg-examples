@@ -16,6 +16,7 @@ Seed queries with named args automatically store their generated rows as dataset
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

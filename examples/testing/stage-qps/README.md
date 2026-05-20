@@ -19,8 +19,17 @@ When `qps` is set on a stage, workers collectively throttle to that rate. When o
 
 ### Setup
 
+Apply license (if using `--tui` flag)
+
+```sh
+eval "export $(dotenvx get --format shell)"
+```
+
+Start cluster
+
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run
@@ -30,9 +39,18 @@ edg all \
   --driver pgx \
   --config examples/testing/stage-qps/crdb.edg \
   --url "postgres://root@localhost:26257?sslmode=disable" \
-  --metrics-samples 500
+  --metrics-samples 500 \
+  --tui
 ```
 
-## Observe
+### Observe
 
 Add `--metrics-addr :9090` to expose Prometheus metrics during the run and verify QPS matches the target at each stage.
+
+### Teardown
+
+Stop cluster
+
+```sh
+docker compose -f infra/compose_crdb.yml down
+```

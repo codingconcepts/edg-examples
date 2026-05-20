@@ -32,6 +32,7 @@ Pick from a predefined set of values using a distribution to control which items
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

@@ -58,6 +58,7 @@ Demonstrates `if/then/else` branching for binary conditions using customer marke
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

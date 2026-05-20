@@ -39,6 +39,7 @@ Named args bind to `$1`, `$2`, etc. in declaration order, so query placeholders 
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

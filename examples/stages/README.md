@@ -22,6 +22,7 @@ This runs the workload with 1 worker for 10 seconds, then 10 workers for 30 seco
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

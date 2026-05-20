@@ -10,6 +10,7 @@ The CockroachDB config includes both prepared and non-prepared variants of each 
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

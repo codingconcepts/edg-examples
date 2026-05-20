@@ -32,6 +32,7 @@ Alpha sequences of length N produce 26^N unique values (length 3 = 17,576; lengt
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

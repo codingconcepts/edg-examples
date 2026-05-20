@@ -16,6 +16,7 @@ Demonstrates map lookup with `fail()` to validate environment variables at runti
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run (success)

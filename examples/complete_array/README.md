@@ -27,6 +27,7 @@ See [`_examples/complete/`](../_examples/complete/) for LLM client setup (API ke
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 
 # Env vars/
 source .env

@@ -8,6 +8,7 @@ Write identical data to multiple databases and verify consistency. Tests dual-wr
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 docker compose -f infra/compose_mysql.yml up -d
 
 until cockroach sql --insecure -e "SELECT 1" &>/dev/null; do sleep 1; done
@@ -117,6 +118,7 @@ docker compose -f infra/compose_mysql.yml down
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 docker compose -f infra/compose_mongo.yml up -d
 
 until cockroach sql --insecure -e "SELECT 1" &>/dev/null; do sleep 1; done
@@ -171,6 +173,7 @@ Cassandra rows are fetched using server-side paging (`PageSize`) and sorted clie
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 docker compose -f infra/compose_cassandra.yml up -d
 
 until cockroach sql --insecure -e "SELECT 1" &>/dev/null; do sleep 1; done

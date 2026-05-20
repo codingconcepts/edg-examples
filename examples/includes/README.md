@@ -69,6 +69,7 @@ Nested includes are supported (an included file can itself use `!include`). Circ
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

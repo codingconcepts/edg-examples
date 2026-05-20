@@ -8,6 +8,7 @@ Built-in workloads (bank, kv, movr, tpcc, tpch, ttlbench, ttllogger, ycsb) that 
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

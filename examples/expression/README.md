@@ -27,6 +27,7 @@ Demonstrates the built-in [expr-lang](https://expr-lang.org/docs/language-defini
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

@@ -10,6 +10,7 @@ This example defines a **regions** reference dataset with names and cities, then
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

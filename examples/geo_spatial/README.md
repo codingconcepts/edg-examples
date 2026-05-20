@@ -8,6 +8,7 @@ A dating app workload with user profiles, location-based discovery, swipes, matc
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run

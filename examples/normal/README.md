@@ -15,6 +15,7 @@ Demonstrates `norm` and `norm_n` by generating product reviews with realistic ra
 
 ```sh
 docker compose -f infra/compose_crdb.yml up -d
+docker exec -it node1 cockroach init --insecure
 ```
 
 ### Run
