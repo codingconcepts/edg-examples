@@ -1,0 +1,38 @@
+let customers = 100000
+let batch_size = 5000
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email STRING NOT NULL,
+    name STRING NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`
+}
+
+seed {
+  populate_customers(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email, name) __values__` (
+    gen('email'),
+    gen('name')
+  )
+}
+
+init {
+  fetch_emails `SELECT email FROM customer ORDER BY random() LIMIT 1000`
+}
+
+run {
+  lookup_by_email(type: query) `SELECT id FROM customer WHERE email = $1` (ref_rand('fetch_emails').email)
+}
+
+workers {
+  add_email_index(delay: 10s, request_timeout: 10m, type: exec, ignore: true) `CREATE INDEX idx_customer_email ON customer (email)`
+}
+
+deseed {
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+}
+
+down {
+  drop_customer `DROP TABLE IF EXISTS customer`
+}
