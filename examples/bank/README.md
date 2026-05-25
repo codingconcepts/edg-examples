@@ -34,8 +34,8 @@ edg run \
 --driver pgx \
 --config examples/bank/crdb.yaml \
 --url "postgres://root@localhost:26257?sslmode=disable" \
--w 100 \
--d 1m
+-w 10 \
+-d 10m
 
 edg deseed \
 --driver pgx \

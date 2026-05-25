@@ -1,6 +1,6 @@
-let customers = 100000
+let customers       = 100000
 let initial_balance = 10000
-let batch_size = 10000
+let batch_size      = 10000
 
 up {
   create_customer `
@@ -32,16 +32,22 @@ seed {
     ORDER BY c.id
     OFFSET $1::INT * $3::INT
     LIMIT $3::INT
-  ` (batch(customers / batch_size), initial_balance, batch_size)
+  ` (
+    batch(customers / batch_size),
+    initial_balance,
+    batch_size
+  )
 }
 
 deseed {
   truncate_account `TRUNCATE TABLE account CASCADE`
+
   truncate_customer `TRUNCATE TABLE customer CASCADE`
 }
 
 down {
   drop_account `DROP TABLE IF EXISTS account`
+
   drop_customer `DROP TABLE IF EXISTS customer`
 }
 
@@ -57,20 +63,27 @@ weights {
 
 run {
   check_balance(type: query) `
-    SELECT balance FROM account WHERE id = $1::UUID
+    SELECT balance FROM account WHERE id = $1
   ` (ref_rand('fetch_accounts').id)
 
   credit_account `
-    UPDATE account SET balance = balance + $2::FLOAT
-    WHERE id = $1::UUID
-  ` (ref_rand('fetch_accounts').id, gen('number:1,1000'))
+    UPDATE account SET balance = balance + $2
+    WHERE id = $1
+  ` (
+    ref_rand('fetch_accounts').id,
+    gen('number:1,1000')
+  )
 
   make_transfer `
     UPDATE account SET
       balance = CASE
-                  WHEN id = $2::UUID THEN balance + $3::FLOAT
-                  WHEN id = $1::UUID THEN balance - $3::FLOAT
+                  WHEN id = $2 THEN balance + $3
+                  WHEN id = $1 THEN balance - $3
                 END
     WHERE id IN ($1::UUID, $2::UUID)
-  ` (ref_diff('fetch_accounts').id, ref_diff('fetch_accounts').id, gen('number:1,100'))
+  ` (
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
+  )
 }

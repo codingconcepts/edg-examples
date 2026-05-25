@@ -1,0 +1,3 @@
+pub let customers       = 100000
+pub let initial_balance = 10000
+pub let batch_size      = 10000

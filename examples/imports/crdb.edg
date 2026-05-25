@@ -1,0 +1,66 @@
+import 'top.edg'
+import 'objects/customer.edg' as cust
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      name STRING NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL
+    )`
+
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      balance FLOAT NOT NULL,
+      customer_id UUID NOT NULL REFERENCES customer(id)
+    )`
+}
+
+seed {
+  populate_customer(count: top.customers, size: top.batch_size, type: exec_batch, object: cust.customer)
+    `INSERT INTO customer __columns__ __values__`
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2::FLOAT, c.id
+    FROM customer c
+    ORDER BY c.id
+    OFFSET $1::INT * $3::INT
+    LIMIT $3::INT` (
+      batch(top.customers / top.batch_size),
+      top.initial_balance,
+      top.batch_size
+  )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+}
+
+weights {
+  check_balance = 50
+  credit_account = 50
+}
+
+run {
+  check_balance(type: query)
+    `SELECT balance FROM account WHERE id = $1::UUID` (ref_rand('fetch_accounts').id)
+
+  credit_account(type: exec)
+    `UPDATE account SET balance = balance + $2::FLOAT
+    WHERE id = $1::UUID` (
+        ref_rand('fetch_accounts').id,
+        gen('number:1,1000')
+    )
+}
