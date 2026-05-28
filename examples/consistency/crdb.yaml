@@ -1,0 +1,341 @@
+# Consistency Workload
+# ====================
+# Generates concurrent access patterns that provoke classic
+# database concurrency anomalies:
+#
+#   SQL standard (Berenson et al. 1995):
+#   1. Dirty reads           - reading uncommitted data
+#   2. Non-repeatable reads  - same row returns different values
+#   3. Phantom reads         - new rows appear in repeated range scans
+#   4. Serialization anomaly - outcome impossible in any serial order
+#
+#   Extended phenomena:
+#   5. Dirty write  (P0)  - concurrent blind overwrites to same row
+#   6. Lost update  (P4)  - concurrent read-modify-write loses one write
+#   7. Read skew    (A5A) - reading related values gives inconsistent view
+#   8. Write skew   (A5B) - disjoint writes violate cross-row constraint
+#
+# Under SERIALIZABLE (CockroachDB default), these manifest as
+# transaction retry errors (SQLSTATE 40001) rather than silent
+# data corruption. Under READ COMMITTED, some anomalies may
+# pass through undetected.
+#
+# Run with many workers and a small dataset to maximise contention:
+#
+#   edg workload consistency all \
+#     --driver pgx \
+#     --url "postgres://root@localhost:26257/defaultdb?sslmode=disable" \
+#     -w 16 -d 30s
+
+globals:
+  accounts: int(coalesce(env_nil('ACCOUNTS'), 10))
+  initial_balance: int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+
+up:
+
+  - name: create_account
+    query: |-
+      CREATE TABLE IF NOT EXISTS account (
+        id INT8 PRIMARY KEY,
+        balance INT8 NOT NULL,
+        version INT8 NOT NULL DEFAULT 0
+      )
+
+  - name: create_ledger
+    query: |-
+      CREATE TABLE IF NOT EXISTS ledger (
+        id INT8 PRIMARY KEY DEFAULT unique_rowid(),
+        account_id INT8 NOT NULL REFERENCES account(id),
+        amount INT8 NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+
+  - name: create_counter
+    query: |-
+      CREATE TABLE IF NOT EXISTS counter (
+        id INT8 PRIMARY KEY,
+        value INT8 NOT NULL DEFAULT 0
+      )
+
+  - name: create_blind_write
+    query: |-
+      CREATE TABLE IF NOT EXISTS blind_write (
+        id INT8 PRIMARY KEY,
+        value INT8 NOT NULL DEFAULT 0
+      )
+
+  - name: create_cas
+    query: |-
+      CREATE TABLE IF NOT EXISTS cas (
+        id INT8 PRIMARY KEY,
+        value INT8 NOT NULL DEFAULT 0,
+        version INT8 NOT NULL DEFAULT 0
+      )
+
+  - name: create_oncall
+    query: |-
+      CREATE TABLE IF NOT EXISTS oncall (
+        doctor_id INT8 PRIMARY KEY,
+        on_duty BOOL NOT NULL DEFAULT true
+      )
+
+seed:
+
+  - name: populate_accounts
+    args:
+      - accounts
+      - initial_balance
+    query: |-
+      INSERT INTO account (id, balance)
+      SELECT s, $2::INT8
+      FROM generate_series(1, $1::INT) AS s
+      ON CONFLICT (id) DO NOTHING
+
+  - name: populate_counters
+    query: |-
+      INSERT INTO counter (id, value)
+      VALUES (1, 0), (2, 0)
+      ON CONFLICT (id) DO NOTHING
+
+  - name: populate_blind_write
+    args:
+      - accounts
+    query: |-
+      INSERT INTO blind_write (id, value)
+      SELECT s, 0
+      FROM generate_series(1, $1::INT) AS s
+      ON CONFLICT (id) DO NOTHING
+
+  - name: populate_cas
+    args:
+      - accounts
+    query: |-
+      INSERT INTO cas (id, value)
+      SELECT s, 0
+      FROM generate_series(1, $1::INT) AS s
+      ON CONFLICT (id) DO NOTHING
+
+  - name: populate_oncall
+    query: |-
+      INSERT INTO oncall (doctor_id, on_duty)
+      VALUES (1, true), (2, true), (3, true)
+      ON CONFLICT (doctor_id) DO NOTHING
+
+deseed:
+
+  - name: truncate_ledger
+    type: exec
+    query: TRUNCATE TABLE ledger
+
+  - name: reset_accounts
+    type: exec
+    args:
+      - initial_balance
+    query: |-
+      UPDATE account SET balance = $1::INT8, version = 0
+
+  - name: reset_counters
+    type: exec
+    query: UPDATE counter SET value = 0
+
+  - name: reset_oncall
+    type: exec
+    query: UPDATE oncall SET on_duty = true
+
+  - name: reset_blind_write
+    type: exec
+    query: UPDATE blind_write SET value = 0
+
+  - name: reset_cas
+    type: exec
+    query: UPDATE cas SET value = 0, version = 0
+
+down:
+
+  - name: drop_ledger
+    type: exec
+    query: DROP TABLE IF EXISTS ledger
+
+  - name: drop_account
+    type: exec
+    query: DROP TABLE IF EXISTS account
+
+  - name: drop_oncall
+    type: exec
+    query: DROP TABLE IF EXISTS oncall
+
+  - name: drop_counter
+    type: exec
+    query: DROP TABLE IF EXISTS counter
+
+  - name: drop_blind_write
+    type: exec
+    query: DROP TABLE IF EXISTS blind_write
+
+  - name: drop_cas
+    type: exec
+    query: DROP TABLE IF EXISTS cas
+
+run_weights:
+  # Phantom read: concurrent range scan + insert
+  count_ledger: 10
+  insert_ledger: 10
+  # Serialization anomaly: concurrent read-modify-write
+  increment_counter: 10
+  # Transfer: overlapping multi-row updates
+  transfer: 10
+  # Dirty write (P0): concurrent blind overwrites
+  blind_write: 10
+  # Lost update (P4): conditional update racing on same version
+  cas_update: 10
+  # Read skew (A5A): check cross-row invariant under mutation
+  check_total_balance: 10
+  # Write skew (A5B): go off-call only if another doctor remains
+  go_off_duty: 10
+
+run:
+
+  # Phantom read.
+  #
+  # Workers counting ledger entries while others insert new ones.
+  # Under READ COMMITTED, repeated range scans may see rows that
+  # were not visible in an earlier scan within the same transaction.
+
+  - name: count_ledger
+    type: query
+    args:
+      - gen('number:1,' + string(accounts))
+    query: |-
+      SELECT COUNT(*) AS entries, COALESCE(SUM(amount), 0) AS total
+      FROM ledger
+      WHERE account_id = $1::INT8
+
+  - name: insert_ledger
+    type: exec
+    args:
+      - gen('number:1,' + string(accounts))
+      - gen('number:1,500')
+    query: |-
+      INSERT INTO ledger (account_id, amount)
+      VALUES ($1::INT8, $2::INT8)
+
+  # Serialization anomaly.
+  #
+  # Multiple workers doing read-modify-write on the same counter.
+  # Classic lost-update pattern. Under SERIALIZABLE, CockroachDB
+  # detects the dependency cycle and aborts one transaction.
+
+  - name: increment_counter
+    type: exec
+    args:
+      - gen('number:1,2')
+    query: |-
+      UPDATE counter SET value = value + 1 WHERE id = $1::INT8
+
+  # Write skew.
+  #
+  # Transfer between two random accounts. With few accounts and
+  # many workers, transactions frequently touch overlapping rows,
+  # creating serialization conflicts.
+
+  - name: transfer
+    type: exec
+    args:
+      - gen('number:1,' + string(accounts))
+      - gen('number:1,' + string(accounts))
+      - gen('number:1,100')
+    query: |-
+      UPDATE account
+      SET balance = CASE
+                      WHEN id = $1::INT8 THEN balance - $3::INT8
+                      WHEN id = $2::INT8 THEN balance + $3::INT8
+                    END
+      WHERE id IN ($1::INT8, $2::INT8)
+        AND $1::INT8 != $2::INT8
+
+  # Dirty write (P0).
+  #
+  # Concurrent unconditional overwrites to the same row.
+  # Two workers blindly set balance to different values.
+  # Without proper locking, last-writer-wins silently.
+
+  - name: blind_write
+    type: exec
+    args:
+      - gen('number:1,' + string(accounts))
+      - gen('number:100,900')
+    query: |-
+      UPDATE blind_write SET value = $2::INT8 WHERE id = $1::INT8
+
+  # Lost update (P4).
+  #
+  # Compare-and-swap on version column. Two workers read the same
+  # version, both try to update - one succeeds, one matches zero
+  # rows. Under weaker isolation the version check can be stale,
+  # allowing both writes to land (lost update).
+
+  - name: cas_update
+    type: exec
+    args:
+      - gen('number:1,' + string(accounts))
+      - gen('number:1,100')
+    query: |-
+      UPDATE cas
+      SET value = value + $2::INT8, version = version + 1
+      WHERE id = $1::INT8
+        AND version = (SELECT version FROM cas WHERE id = $1::INT8)
+
+  # Read skew (A5A).
+  #
+  # Sum all account balances. Should equal accounts * initial_balance
+  # plus net changes. Under weaker isolation, concurrent transfers
+  # can make the sum appear inconsistent (money created or destroyed).
+
+  - name: check_total_balance
+    type: query
+    query: |-
+      SELECT SUM(balance) AS total, COUNT(*) AS num_accounts
+      FROM account
+
+  # Write skew (A5B).
+  #
+  # Classic on-call doctor scenario. A doctor goes off duty only if
+  # at least one other doctor is still on duty. Two concurrent
+  # transactions can both see the other on duty, both go off,
+  # leaving nobody on call.
+
+  - name: go_off_duty
+    type: exec
+    args:
+      - gen('number:1,3')
+    query: |-
+      UPDATE oncall SET on_duty = false
+      WHERE doctor_id = $1::INT8
+        AND (SELECT COUNT(*) FROM oncall WHERE on_duty = true) > 1
+
+expectations:
+  - error_rate < 25
+
+  - name: lost_update
+    query: SELECT COALESCE(SUM(value), 0)::INT8 AS counter_total FROM counter
+    expr: counter_total >= increment_counter.success_count
+
+  - name: phantom_row
+    query: SELECT COUNT(*) AS n FROM account
+    expr: n == accounts
+
+  - name: dirty_write
+    query: SELECT COALESCE(SUM(balance), 0)::INT8 AS total FROM account
+    expr: total == accounts * initial_balance
+
+  - name: write_skew
+    query: SELECT COALESCE(SUM(version), 0)::INT8 AS total_versions FROM cas
+    expr: total_versions <= cas_update.success_count
+
+  - name: dirty_read
+    query: SELECT COUNT(*) AS n FROM blind_write
+    expr: n == accounts
+
+  - name: read_skew
+    query: SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = true
+    expr: on_duty >= 1
