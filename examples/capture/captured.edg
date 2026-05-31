@@ -1,0 +1,184 @@
+stages {
+  captured_workload(workers: 10, duration: 2m0s)
+}
+
+up {
+  create_promo_codes `CREATE TABLE public.promo_codes (
+    	code VARCHAR NOT NULL,
+    	description VARCHAR NULL,
+    	creation_time TIMESTAMP NULL,
+    	expiration_time TIMESTAMP NULL,
+    	rules JSONB NULL,
+    	CONSTRAINT promo_codes_pkey PRIMARY KEY (code ASC)
+    ) WITH (schema_locked = true)`
+
+  create_users `CREATE TABLE public.users (
+    	id UUID NOT NULL,
+    	city VARCHAR NOT NULL,
+    	name VARCHAR NULL,
+    	address VARCHAR NULL,
+    	credit_card VARCHAR NULL,
+    	CONSTRAINT users_pkey PRIMARY KEY (city ASC, id ASC)
+    ) WITH (schema_locked = true)`
+
+  create_user_promo_codes `CREATE TABLE public.user_promo_codes (
+    	city VARCHAR NOT NULL,
+    	user_id UUID NOT NULL,
+    	code VARCHAR NOT NULL,
+    	"timestamp" TIMESTAMP NULL,
+    	usage_count INT8 NULL,
+    	CONSTRAINT user_promo_codes_pkey PRIMARY KEY (city ASC, user_id ASC, code ASC),
+    	CONSTRAINT user_promo_codes_city_user_id_fkey FOREIGN KEY (city, user_id) REFERENCES public.users(city, id)
+    ) WITH (schema_locked = true)`
+
+  create_vehicles `CREATE TABLE public.vehicles (
+    	id UUID NOT NULL,
+    	city VARCHAR NOT NULL,
+    	type VARCHAR NULL,
+    	owner_id UUID NULL,
+    	creation_time TIMESTAMP NULL,
+    	status VARCHAR NULL,
+    	current_location VARCHAR NULL,
+    	ext JSONB NULL,
+    	CONSTRAINT vehicles_pkey PRIMARY KEY (city ASC, id ASC),
+    	CONSTRAINT vehicles_city_owner_id_fkey FOREIGN KEY (city, owner_id) REFERENCES public.users(city, id),
+    	INDEX vehicles_auto_index_fk_city_ref_users (city ASC, owner_id ASC)
+    ) WITH (schema_locked = true)`
+
+  create_rides `CREATE TABLE public.rides (
+    	id UUID NOT NULL,
+    	city VARCHAR NOT NULL,
+    	vehicle_city VARCHAR NULL,
+    	rider_id UUID NULL,
+    	vehicle_id UUID NULL,
+    	start_address VARCHAR NULL,
+    	end_address VARCHAR NULL,
+    	start_time TIMESTAMP NULL,
+    	end_time TIMESTAMP NULL,
+    	revenue DECIMAL(10,2) NULL,
+    	CONSTRAINT rides_pkey PRIMARY KEY (city ASC, id ASC),
+    	CONSTRAINT rides_city_rider_id_fkey FOREIGN KEY (city, rider_id) REFERENCES public.users(city, id),
+    	CONSTRAINT rides_vehicle_city_vehicle_id_fkey FOREIGN KEY (vehicle_city, vehicle_id) REFERENCES public.vehicles(city, id),
+    	INDEX rides_auto_index_fk_city_ref_users (city ASC, rider_id ASC),
+    	INDEX rides_auto_index_fk_vehicle_city_ref_vehicles (vehicle_city ASC, vehicle_id ASC),
+    	CONSTRAINT check_vehicle_city_city CHECK (vehicle_city = city) NOT VALID
+    ) WITH (schema_locked = true)`
+
+  create_vehicle_location_histories `CREATE TABLE public.vehicle_location_histories (
+    	city VARCHAR NOT NULL,
+    	ride_id UUID NOT NULL,
+    	"timestamp" TIMESTAMP NOT NULL,
+    	lat FLOAT8 NULL,
+    	long FLOAT8 NULL,
+    	CONSTRAINT vehicle_location_histories_pkey PRIMARY KEY (city ASC, ride_id ASC, "timestamp" ASC),
+    	CONSTRAINT vehicle_location_histories_city_ride_id_fkey FOREIGN KEY (city, ride_id) REFERENCES public.rides(city, id)
+    ) WITH (schema_locked = true)`
+}
+
+down {
+  drop_vehicle_location_histories(type: exec) `DROP TABLE IF EXISTS vehicle_location_histories`
+
+  drop_rides(type: exec) `DROP TABLE IF EXISTS rides`
+
+  drop_vehicles(type: exec) `DROP TABLE IF EXISTS vehicles`
+
+  drop_user_promo_codes(type: exec) `DROP TABLE IF EXISTS user_promo_codes`
+
+  drop_users(type: exec) `DROP TABLE IF EXISTS users`
+
+  drop_promo_codes(type: exec) `DROP TABLE IF EXISTS promo_codes`
+}
+
+weights {
+  insert_promo_codes = 1
+  insert_rides = 1
+  insert_user_promo_codes = 1
+  insert_users = 1
+  insert_vehicles = 1
+  select_promo_codes = 1
+  select_user_promo_codes = 1
+  select_users = 2
+  select_vehicles = 61
+  select_vehicles_2 = 1
+  update_rides = 1
+  upsert_vehicle_location_histories = 32
+}
+
+run {
+  select_vehicles(type: query) `SELECT city, id FROM vehicles WHERE city = $1` (TODO)
+
+  upsert_vehicle_location_histories(type: exec, wait: 1ms) `UPSERT INTO vehicle_location_histories VALUES ($1, $2, now(), $3, $4)` (
+      TODO,
+      TODO,
+      TODO,
+      TODO
+  )
+
+  select_users(type: query, wait: 30ms) `SELECT IFNULL(a, b) FROM (SELECT (SELECT id FROM users WHERE (city = $1) AND (id > $2) ORDER BY id LIMIT $3) AS a, (SELECT id FROM users WHERE city = $4 ORDER BY id LIMIT $5) AS b)` (
+      TODO,
+      TODO,
+      TODO,
+      TODO,
+      TODO
+  )
+
+  select_vehicles_2(type: query, wait: 46ms) `SELECT IFNULL(a, b) FROM (SELECT (SELECT id FROM vehicles WHERE (city = $1) AND (id > $2) ORDER BY id LIMIT $3) AS a, (SELECT id FROM vehicles WHERE city = $4 ORDER BY id LIMIT $5) AS b)` (
+      TODO,
+      TODO,
+      TODO,
+      TODO,
+      TODO
+  )
+
+  insert_rides(type: exec, wait: 45ms) `INSERT INTO rides VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8, $9)` (
+      TODO,
+      TODO,
+      TODO,
+      TODO,
+      TODO,
+      TODO,
+      TODO,
+      TODO,
+      TODO
+  )
+
+  insert_users(type: exec, wait: 59ms) `INSERT INTO users VALUES ($1, $2)` (
+      TODO,
+      TODO
+  )
+
+  select_user_promo_codes(type: query, wait: 181ms) `SELECT count(*) FROM user_promo_codes WHERE ((city = $1) AND (user_id = $2)) AND (code = $3)` (
+      TODO,
+      TODO,
+      TODO
+  )
+
+  select_promo_codes(type: query, wait: 181ms) `SELECT IFNULL(a, b) FROM (SELECT (SELECT code FROM promo_codes WHERE code > $1 ORDER BY code LIMIT $2) AS a, (SELECT code FROM promo_codes ORDER BY code LIMIT $3) AS b)` (
+      TODO,
+      TODO,
+      TODO
+  )
+
+  insert_user_promo_codes(type: exec, wait: 181ms) `INSERT INTO user_promo_codes VALUES ($1, $2, $3, now(), $4)` (
+      TODO,
+      TODO,
+      TODO,
+      TODO
+  )
+
+  insert_vehicles(type: exec, wait: 184ms) `INSERT INTO vehicles VALUES ($1, $2)` (
+      TODO,
+      TODO
+  )
+
+  update_rides(type: exec, wait: 266ms) `UPDATE rides SET end_address = $1, end_time = now() WHERE (city = $2) AND (id = $3)` (
+      TODO,
+      TODO,
+      TODO
+  )
+
+  insert_promo_codes(type: exec, wait: 570ms) `INSERT INTO promo_codes VALUES ($1, $2)` (
+      TODO,
+      TODO
+  )
+}
