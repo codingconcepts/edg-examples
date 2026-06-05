@@ -148,11 +148,12 @@ run:
     else:
       - noop
 
-  # if/then/else inside a transaction
+  # if/then/else inside a transaction (with let-in-branches)
   #
   # Places an order with market-specific tax and currency.
   # UK customers pay 20% VAT in GBP; all others pay 10% tax
-  # in USD. The market is captured in the order for verification.
+  # in USD. The conditional sets locals for the varying parts;
+  # the query below references them via local().
 
   - transaction: place_order
     queries:
@@ -172,29 +173,28 @@ run:
 
       - if: "ref_same('read_buyer').market == 'uk'"
         then:
-          - name: insert_uk_order
-            type: exec
-            args:
-              - ref_same('read_buyer').id
-              - ref_same('read_product').id
-              - ref_same('read_product').price
-              - ref_same('read_product').price * 0.20
-              - ref_same('read_buyer').market
-            query: |-
-              INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
-              VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, 'GBP', $5::STRING)
+          - locals:
+              tax_rate: "0.20"
+          - locals:
+              currency: "'GBP'"
         else:
-          - name: insert_other_order
-            type: exec
-            args:
-              - ref_same('read_buyer').id
-              - ref_same('read_product').id
-              - ref_same('read_product').price
-              - ref_same('read_product').price * 0.10
-              - ref_same('read_buyer').market
-            query: |-
-              INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
-              VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, 'USD', $5::STRING)
+          - locals:
+              tax_rate: "0.10"
+          - locals:
+              currency: "'USD'"
+
+      - name: insert_order
+        type: exec
+        args:
+          - ref_same('read_buyer').id
+          - ref_same('read_product').id
+          - ref_same('read_product').price
+          - ref_same('read_product').price * local('tax_rate')
+          - local('currency')
+          - ref_same('read_buyer').market
+        query: |-
+          INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
+          VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, $5::STRING, $6::STRING)
 
 expectations:
 

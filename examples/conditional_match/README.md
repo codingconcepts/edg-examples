@@ -38,31 +38,41 @@ Demonstrates `match/when/default` branching for multi-way dispatch using custome
         VALUES ($1::UUID, $2::STRING, 'standard')
 ```
 
-**Inside a transaction** - places an order with market-specific tax and currency. UK: 20% VAT in GBP, US: 10% sales tax in USD, EU (default): 23% VAT in EUR:
+**Inside a transaction** (with let-in-branches) - places an order with market-specific tax and currency. Each branch sets locals for the varying parts; the query below references them via `local()`:
 
 ```yaml
 - match: "ref_same('read_buyer').market"
   when:
     - eq: "'uk'"
       queries:
-        - name: insert_uk_order
-          type: exec
-          args:
-            - ref_same('read_buyer').id
-            - ref_same('read_product').id
-            - ref_same('read_product').price
-            - ref_same('read_product').price * 0.20
-            - ref_same('read_buyer').market
-          query: |-
-            INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
-            VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, 'GBP', $5::STRING)
+        - locals:
+            tax_rate: "0.20"
+        - locals:
+            currency: "'GBP'"
     - eq: "'us'"
       queries:
-        - name: insert_us_order
-          ...
+        - locals:
+            tax_rate: "0.10"
+        - locals:
+            currency: "'USD'"
   default:
-    - name: insert_eu_order
-      ...
+    - locals:
+        tax_rate: "0.23"
+    - locals:
+        currency: "'EUR'"
+
+- name: insert_order
+  type: exec
+  args:
+    - ref_same('read_buyer').id
+    - ref_same('read_product').id
+    - ref_same('read_product').price
+    - ref_same('read_product').price * local('tax_rate')
+    - local('currency')
+    - ref_same('read_buyer').market
+  query: |-
+    INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
+    VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, $5::STRING, $6::STRING)
 ```
 
 The match expression is evaluated once and compared to each `eq` value. First match wins. The `default` block is optional - if no match and no default, the block is skipped.

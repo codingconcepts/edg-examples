@@ -168,11 +168,13 @@ run:
           INSERT INTO compliance_log (customer_id, market, check_type)
           VALUES ($1::UUID, $2::STRING, 'standard')
 
-  # match/when/default inside a transaction
+  # match/when/default inside a transaction (with let-in-branches)
   #
   # Places an order with market-specific tax and currency.
   # UK: 20% VAT in GBP, US: 10% sales tax in USD,
   # EU (default): 23% VAT in EUR.
+  # Each branch sets locals for the varying parts; the query
+  # below references them via local().
 
   - transaction: place_order
     queries:
@@ -194,44 +196,34 @@ run:
         when:
           - eq: "'uk'"
             queries:
-              - name: insert_uk_order
-                type: exec
-                args:
-                  - ref_same('read_buyer').id
-                  - ref_same('read_product').id
-                  - ref_same('read_product').price
-                  - ref_same('read_product').price * 0.20
-                  - ref_same('read_buyer').market
-                query: |-
-                  INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
-                  VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, 'GBP', $5::STRING)
-
+              - locals:
+                  tax_rate: "0.20"
+              - locals:
+                  currency: "'GBP'"
           - eq: "'us'"
             queries:
-              - name: insert_us_order
-                type: exec
-                args:
-                  - ref_same('read_buyer').id
-                  - ref_same('read_product').id
-                  - ref_same('read_product').price
-                  - ref_same('read_product').price * 0.10
-                  - ref_same('read_buyer').market
-                query: |-
-                  INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
-                  VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, 'USD', $5::STRING)
-
+              - locals:
+                  tax_rate: "0.10"
+              - locals:
+                  currency: "'USD'"
         default:
-          - name: insert_eu_order
-            type: exec
-            args:
-              - ref_same('read_buyer').id
-              - ref_same('read_product').id
-              - ref_same('read_product').price
-              - ref_same('read_product').price * 0.23
-              - ref_same('read_buyer').market
-            query: |-
-              INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
-              VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, 'EUR', $5::STRING)
+          - locals:
+              tax_rate: "0.23"
+          - locals:
+              currency: "'EUR'"
+
+      - name: insert_order
+        type: exec
+        args:
+          - ref_same('read_buyer').id
+          - ref_same('read_product').id
+          - ref_same('read_product').price
+          - ref_same('read_product').price * local('tax_rate')
+          - local('currency')
+          - ref_same('read_buyer').market
+        query: |-
+          INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
+          VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, $5::STRING, $6::STRING)
 
 expectations:
 
