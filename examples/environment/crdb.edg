@@ -1,0 +1,23 @@
+up {
+  create e `CREATE TABLE IF NOT EXISTS e (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      key STRING NOT NULL,
+      val STRING NOT NULL
+    )`
+}
+
+seed {
+  populate_e_abc(type: exec) `INSERT INTO e (key, val)
+    VALUES ('ABC', $1::STRING)` (env('ABC'))
+
+  populate_e_def(type: exec) `INSERT INTO e (key, val)
+    VALUES ('DEF', $1::STRING)` (upper(env('DEF')))
+}
+
+deseed {
+  truncate_e(type: exec) `TRUNCATE TABLE e`
+}
+
+down {
+  drop_e(type: exec) `DROP TABLE IF EXISTS e`
+}
