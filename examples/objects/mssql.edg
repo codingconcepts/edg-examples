@@ -1,0 +1,65 @@
+let orders = 1000
+
+object order {
+  email      = gen('email')
+  product    = gen('productname')
+  quantity   = int(uniform(1, 100))
+  ordered_at = timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z')
+}
+
+up {
+  create_order(type: exec) `IF OBJECT_ID('orders', 'U') IS NULL
+    CREATE TABLE orders (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      email NVARCHAR(255) NOT NULL,
+      product NVARCHAR(255) NOT NULL,
+      quantity INT NOT NULL,
+      ordered_at DATETIME2 NOT NULL
+    )`
+}
+
+seed {
+  populate_order(type: exec_batch, count: orders, size: 100, object: order) `INSERT INTO orders (email, product, quantity, ordered_at)
+    __values__`
+}
+
+deseed {
+  delete_order(type: exec) `DELETE FROM orders`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS orders`
+}
+
+init {
+  fetch_orders(type: query) `SELECT id FROM orders`
+}
+
+run {
+  insert_order_row(type: exec, object: order) `INSERT INTO orders (email, product, quantity, ordered_at)
+    VALUES (@p1, @p2, @p3, @p4)`
+
+  insert_order_field(type: exec, object: order) `INSERT INTO orders (email, product, quantity, ordered_at)
+    VALUES (@p1, @p2, @p3, @p4)` (
+      field('email'),
+      field('product'),
+      field('quantity'),
+      field('ordered_at')
+  )
+
+  insert_order_obj(type: exec) `INSERT INTO orders (email, product, quantity, ordered_at)
+    VALUES (@p1, @p2, @p3, @p4)` (
+      obj('order', 'email'),
+      obj('order', 'product'),
+      obj('order', 'quantity'),
+      obj('order', 'ordered_at')
+  )
+
+  insert_order_dot(type: exec) `INSERT INTO orders (email, product, quantity, ordered_at)
+    VALUES (@p1, @p2, @p3, @p4)` (
+      obj('order').email,
+      obj('order').product,
+      obj('order').quantity,
+      obj('order').ordered_at
+  )
+}

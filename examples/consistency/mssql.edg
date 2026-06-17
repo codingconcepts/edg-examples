@@ -1,0 +1,188 @@
+let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+
+expect {
+  error_rate < 25
+  lost_update `SELECT CAST(COALESCE(SUM(value), 0) AS BIGINT) AS counter_total FROM counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM account` n = = accounts
+  dirty_write `SELECT CAST(COALESCE(SUM(balance), 0) AS BIGINT) AS total FROM account` total = = accounts * initial_balance
+  write_skew `SELECT CAST(COALESCE(SUM(version), 0) AS BIGINT) AS total_versions FROM cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n = = accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = 1` on_duty >= 1
+}
+
+up {
+  create_account `IF OBJECT_ID('account', 'U') IS NULL
+    CREATE TABLE account (
+      id BIGINT PRIMARY KEY,
+      balance BIGINT NOT NULL,
+      version BIGINT NOT NULL DEFAULT 0
+    )`
+
+  create_ledger `IF OBJECT_ID('ledger', 'U') IS NULL
+    CREATE TABLE ledger (
+      id BIGINT IDENTITY(1,1) PRIMARY KEY,
+      account_id BIGINT NOT NULL,
+      amount BIGINT NOT NULL,
+      created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+      FOREIGN KEY (account_id) REFERENCES account(id)
+    )`
+
+  create_counter `IF OBJECT_ID('counter', 'U') IS NULL
+    CREATE TABLE counter (
+      id BIGINT PRIMARY KEY,
+      value BIGINT NOT NULL DEFAULT 0
+    )`
+
+  create_oncall `IF OBJECT_ID('oncall', 'U') IS NULL
+    CREATE TABLE oncall (
+      doctor_id BIGINT PRIMARY KEY,
+      on_duty BIT NOT NULL DEFAULT 1
+    )`
+
+  create_blind_write `IF OBJECT_ID('blind_write', 'U') IS NULL
+    CREATE TABLE blind_write (
+      id BIGINT PRIMARY KEY,
+      value BIGINT NOT NULL DEFAULT 0
+    )`
+
+  create_cas `IF OBJECT_ID('cas', 'U') IS NULL
+    CREATE TABLE cas (
+      id BIGINT PRIMARY KEY,
+      value BIGINT NOT NULL DEFAULT 0,
+      version BIGINT NOT NULL DEFAULT 0
+    )`
+}
+
+seed {
+  populate_accounts `WITH seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    MERGE INTO account AS tgt
+    USING (SELECT s AS id, CAST($2 AS BIGINT) AS balance FROM seq) AS src
+    ON tgt.id = src.id
+    WHEN NOT MATCHED THEN INSERT (id, balance) VALUES (src.id, src.balance)
+    OPTION (MAXRECURSION 10000);` (
+      accounts,
+      initial_balance
+  )
+
+  populate_counters `MERGE INTO counter AS tgt
+    USING (VALUES (1, 0), (2, 0)) AS src (id, value)
+    ON tgt.id = src.id
+    WHEN NOT MATCHED THEN INSERT (id, value) VALUES (src.id, src.value);`
+
+  populate_oncall `MERGE INTO oncall AS tgt
+    USING (VALUES (1, 1), (2, 1), (3, 1)) AS src (doctor_id, on_duty)
+    ON tgt.doctor_id = src.doctor_id
+    WHEN NOT MATCHED THEN INSERT (doctor_id, on_duty) VALUES (src.doctor_id, src.on_duty);`
+
+  populate_blind_write `WITH seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    MERGE INTO blind_write AS tgt
+    USING (SELECT s AS id, CAST(0 AS BIGINT) AS value FROM seq) AS src
+    ON tgt.id = src.id
+    WHEN NOT MATCHED THEN INSERT (id, value) VALUES (src.id, src.value)
+    OPTION (MAXRECURSION 10000);` (accounts)
+
+  populate_cas `WITH seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    MERGE INTO cas AS tgt
+    USING (SELECT s AS id, CAST(0 AS BIGINT) AS value FROM seq) AS src
+    ON tgt.id = src.id
+    WHEN NOT MATCHED THEN INSERT (id, value) VALUES (src.id, src.value)
+    OPTION (MAXRECURSION 10000);` (accounts)
+}
+
+deseed {
+  delete_ledger(type: exec) `DELETE FROM ledger`
+
+  reset_accounts(type: exec) `UPDATE account SET balance = $1, version = 0` (initial_balance)
+
+  reset_counters(type: exec) `UPDATE counter SET value = 0`
+
+  reset_oncall(type: exec) `UPDATE oncall SET on_duty = 1`
+
+  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0`
+
+  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0`
+}
+
+down {
+  drop_ledger(type: exec) `DROP TABLE IF EXISTS ledger`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_oncall(type: exec) `DROP TABLE IF EXISTS oncall`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
+
+  drop_blind_write(type: exec) `DROP TABLE IF EXISTS blind_write`
+
+  drop_cas(type: exec) `DROP TABLE IF EXISTS cas`
+}
+
+weights {
+  blind_write         = 10
+  cas_update          = 10
+  check_total_balance = 10
+  count_ledger        = 10
+  go_off_duty         = 10
+  increment_counter   = 10
+  insert_ledger       = 10
+  transfer            = 10
+}
+
+run {
+  count_ledger(type: query) `SELECT COUNT(*) AS entries, COALESCE(SUM(amount), 0) AS total
+    FROM ledger
+    WHERE account_id = @p1` (gen('number:1,' + string(accounts)))
+
+  insert_ledger(type: exec) `INSERT INTO ledger (account_id, amount)
+    VALUES (@p1, @p2)` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,500')
+  )
+
+  increment_counter(type: exec) `UPDATE counter SET value = value + 1 WHERE id = @p1` (gen('number:1,2'))
+
+  transfer(type: exec) `UPDATE account
+    SET balance = CASE
+                    WHEN id = @p2 THEN balance + CAST(@p3 AS BIGINT)
+                    WHEN id = @p1 THEN balance - CAST(@p3 AS BIGINT)
+                  END
+    WHERE id IN (@p1, @p2)
+      AND @p1 != @p2` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,' + string(accounts)),
+      gen('number:1,100')
+  )
+
+  blind_write(type: exec) `UPDATE blind_write SET value = CAST(@p2 AS BIGINT) WHERE id = @p1` (
+      gen('number:1,' + string(accounts)),
+      gen('number:100,900')
+  )
+
+  cas_update(type: exec) `UPDATE cas
+    SET value = value + CAST(@p2 AS BIGINT), version = version + 1
+    WHERE id = @p1
+      AND version = (SELECT version FROM cas WHERE id = @p1)` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,100')
+  )
+
+  check_total_balance(type: query) `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts
+    FROM account`
+
+  go_off_duty(type: exec) `UPDATE oncall SET on_duty = 0
+    WHERE doctor_id = @p1
+      AND (SELECT COUNT(*) FROM oncall WHERE on_duty = 1) > 1` (gen('number:1,3'))
+}

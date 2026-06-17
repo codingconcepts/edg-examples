@@ -1,0 +1,343 @@
+let tenants             = 10
+let users_per_tenant    = 100
+let projects_per_tenant = 5
+let tasks_per_project   = 100
+
+up {
+  create_tenant(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE tenant (
+          id RAW(16) DEFAULT SYS_GUID(),
+          name VARCHAR2(255) NOT NULL,
+          plan VARCHAR2(20) DEFAULT ''free'' NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_app_user(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE app_user (
+          id RAW(16) DEFAULT SYS_GUID(),
+          tenant_id RAW(16) NOT NULL,
+          email VARCHAR2(320) NOT NULL,
+          role VARCHAR2(20) DEFAULT ''member'' NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_project(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE project (
+          id RAW(16) DEFAULT SYS_GUID(),
+          tenant_id RAW(16) NOT NULL,
+          name VARCHAR2(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_task(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE task (
+          id RAW(16) DEFAULT SYS_GUID(),
+          project_id RAW(16) NOT NULL,
+          tenant_id RAW(16) NOT NULL,
+          title VARCHAR2(255) NOT NULL,
+          status VARCHAR2(20) DEFAULT ''open'' NOT NULL,
+          assignee_id RAW(16),
+          deleted_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          updated_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_task_comment(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE task_comment (
+          id RAW(16) DEFAULT SYS_GUID(),
+          task_id RAW(16) NOT NULL,
+          tenant_id RAW(16) NOT NULL,
+          author_id RAW(16) NOT NULL,
+          body VARCHAR2(4000) NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_billing_usage(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE billing_usage (
+          tenant_id RAW(16) NOT NULL,
+          api_calls NUMBER DEFAULT 0 NOT NULL,
+          storage_bytes NUMBER DEFAULT 0 NOT NULL,
+          updated_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (tenant_id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_idx_task_tenant_status(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX idx_task_tenant_status
+        ON task (tenant_id, status)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_idx_task_project(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX idx_task_project
+        ON task (project_id, status)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_idx_app_user_tenant(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX idx_app_user_tenant
+        ON app_user (tenant_id)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_idx_task_comment_task(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX idx_task_comment_task
+        ON task_comment (task_id, created_at DESC)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_task(type: exec) `TRUNCATE TABLE task`
+
+  clear_project(type: exec) `TRUNCATE TABLE project`
+
+  clear_billing_usage(type: exec) `TRUNCATE TABLE billing_usage`
+
+  clear_app_user(type: exec) `TRUNCATE TABLE app_user`
+
+  clear_tenant(type: exec) `TRUNCATE TABLE tenant`
+
+  populate_tenant `INSERT INTO tenant (name, plan)
+    SELECT
+      'tenant-' || LEVEL,
+      DECODE(TRUNC(DBMS_RANDOM.VALUE * 4) + 1,
+        1,'free', 2,'starter', 3,'pro', 4,'enterprise')
+    FROM DUAL
+    CONNECT BY LEVEL <= $1` (tenants)
+
+  populate_billing_usage `INSERT INTO billing_usage (tenant_id, api_calls, storage_bytes)
+    SELECT id, 0, 0
+    FROM tenant`
+
+  populate_app_user `INSERT INTO app_user (tenant_id, email, role)
+    SELECT
+      HEXTORAW('$1'),
+      'user_' || LEVEL || '_' || SUBSTR('$1', 1, 8) || '@example.com',
+      CASE WHEN LEVEL = 1 THEN 'admin'
+           WHEN LEVEL <= 5 THEN 'manager'
+           ELSE 'member'
+      END
+    FROM DUAL
+    CONNECT BY LEVEL <= $2` (
+      ref_each('SELECT RAWTOHEX(id) AS id FROM tenant'),
+      users_per_tenant
+  )
+
+  populate_project `INSERT INTO project (tenant_id, name)
+    SELECT
+      HEXTORAW('$1'),
+      'project-' || LEVEL || '-' || SUBSTR('$1', 1, 8)
+    FROM DUAL
+    CONNECT BY LEVEL <= $2` (
+      ref_each('SELECT RAWTOHEX(id) AS id FROM tenant'),
+      projects_per_tenant
+  )
+
+  populate_task `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
+    SELECT
+      HEXTORAW('$1'),
+      HEXTORAW('$2'),
+      'task-' || LEVEL || '-' || SUBSTR('$1', 1, 8),
+      DECODE(TRUNC(DBMS_RANDOM.VALUE * 4) + 1,
+        1,'open', 2,'in_progress', 3,'review', 4,'done'),
+      (SELECT id FROM (SELECT id FROM app_user WHERE tenant_id = HEXTORAW('$2') ORDER BY DBMS_RANDOM.VALUE) WHERE ROWNUM = 1)
+    FROM DUAL
+    CONNECT BY LEVEL <= $3` (
+      ref_each('SELECT RAWTOHEX(p.id) AS project_id, RAWTOHEX(p.tenant_id) AS tenant_id FROM project p'),
+      tasks_per_project
+  )
+}
+
+deseed {
+  truncate_task_comment(type: exec) `TRUNCATE TABLE task_comment`
+
+  truncate_task(type: exec) `TRUNCATE TABLE task`
+
+  truncate_project(type: exec) `TRUNCATE TABLE project`
+
+  truncate_billing_usage(type: exec) `TRUNCATE TABLE billing_usage`
+
+  truncate_app_user(type: exec) `TRUNCATE TABLE app_user`
+
+  truncate_tenant(type: exec) `TRUNCATE TABLE tenant`
+}
+
+down {
+  drop_task_comment(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE task_comment CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_task(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE task CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_project(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE project CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_billing_usage(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE billing_usage CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_app_user(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE app_user CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_tenant(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE tenant CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+init {
+  fetch_tenants(type: query) `SELECT RAWTOHEX(id) AS id FROM tenant`
+
+  fetch_users(type: query) `SELECT RAWTOHEX(id) AS id, RAWTOHEX(tenant_id) AS tenant_id FROM app_user`
+
+  fetch_projects(type: query) `SELECT RAWTOHEX(id) AS id, RAWTOHEX(tenant_id) AS tenant_id FROM project`
+
+  fetch_tasks(type: query) `SELECT RAWTOHEX(id) AS id, RAWTOHEX(tenant_id) AS tenant_id, RAWTOHEX(project_id) AS project_id FROM task WHERE deleted_at IS NULL`
+}
+
+weights {
+  add_comment      = 10
+  admin_overview   = 10
+  create_task      = 15
+  list_tasks       = 30
+  soft_delete      = 5
+  tenant_dashboard = 15
+  update_task      = 15
+}
+
+run {
+  list_tasks(type: query) `SELECT t.id, t.title, t.status, t.created_at,
+      u.email AS assignee_email
+    FROM task t
+    LEFT JOIN app_user u ON u.id = t.assignee_id
+    WHERE t.tenant_id = HEXTORAW(:1)
+      AND t.deleted_at IS NULL
+      AND t.status = DECODE(:2, 1,'open', 2,'in_progress', 3,'review', 4,'done')
+    ORDER BY t.updated_at DESC
+    FETCH FIRST 20 ROWS ONLY` (
+      ref_perm('fetch_tenants').id,
+      gen('number:1,4')
+  )
+
+  create_task(type: exec) `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
+    SELECT HEXTORAW(:2), HEXTORAW(:1), :4, 'open', HEXTORAW(:3)
+    FROM DUAL
+    WHERE EXISTS (
+      SELECT 1 FROM project WHERE id = HEXTORAW(:2) AND tenant_id = HEXTORAW(:1)
+    )` (
+      ref_perm('fetch_tenants').id,
+      ref_rand('fetch_projects').id,
+      ref_rand('fetch_users').id,
+      gen('sentence:5')
+  )
+
+  update_task(type: exec) `UPDATE task SET
+      status = CASE status
+        WHEN 'open' THEN 'in_progress'
+        WHEN 'in_progress' THEN 'review'
+        WHEN 'review' THEN 'done'
+        ELSE status
+      END,
+      updated_at = SYSTIMESTAMP
+    WHERE id = HEXTORAW(:1) AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+
+  add_comment(type: exec) `INSERT INTO task_comment (task_id, tenant_id, author_id, body)
+    VALUES (HEXTORAW(:3), HEXTORAW(:2), HEXTORAW(:1), :4)` (
+      ref_same('fetch_users').id,
+      ref_same('fetch_users').tenant_id,
+      ref_rand('fetch_tasks').id,
+      gen('sentence:6')
+  )
+
+  soft_delete(type: exec) `UPDATE task
+    SET deleted_at = SYSTIMESTAMP, updated_at = SYSTIMESTAMP
+    WHERE id = HEXTORAW(:1) AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+
+  tenant_dashboard(type: query) `SELECT
+      p.name AS project_name,
+      COUNT(CASE WHEN t.status = 'open' THEN 1 END) AS open_count,
+      COUNT(CASE WHEN t.status = 'in_progress' THEN 1 END) AS in_progress_count,
+      COUNT(CASE WHEN t.status = 'review' THEN 1 END) AS review_count,
+      COUNT(CASE WHEN t.status = 'done' THEN 1 END) AS done_count,
+      COUNT(*) AS total
+    FROM task t
+    JOIN project p ON p.id = t.project_id
+    WHERE t.tenant_id = HEXTORAW(:1) AND t.deleted_at IS NULL
+    GROUP BY p.name` (ref_perm('fetch_tenants').id)
+
+  admin_overview(type: query) `SELECT
+      tn.name AS tenant_name,
+      tn.plan,
+      bu.api_calls,
+      COUNT(DISTINCT t.id) AS task_count,
+      COUNT(DISTINCT u.id) AS user_count
+    FROM tenant tn
+    LEFT JOIN billing_usage bu ON bu.tenant_id = tn.id
+    LEFT JOIN task t ON t.tenant_id = tn.id AND t.deleted_at IS NULL
+    LEFT JOIN app_user u ON u.tenant_id = tn.id
+    GROUP BY tn.id, tn.name, tn.plan, bu.api_calls
+    ORDER BY bu.api_calls DESC
+    FETCH FIRST 20 ROWS ONLY`
+}

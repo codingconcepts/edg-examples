@@ -1,0 +1,182 @@
+let prices    = '[9.99 19.99 4.99 29.99 14.99]'
+let tags      = '[electronics books clothing food toys]'
+let names     = '[Alice Bob Charlie Diana Eve]'
+let threshold = 10
+let matrix    = '[[1 2] [3 4] [5 6]]'
+let products  = '[map[category:tools name:Widget price:29.99] map[category:electronics name:Gadget price:9.99] map[category:tools name:Gizmo price:19.99] map[category:toys name:Doohickey price:4.99] map[category:electronics name:Thingamajig price:49.99]]'
+
+expr grade = if args[0] >= 90 { 'A' } else if args[0] >= 70 { 'B' } else { 'F' }
+
+expr sum_of_squares = let a = float(args[0]); let b = float(args[1]); a ** 2 + b ** 2
+
+up {
+  create_expr_demo(type: exec) `CREATE TABLE IF NOT EXISTS expr_demo (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      label VARCHAR(255) NOT NULL,
+      result TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+}
+
+deseed {
+  truncate(type: exec) `DELETE FROM expr_demo`
+}
+
+down {
+  drop(type: exec) `DROP TABLE IF EXISTS expr_demo`
+}
+
+run {
+  array_predicates(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('all(# > 0)', ?),
+    ('any(# > 25)', ?),
+    ('one(# < 5)', ?),
+    ('none(# < 0)', ?)` (
+      'all(prices, # > 0)',
+      'any(prices, # > 25)',
+      'one(prices, # < 5)',
+      'none(prices, # < 0)'
+  )
+
+  array_search(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('find(# > 20)', ?),
+    ('findIndex(# > 20)', ?),
+    ('findLast(# > 10)', ?),
+    ('findLastIndex(# > 10)', ?)` (
+      'find(prices, # > 20)',
+      'findIndex(prices, # > 20)',
+      'findLast(prices, # > 10)',
+      'findLastIndex(prices, # > 10)'
+  )
+
+  array_transform(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('filter+map', ?),
+    ('map(# * 2)', ?),
+    ('sort', ?),
+    ('sortBy(#.price)', ?),
+    ('reverse', ?),
+    ('uniq+concat', ?),
+    ('flatten', ?)` (
+      'join(map(filter(prices, # > threshold), string(#)), ",")',
+      'join(map(prices, string(# * 2)), ",")',
+      'join(map(sort(prices), string(#)), ",")',
+      'join(map(sortBy(products, #.price), #.name), ",")',
+      join(reverse(names), ','),
+      join(uniq(concat(tags,['books', 'games'])), ','),
+      'join(map(flatten(matrix), string(#)), ",")'
+  )
+
+  array_aggregate(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('reduce(#acc + #)', ?),
+    ('mean', ?),
+    ('median', ?),
+    ('first', ?),
+    ('last', ?),
+    ('take(3)', ?),
+    ('len(array)', ?)` (
+      'reduce(prices, #acc + #, 0)',
+      mean(prices),
+      median(prices),
+      first(names),
+      last(names),
+      join(take(names, 3), ','),
+      len(names)
+  )
+
+  map_functions(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('keys', ?),
+    ('values', ?),
+    ('groupBy(#.category)', ?)` (
+      join(keys({ a : 1, b : 2, c : 3 }), ','),
+      'join(map(values({a: 1, b: 2, c: 3}), string(#)), ",")',
+      'join(keys(groupBy(products, #.category)), ",")'
+  )
+
+  string_operators(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('contains', ?),
+    ('startsWith', ?),
+    ('endsWith', ?),
+    ('matches (regex)', ?),
+    ('in (membership)', ?)` (
+      'hello world' contains 'world',
+      'hello' startsWith 'hel',
+      'world' endsWith 'rld',
+      'hello123' matches '^[a-z]+[0-9]+$',
+      'books' in tags
+  )
+
+  string_functions(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('trimPrefix', ?),
+    ('trimSuffix', ?),
+    ('splitAfter', ?),
+    ('repeat', ?),
+    ('indexOf', ?),
+    ('lastIndexOf', ?),
+    ('hasPrefix', ?),
+    ('hasSuffix', ?)` (
+      trimPrefix('test_value', 'test_'),
+      trimSuffix('image.png', '.png'),
+      join(splitAfter('a.b.c', '.'), '|'),
+      repeat('ab', 3),
+      indexOf('hello world', 'world'),
+      lastIndexOf('abcabc', 'abc'),
+      hasPrefix('hello', 'hel'),
+      hasSuffix('hello', 'llo')
+  )
+
+  type_conversion(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('type', ?),
+    ('toJSON', ?),
+    ('fromJSON', ?),
+    ('toBase64', ?),
+    ('fromBase64', ?),
+    ('toPairs', ?),
+    ('fromPairs', ?)` (
+      type(42),
+      toJSON({ name : 'test', value : 42 }),
+      string(fromJSON('{"a": 1}').a),
+      toBase64('hello'),
+      fromBase64('aGVsbG8='),
+      len(toPairs({ x : 1, y : 2 })),
+      join(keys(fromPairs([['x', 1],['y', 2]])), ',')
+  )
+
+  operators(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('range 1..5', ?),
+    ('slice [1:3]', ?),
+    ('?. + ??', ?),
+    ('if/else', ?),
+    ('let bindings', ?)` (
+      'reduce(1..5, #acc + #, 0)',
+      join(names[1 : 3], ','),
+      { name : 'test' }?.missing ?? 'default',
+      grade(85),
+      sum_of_squares(3, 4)
+  )
+
+  bitwise(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('bitand(0xFF, 0x0F)', ?),
+    ('bitor(0xF0, 0x0F)', ?),
+    ('bitxor(0xFF, 0x0F)', ?),
+    ('bitnand(0xFF, 0x0F)', ?),
+    ('bitnot(0)', ?),
+    ('bitshl(1, 8)', ?),
+    ('bitshr(256, 4)', ?),
+    ('bitushr(256, 4)', ?)` (
+      bitand(0 xFF, 0 x0F),
+      bitor(0 xF0, 0 x0F),
+      bitxor(0 xFF, 0 x0F),
+      bitnand(0 xFF, 0 x0F),
+      bitnot(0),
+      bitshl(1, 8),
+      bitshr(256, 4),
+      bitushr(256, 4)
+  )
+
+  misc(type: exec) `INSERT INTO expr_demo (label, result) VALUES
+    ('len(string)', ?),
+    ('get + ??', ?)` (
+      len('hello'),
+      get({ a : 1, b : 2 }, 'c') ?? 'missing'
+  )
+}

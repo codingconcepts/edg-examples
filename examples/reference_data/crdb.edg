@@ -1,0 +1,33 @@
+let customers = 100
+
+ref regions [
+  {cities: '[a b c]', name: 'us'}
+  {cities: '[d e f]', name: 'eu'}
+  {cities: '[g h i]', name: 'ap'}
+]
+
+up {
+  create_customer(type: exec) `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      region STRING NOT NULL,
+      city STRING NOT NULL
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: 10) `INSERT INTO customer (email, region, city)
+    __values__` (
+      gen('email'),
+      ref_same('regions').name,
+      set_rand(ref_same('regions').cities,[])
+  )
+}
+
+deseed {
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}

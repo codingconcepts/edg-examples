@@ -1,0 +1,30 @@
+let users      = 10000
+let batch_size = 1000
+
+up {
+  create_user `CREATE TABLE IF NOT EXISTS "user" (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      phone STRING,
+      bio STRING,
+      referred_by UUID
+    )`
+}
+
+seed {
+  populate_user(type: exec_batch, count: users, size: batch_size) `INSERT INTO "user" (email, phone, bio, referred_by)
+    __values__` (
+      gen('email'),
+      nullable(gen('phone'), 0.3),
+      nullable(gen('sentence:5'), 0.5),
+      nullable(uuid_v4(), 0.8)
+  )
+}
+
+deseed {
+  truncate_user(type: exec) `TRUNCATE TABLE "user"`
+}
+
+down {
+  drop_user(type: exec) `DROP TABLE IF EXISTS "user"`
+}

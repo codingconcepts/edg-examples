@@ -1,0 +1,42 @@
+let articles   = 1000
+let batch_size = 100
+
+up {
+  create_article `IF OBJECT_ID('article', 'U') IS NULL
+    CREATE TABLE article (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      title NVARCHAR(500) NOT NULL,
+      embedding_uniform NVARCHAR(MAX) NOT NULL,
+      embedding_zipf NVARCHAR(MAX) NOT NULL,
+      embedding_norm NVARCHAR(MAX) NOT NULL,
+      created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    )`
+}
+
+seed {
+  populate_article(type: exec_batch, count: articles, size: batch_size) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm)
+    __values__` (
+      gen('sentence:3'),
+      vector(32, 5, 0.1),
+      vector_zipf(32, 5, 0.1, 2.0, 1.0),
+      vector_norm(32, 5, 0.1, 2.0, 0.8)
+  )
+}
+
+deseed {
+  delete_article(type: exec) `DELETE FROM article`
+}
+
+down {
+  drop_article(type: exec) `DROP TABLE IF EXISTS article`
+}
+
+run {
+  insert_article(type: exec) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm)
+    VALUES (@p1, @p2, @p3, @p4)` (
+      gen('sentence:3'),
+      vector(32, 5, 0.1),
+      vector_zipf(32, 5, 0.1, 2.0, 1.0),
+      vector_norm(32, 5, 0.1, 2.0, 0.8)
+  )
+}

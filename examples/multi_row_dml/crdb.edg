@@ -1,0 +1,63 @@
+let products = 20
+let reviews  = 50
+
+up {
+  create_product(type: exec) `CREATE TABLE IF NOT EXISTS product (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL UNIQUE,
+      price DECIMAL(10,2) NOT NULL DEFAULT 0
+    )`
+
+  create_review(type: exec) `CREATE TABLE IF NOT EXISTS review (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      product_id UUID NOT NULL REFERENCES product(id),
+      rating INT NOT NULL,
+      body STRING NOT NULL
+    )`
+}
+
+seed {
+  insert_products(type: exec_batch, count: products, size: 10) `INSERT INTO product (name, price)
+    __values__` (
+      gen('productname'),
+      uniform_f(1.00, 100.00, 2)
+  )
+
+  fetch_products(type: query) `SELECT id, name FROM product`
+
+  insert_reviews(type: exec_batch, count: reviews, size: 10) `INSERT INTO review (product_id, rating, body)
+    __values__` (
+      ref_rand('fetch_products').id,
+      norm(4, 1, 1, 5),
+      gen('loremipsumsentence:5')
+  )
+
+  upsert_products(type: exec_batch, count: products, size: 10) `INSERT INTO product (name, price)
+    __values__
+    ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price` (
+      gen('productname'),
+      uniform_f(50.00, 200.00, 2)
+  )
+
+  update_prices(type: exec_batch, count: products, size: 10) `UPDATE product
+    SET price = v.price
+    FROM (
+      __values__
+    ) AS v(id, price)
+    WHERE product.id = v.id::UUID` (
+      ref_rand('fetch_products').id,
+      uniform_f(5.00, 150.00, 2)
+  )
+}
+
+deseed {
+  truncate_review(type: exec) `TRUNCATE TABLE review CASCADE`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE IF EXISTS review`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+}

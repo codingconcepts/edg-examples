@@ -1,0 +1,117 @@
+let a_rows     = 1000
+let b_rows     = 5000
+let c_rows     = 20000
+let batch_size = 5000
+
+up {
+  create_a(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE a (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          name VARCHAR2(255) NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_b(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE b (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          a_id NUMBER NOT NULL,
+          value NUMBER NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_c(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE c (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          b_id NUMBER NOT NULL,
+          status VARCHAR2(20) DEFAULT ''new'' NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_c(type: exec) `TRUNCATE TABLE c`
+
+  clear_b(type: exec) `TRUNCATE TABLE b`
+
+  clear_a(type: exec) `TRUNCATE TABLE a`
+
+  populate_a(type: exec_batch, count: a_rows, size: 100) `INSERT ALL __values__(a(name))` (gen('word'))
+
+  populate_b `INSERT INTO b (a_id, value)
+    SELECT a.id, TRUNC(DBMS_RANDOM.VALUE * 100)
+    FROM a
+    ORDER BY DBMS_RANDOM.VALUE
+    FETCH FIRST $2 ROWS ONLY` (
+      batch(b_rows / batch_size),
+      batch_size
+  )
+
+  populate_c `INSERT INTO c (b_id)
+    SELECT b.id
+    FROM b
+    ORDER BY DBMS_RANDOM.VALUE
+    FETCH FIRST $2 ROWS ONLY` (
+      batch(c_rows / batch_size),
+      batch_size
+  )
+}
+
+deseed {
+  truncate_c(type: exec) `TRUNCATE TABLE c`
+
+  truncate_b(type: exec) `TRUNCATE TABLE b`
+
+  truncate_a(type: exec) `TRUNCATE TABLE a`
+}
+
+down {
+  drop_c(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE c CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_b(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE b CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_a(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE a CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+run {
+  find_a(type: query) `SELECT id AS a_id, name
+    FROM a
+    ORDER BY DBMS_RANDOM.VALUE
+    FETCH FIRST 1 ROW ONLY`
+
+  find_b(type: query) `SELECT id AS b_id, value
+    FROM b
+    WHERE a_id = :1
+    FETCH FIRST 1 ROW ONLY` (ref_rand('find_a').a_id)
+
+  update_c(type: exec) `UPDATE c SET status = 'processed'
+    WHERE b_id = :1
+      AND status = 'new'
+      AND ROWNUM = 1` (ref_rand('find_b').b_id)
+}

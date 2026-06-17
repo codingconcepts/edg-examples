@@ -1,0 +1,33 @@
+csv "data/"
+
+let customers = 10
+
+seq customer_id(start: 1, step: 1)
+
+up {
+  create_customer(type: exec) `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      region STRING NOT NULL,
+      currency STRING NOT NULL,
+      greeting STRING NOT NULL
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: 10) `INSERT INTO customer (email, region, currency, greeting)
+    __values__` (
+      gen('email'),
+      ref_same('regions').code,
+      ref_same('regions').currency,
+      ref_rand('translations').greeting
+  )
+}
+
+deseed {
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}

@@ -1,0 +1,234 @@
+let users            = 1000
+let posts_per_user   = 5
+let follows_per_user = 10
+let tags             = 50
+
+up {
+  create_user_profile `CREATE TABLE IF NOT EXISTS user_profile (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      username VARCHAR(255) NOT NULL,
+      display_name VARCHAR(255) NOT NULL,
+      bio VARCHAR(500) NOT NULL DEFAULT '',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+
+  create_post `CREATE TABLE IF NOT EXISTS post (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      author_id CHAR(36) NOT NULL,
+      body TEXT NOT NULL,
+      like_count INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (author_id) REFERENCES user_profile(id)
+    )`
+
+  create_follow `CREATE TABLE IF NOT EXISTS follow (
+      follower_id CHAR(36) NOT NULL,
+      following_id CHAR(36) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (follower_id, following_id),
+      FOREIGN KEY (follower_id) REFERENCES user_profile(id),
+      FOREIGN KEY (following_id) REFERENCES user_profile(id),
+      CHECK (follower_id != following_id)
+    )`
+
+  create_post_like `CREATE TABLE IF NOT EXISTS post_like (
+      post_id CHAR(36) NOT NULL,
+      user_id CHAR(36) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (post_id, user_id),
+      FOREIGN KEY (post_id) REFERENCES post(id),
+      FOREIGN KEY (user_id) REFERENCES user_profile(id)
+    )`
+
+  create_comment `CREATE TABLE IF NOT EXISTS comment (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      post_id CHAR(36) NOT NULL,
+      author_id CHAR(36) NOT NULL,
+      body TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (post_id) REFERENCES post(id),
+      FOREIGN KEY (author_id) REFERENCES user_profile(id)
+    )`
+
+  create_tag `CREATE TABLE IF NOT EXISTS tag (
+      id INT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE
+    )`
+
+  create_post_tag `CREATE TABLE IF NOT EXISTS post_tag (
+      post_id CHAR(36) NOT NULL,
+      tag_id INT NOT NULL,
+      PRIMARY KEY (post_id, tag_id),
+      FOREIGN KEY (post_id) REFERENCES post(id),
+      FOREIGN KEY (tag_id) REFERENCES tag(id)
+    )`
+
+  create_idx_post_author `CREATE INDEX idx_post_author
+    ON post (author_id, created_at DESC)`
+
+  create_idx_follow_follower `CREATE INDEX idx_follow_follower
+    ON follow (follower_id)`
+
+  create_idx_comment_post `CREATE INDEX idx_comment_post
+    ON comment (post_id, created_at DESC)`
+}
+
+seed {
+  populate_user_profile `INSERT INTO user_profile (username, display_name, bio)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    SELECT
+      CONCAT('user_', s),
+      SUBSTRING(MD5(RAND()), 1, 12),
+      SUBSTRING(CONCAT(MD5(RAND()), MD5(RAND())), 1, 60)
+    FROM seq` (users)
+
+  populate_tag `INSERT INTO tag (id, name)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    SELECT s, CONCAT('tag-', s)
+    FROM seq` (tags)
+
+  populate_post `INSERT INTO post (author_id, body, like_count)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    SELECT
+      u.id,
+      SUBSTRING(CONCAT(MD5(RAND()), MD5(RAND())), 1, 100),
+      FLOOR(RAND() * 100)
+    FROM user_profile u
+    CROSS JOIN seq` (posts_per_user)
+
+  populate_post_tag `INSERT IGNORE INTO post_tag (post_id, tag_id)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < 3
+    )
+    SELECT p.id, FLOOR(RAND() * $1) + 1
+    FROM post p
+    CROSS JOIN seq` (tags)
+
+  populate_follow `INSERT IGNORE INTO follow (follower_id, following_id)
+    SELECT u.id, f.id
+    FROM user_profile u
+    CROSS JOIN LATERAL (
+      SELECT id FROM user_profile
+      WHERE id != u.id
+      ORDER BY RAND()
+      LIMIT $1
+    ) f` (follows_per_user)
+}
+
+deseed {
+  delete_post_tag(type: exec) `DELETE FROM post_tag`
+
+  delete_comment(type: exec) `DELETE FROM comment`
+
+  delete_post_like(type: exec) `DELETE FROM post_like`
+
+  delete_follow(type: exec) `DELETE FROM follow`
+
+  delete_post(type: exec) `DELETE FROM post`
+
+  delete_tag(type: exec) `DELETE FROM tag`
+
+  delete_user_profile(type: exec) `DELETE FROM user_profile`
+}
+
+down {
+  drop_post_tag(type: exec) `DROP TABLE IF EXISTS post_tag`
+
+  drop_comment(type: exec) `DROP TABLE IF EXISTS comment`
+
+  drop_post_like(type: exec) `DROP TABLE IF EXISTS post_like`
+
+  drop_follow(type: exec) `DROP TABLE IF EXISTS follow`
+
+  drop_post(type: exec) `DROP TABLE IF EXISTS post`
+
+  drop_tag(type: exec) `DROP TABLE IF EXISTS tag`
+
+  drop_user_profile(type: exec) `DROP TABLE IF EXISTS user_profile`
+}
+
+init {
+  fetch_users(type: query) `SELECT id, username, display_name FROM user_profile ORDER BY RAND()`
+
+  fetch_posts(type: query) `SELECT id FROM post ORDER BY RAND()`
+
+  fetch_tags(type: query) `SELECT id, name FROM tag`
+}
+
+weights {
+  add_comment    = 10
+  create_post    = 10
+  fetch_feed     = 30
+  follow_user    = 5
+  like_post      = 25
+  mutual_friends = 10
+  trending       = 10
+}
+
+run {
+  fetch_feed(type: query) `SELECT p.id, p.body, p.like_count, p.created_at,
+      u.username, u.display_name
+    FROM post p
+    JOIN follow f ON f.following_id = p.author_id
+    JOIN user_profile u ON u.id = p.author_id
+    WHERE f.follower_id = ?
+    ORDER BY p.created_at DESC
+    LIMIT 20` (ref_rand('fetch_users').id)
+
+  create_post(type: exec) `INSERT INTO post (author_id, body)
+    VALUES (?, ?)` (
+      ref_rand('fetch_users').id,
+      gen('sentence:10')
+  )
+
+  like_post(type: exec) `INSERT IGNORE INTO post_like (post_id, user_id)
+    VALUES (?, ?)` (
+      ref_rand('fetch_posts').id,
+      ref_rand('fetch_users').id
+  )
+
+  add_comment(type: exec) `INSERT INTO comment (post_id, author_id, body)
+    VALUES (?, ?, CONCAT(?, ': ', ?))` (
+      ref_rand('fetch_posts').id,
+      ref_same('fetch_users').id,
+      ref_same('fetch_users').display_name,
+      gen('sentence:8')
+  )
+
+  follow_user(type: exec) `INSERT IGNORE INTO follow (follower_id, following_id)
+    VALUES (?, ?)` (
+      ref_diff('fetch_users').id,
+      ref_diff('fetch_users').id
+  )
+
+  trending(type: query) `SELECT p.id, p.body, p.like_count, u.username
+    FROM post p
+    JOIN user_profile u ON u.id = p.author_id
+    ORDER BY p.like_count DESC
+    LIMIT 10`
+
+  mutual_friends(type: query) `SELECT u.id, u.username, u.display_name
+    FROM follow f1
+    JOIN follow f2 ON f1.following_id = f2.following_id
+    JOIN user_profile u ON u.id = f1.following_id
+    WHERE f1.follower_id = ?
+      AND f2.follower_id = ?
+    LIMIT 20` (
+      ref_diff('fetch_users').id,
+      ref_diff('fetch_users').id
+  )
+}

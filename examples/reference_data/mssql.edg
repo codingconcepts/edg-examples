@@ -1,0 +1,34 @@
+let customers = 100
+
+ref regions [
+  {cities: '[a b c]', name: 'us'}
+  {cities: '[d e f]', name: 'eu'}
+  {cities: '[g h i]', name: 'ap'}
+]
+
+up {
+  create_customer(type: exec) `IF OBJECT_ID('customer', 'U') IS NULL
+    CREATE TABLE customer (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      email NVARCHAR(255) NOT NULL,
+      region NVARCHAR(50) NOT NULL,
+      city NVARCHAR(50) NOT NULL
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: 10) `INSERT INTO customer (email, region, city)
+    __values__` (
+      gen('email'),
+      ref_same('regions').name,
+      set_rand(ref_same('regions').cities,[])
+  )
+}
+
+deseed {
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}

@@ -1,0 +1,173 @@
+let devices             = 100
+let sensors_per_device  = 5
+let readings_per_sensor = 1000
+let page_size           = 50
+
+up {
+  create_device `CREATE TABLE IF NOT EXISTS device (
+      id INT PRIMARY KEY,
+      name STRING NOT NULL,
+      location STRING NOT NULL,
+      device_type STRING NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+
+  create_sensor `CREATE TABLE IF NOT EXISTS sensor (
+      id INT PRIMARY KEY,
+      device_id INT NOT NULL REFERENCES device(id),
+      metric_name STRING NOT NULL,
+      unit STRING NOT NULL,
+      min_threshold DECIMAL(10,2) NOT NULL,
+      max_threshold DECIMAL(10,2) NOT NULL
+    )`
+
+  create_reading `CREATE TABLE IF NOT EXISTS reading (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      sensor_id INT NOT NULL REFERENCES sensor(id),
+      value DECIMAL(12,4) NOT NULL,
+      recorded_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+
+  create_alert `CREATE TABLE IF NOT EXISTS alert (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      sensor_id INT NOT NULL REFERENCES sensor(id),
+      reading_value DECIMAL(12,4) NOT NULL,
+      threshold DECIMAL(10,2) NOT NULL,
+      alert_type STRING NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+
+  create_idx_reading_sensor_time `CREATE INDEX IF NOT EXISTS idx_reading_sensor_time
+    ON reading (sensor_id, recorded_at DESC)`
+
+  create_idx_alert_sensor_time `CREATE INDEX IF NOT EXISTS idx_alert_sensor_time
+    ON alert (sensor_id, created_at DESC)`
+}
+
+seed {
+  populate_device `INSERT INTO device (id, name, location, device_type)
+    SELECT
+      s,
+      'device-' || s::TEXT,
+      (ARRAY['floor-1','floor-2','floor-3','roof','basement','warehouse'])[floor(random()::FLOAT8 * 6 + 1)::INT],
+      (ARRAY['temperature','pressure','humidity','vibration'])[floor(random()::FLOAT8 * 4 + 1)::INT]
+    FROM generate_series(1, $1) AS s` (devices)
+
+  populate_sensor `INSERT INTO sensor (id, device_id, metric_name, unit, min_threshold, max_threshold)
+    SELECT
+      ($1::INT - 1) * $2 + s,
+      $1::INT,
+      (ARRAY['temp_c','pressure_psi','humidity_pct','rpm','voltage'])[s],
+      (ARRAY['°C','PSI','%','RPM','V'])[s],
+      (ARRAY[15.0, 20.0, 30.0, 500.0, 110.0])[s]::DECIMAL(10,2),
+      (ARRAY[35.0, 80.0, 70.0, 3000.0, 240.0])[s]::DECIMAL(10,2)
+    FROM generate_series(1, $2) AS s` (
+      ref_each('SELECT id FROM device'),
+      sensors_per_device
+  )
+
+  populate_reading `INSERT INTO reading (sensor_id, value, recorded_at)
+    SELECT
+      $1::INT,
+      $2::FLOAT8 + random()::FLOAT8 * ($3::FLOAT8 - $2::FLOAT8),
+      now() - (s * INTERVAL '1 minute')
+    FROM generate_series(1, $4) AS s` (
+      ref_each('SELECT id, min_threshold, max_threshold FROM sensor'),
+      readings_per_sensor
+  )
+}
+
+deseed {
+  truncate_alert(type: exec) `TRUNCATE TABLE alert`
+
+  truncate_reading(type: exec) `TRUNCATE TABLE reading`
+
+  truncate_sensor(type: exec) `TRUNCATE TABLE sensor CASCADE`
+
+  truncate_device(type: exec) `TRUNCATE TABLE device CASCADE`
+}
+
+down {
+  drop_alert(type: exec) `DROP TABLE IF EXISTS alert`
+
+  drop_reading(type: exec) `DROP TABLE IF EXISTS reading`
+
+  drop_sensor(type: exec) `DROP TABLE IF EXISTS sensor`
+
+  drop_device(type: exec) `DROP TABLE IF EXISTS device`
+}
+
+init {
+  fetch_sensors(type: query) `SELECT id, device_id, min_threshold, max_threshold FROM sensor`
+
+  fetch_devices(type: query) `SELECT id FROM device`
+}
+
+weights {
+  check_alerts     = 15
+  detect_anomaly   = 5
+  device_history   = 10
+  hourly_rollup    = 5
+  ingest_reading   = 60
+  update_threshold = 5
+}
+
+run {
+  ingest_reading(type: exec) `INSERT INTO reading (sensor_id, value)
+    VALUES ($1::INT, $2::DECIMAL / 100.0)` (
+      ref_rand('fetch_sensors').id,
+      gen('number:1,10000')
+  )
+
+  check_alerts(type: query) `SELECT r.id, r.value, r.recorded_at, s.metric_name
+    FROM reading r
+    JOIN sensor s ON s.id = r.sensor_id
+    WHERE r.sensor_id = $1::INT
+      AND r.recorded_at >= now() - INTERVAL '1 hour'
+      AND r.value > $2::DECIMAL
+    ORDER BY r.recorded_at DESC
+    LIMIT 20` (
+      ref_rand('fetch_sensors').id,
+      ref_rand('fetch_sensors').max_threshold
+  )
+
+  hourly_rollup(type: query) `SELECT
+      sensor_id,
+      date_trunc('hour', recorded_at) AS hour,
+      AVG(value)::DECIMAL(10,2) AS avg_value,
+      MIN(value)::DECIMAL(10,2) AS min_value,
+      MAX(value)::DECIMAL(10,2) AS max_value,
+      COUNT(*) AS reading_count
+    FROM reading
+    WHERE sensor_id = $1::INT
+      AND recorded_at >= now() - INTERVAL '24 hours'
+    GROUP BY sensor_id, date_trunc('hour', recorded_at)
+    ORDER BY hour DESC` (ref_rand('fetch_sensors').id)
+
+  device_history(type: query) `SELECT r.value, r.recorded_at, s.metric_name, s.unit
+    FROM reading r
+    JOIN sensor s ON s.id = r.sensor_id
+    WHERE s.device_id = $1::INT
+    ORDER BY r.recorded_at DESC
+    LIMIT $3::INT OFFSET $2::INT * $3::INT` (
+      ref_rand('fetch_devices').id,
+      gen('number:0,19'),
+      page_size
+  )
+
+  update_threshold(type: exec) `UPDATE sensor SET max_threshold = $2::DECIMAL
+    WHERE id = $1::INT` (
+      ref_rand('fetch_sensors').id,
+      gen('number:50,300')
+  )
+
+  detect_anomaly(type: query) `SELECT sensor_id, value, recorded_at,
+      AVG(value) OVER w AS moving_avg,
+      value - AVG(value) OVER w AS deviation
+    FROM reading
+    WHERE sensor_id = $1::INT
+      AND recorded_at >= now() - INTERVAL '1 hour'
+    WINDOW w AS (ORDER BY recorded_at ROWS BETWEEN 10 PRECEDING AND CURRENT ROW)
+    ORDER BY recorded_at DESC
+    LIMIT 50` (ref_rand('fetch_sensors').id)
+}

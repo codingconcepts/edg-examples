@@ -1,0 +1,30 @@
+up {
+  create_blob_test `CREATE TABLE IF NOT EXISTS blob_test (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      label STRING NOT NULL,
+      data_blob BYTES NOT NULL,
+      data_bytes BYTES NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+}
+
+down {
+  drop_blob_test(type: exec) `DROP TABLE IF EXISTS blob_test`
+}
+
+init {
+  fetch_blobs(type: query) `SELECT id, label FROM blob_test ORDER BY random() LIMIT 100`
+}
+
+run {
+  insert_blob(type: exec) `INSERT INTO blob_test (label, data_blob, data_bytes)
+    VALUES ($1::STRING, $2::BYTES, $3::BYTES)` (
+      gen('word'),
+      blob(256),
+      bytes(256)
+  )
+
+  read_blob(type: query) `SELECT id, label, length(data_blob) AS blob_len, length(data_bytes) AS bytes_len
+    FROM blob_test
+    WHERE id = $1::UUID` (ref_rand('fetch_blobs').id)
+}

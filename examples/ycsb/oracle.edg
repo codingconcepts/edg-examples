@@ -1,0 +1,106 @@
+let records    = 10000
+let batch_size = 1000
+let zipf_s     = 1.2
+
+up {
+  create_usertable(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE usertable (
+          ycsb_key VARCHAR2(255) PRIMARY KEY,
+          field0 VARCHAR2(100) NOT NULL,
+          field1 VARCHAR2(100) NOT NULL,
+          field2 VARCHAR2(100) NOT NULL,
+          field3 VARCHAR2(100) NOT NULL,
+          field4 VARCHAR2(100) NOT NULL,
+          field5 VARCHAR2(100) NOT NULL,
+          field6 VARCHAR2(100) NOT NULL,
+          field7 VARCHAR2(100) NOT NULL,
+          field8 VARCHAR2(100) NOT NULL,
+          field9 VARCHAR2(100) NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_usertable(type: exec) `TRUNCATE TABLE usertable`
+
+  populate_usertable `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    SELECT
+      'user' || LPAD($1 * $2 + LEVEL - 1, 10, '0'),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100),
+      DBMS_RANDOM.STRING('x', 100)
+    FROM DUAL
+    CONNECT BY LEVEL <= $2` (
+      batch(records / batch_size),
+      batch_size
+  )
+}
+
+deseed {
+  truncate_usertable(type: exec) `TRUNCATE TABLE usertable`
+}
+
+down {
+  drop_usertable(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE usertable CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+weights {
+  read   = 50
+  update = 50
+}
+
+run {
+  read(type: query) `SELECT * FROM usertable WHERE ycsb_key = :1` (template('user%010d', zipf(zipf_s, 1, records - 1)))
+
+  update(type: exec) `UPDATE usertable SET field0 = :2
+    WHERE ycsb_key = :1` (
+      template('user%010d', zipf(zipf_s, 1, records - 1)),
+      regex('[a-zA-Z0-9]{100}')
+  )
+
+  insert(type: exec) `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11)` (
+      uuid_v7(),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}')
+  )
+
+  scan(type: query) `SELECT * FROM usertable
+    WHERE ycsb_key >= :1
+    ORDER BY ycsb_key
+    FETCH FIRST :2 ROWS ONLY` (
+      template('user%010d', zipf(zipf_s, 1, records - 1)),
+      gen('number:1,100')
+  )
+
+  read_modify_write(type: exec) `UPDATE usertable SET field0 = :2
+    WHERE ycsb_key = :1` (
+      template('user%010d', zipf(zipf_s, 1, records - 1)),
+      regex('[a-zA-Z0-9]{100}')
+  )
+}

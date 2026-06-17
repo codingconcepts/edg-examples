@@ -1,0 +1,29 @@
+up {
+  create_blob_test `IF OBJECT_ID('blob_test', 'U') IS NULL
+    CREATE TABLE blob_test (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      label NVARCHAR(255) NOT NULL,
+      data_blob VARBINARY(MAX) NOT NULL,
+      created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    )`
+}
+
+down {
+  drop_blob_test(type: exec) `DROP TABLE IF EXISTS blob_test`
+}
+
+init {
+  fetch_blobs(type: query) `SELECT TOP 100 id, label FROM blob_test`
+}
+
+run {
+  insert_blob(type: exec) `INSERT INTO blob_test (label, data_blob)
+    VALUES ($1, $2)` (
+      gen('word'),
+      blob(256)
+  )
+
+  read_blob(type: query) `SELECT id, label, DATALENGTH(data_blob) AS blob_len
+    FROM blob_test
+    WHERE id = $1` (ref_rand('fetch_blobs').id)
+}

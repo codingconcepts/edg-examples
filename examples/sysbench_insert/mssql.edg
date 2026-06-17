@@ -1,0 +1,48 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_sbtest1 `IF OBJECT_ID('sbtest1', 'U') IS NULL
+    CREATE TABLE sbtest1 (
+      id INT NOT NULL PRIMARY KEY,
+      k INT NOT NULL DEFAULT 0,
+      c CHAR(120) NOT NULL DEFAULT '',
+      pad CHAR(60) NOT NULL DEFAULT ''
+    )`
+
+  create_idx_k `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'k_1' AND object_id = OBJECT_ID('sbtest1'))
+    CREATE INDEX k_1 ON sbtest1(k)`
+}
+
+seed {
+  populate_sbtest1(type: exec_batch, count: records, size: batch_size) `INSERT INTO sbtest1 (id, k, c, pad)
+    VALUES ($1, $2, $3, $4)` (
+      seq(1, 1),
+      gen('number:0,10000'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}
+
+deseed {
+  delete_sbtest1(type: exec) `DELETE FROM sbtest1`
+}
+
+down {
+  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS sbtest1`
+}
+
+run {
+  insert(type: exec) `IF NOT EXISTS (SELECT 1 FROM sbtest1 WHERE id = @p1)
+      INSERT INTO sbtest1 (id, k, c, pad)
+      VALUES (@p1, @p2, @p3, @p4)` (
+      gen('number:1,2147483647'),
+      gen('number:0,10000'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}

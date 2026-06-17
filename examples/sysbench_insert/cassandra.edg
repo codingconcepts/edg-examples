@@ -1,0 +1,48 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_sbtest1(type: exec) `CREATE TABLE IF NOT EXISTS edg.sbtest1 (
+      id INT PRIMARY KEY,
+      k INT,
+      c TEXT,
+      pad TEXT
+    )`
+
+  create_idx_k(type: exec) `CREATE INDEX IF NOT EXISTS k_1 ON edg.sbtest1(k)`
+}
+
+seed {
+  populate_sbtest1(type: exec_batch, count: records, size: 50) `INSERT INTO edg.sbtest1 (id, k, c, pad) VALUES ($1, $2, $3, $4)` (
+      seq(1, 1),
+      gen('number:0,10000'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}
+
+deseed {
+  truncate_sbtest1(type: exec) `TRUNCATE edg.sbtest1`
+}
+
+down {
+  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS edg.sbtest1`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+run {
+  insert(type: exec) `INSERT INTO edg.sbtest1 (id, k, c, pad) VALUES ($1, $2, $3, $4)` (
+      gen('number:1,2147483647'),
+      gen('number:0,10000'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}

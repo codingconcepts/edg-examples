@@ -1,0 +1,47 @@
+let customers = 100
+
+ref regions [
+  {cities: '[new-york chicago dallas]', name: 'us'}
+  {cities: '[london berlin paris]', name: 'eu'}
+  {cities: '[tokyo sydney mumbai]', name: 'ap'}
+]
+
+up {
+  create_order(type: exec) `CREATE TABLE IF NOT EXISTS named_args_order (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      region STRING NOT NULL,
+      city STRING NOT NULL,
+      amount DECIMAL(10,2) NOT NULL
+    )`
+}
+
+seed {
+  populate_order(type: exec_batch, count: customers, size: 10) `INSERT INTO named_args_order (email, region, city, amount)
+    __values__` (
+      email: gen('email'),
+      region: ref_same('regions').name,
+      city: set_rand(ref_same('regions').cities,[]),
+      amount: uniform(1, 500)
+  )
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE named_args_order`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS named_args_order`
+}
+
+run {
+  insert_order(type: exec, print: ref_same('regions').name, print: arg('amount')) `INSERT INTO named_args_order (email, region, city, amount)
+    VALUES ($1, $2, $3, $4::DECIMAL)` (
+      email: gen('email'),
+      region: ref_same('regions').name,
+      city: set_rand(ref_same('regions').cities,[]),
+      amount: uniform(1, 500)
+  )
+
+  read_order `SELECT id, amount FROM named_args_order WHERE region = $1 LIMIT 1` (region: ref_same('regions').name)
+}

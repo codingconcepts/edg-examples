@@ -1,0 +1,41 @@
+let articles   = 1000
+let batch_size = 100
+
+up {
+  create_article `CREATE TABLE IF NOT EXISTS article (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      title VARCHAR(500) NOT NULL,
+      embedding_uniform TEXT NOT NULL,
+      embedding_zipf TEXT NOT NULL,
+      embedding_norm TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+}
+
+seed {
+  populate_article(type: exec_batch, count: articles, size: batch_size) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm)
+    __values__` (
+      gen('sentence:3'),
+      vector(32, 5, 0.1),
+      vector_zipf(32, 5, 0.1, 2.0, 1.0),
+      vector_norm(32, 5, 0.1, 2.0, 0.8)
+  )
+}
+
+deseed {
+  delete_article(type: exec) `DELETE FROM article`
+}
+
+down {
+  drop_article(type: exec) `DROP TABLE IF EXISTS article`
+}
+
+run {
+  insert_article(type: exec) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm)
+    VALUES (?, ?, ?, ?)` (
+      gen('sentence:3'),
+      vector(32, 5, 0.1),
+      vector_zipf(32, 5, 0.1, 2.0, 1.0),
+      vector_norm(32, 5, 0.1, 2.0, 0.8)
+  )
+}

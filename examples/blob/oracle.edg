@@ -1,0 +1,39 @@
+up {
+  create_blob_test(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE blob_test (
+          id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
+          label VARCHAR2(255) NOT NULL,
+          data_blob BLOB NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL
+        )';
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+down {
+  drop_blob_test(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE blob_test';
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+init {
+  fetch_blobs(type: query) `SELECT id, label FROM blob_test WHERE ROWNUM <= 100`
+}
+
+run {
+  insert_blob(type: exec) `INSERT INTO blob_test (label, data_blob)
+    VALUES ($1, $2)` (
+      gen('word'),
+      blob(256)
+  )
+
+  read_blob(type: query) `SELECT id, label, DBMS_LOB.GETLENGTH(data_blob) AS blob_len
+    FROM blob_test
+    WHERE id = $1` (ref_rand('fetch_blobs').id)
+}

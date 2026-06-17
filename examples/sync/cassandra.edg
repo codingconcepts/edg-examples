@@ -1,0 +1,52 @@
+let user_count  = 1000
+let order_count = 5000
+let batch_size  = 50
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_users(type: exec) `CREATE TABLE IF NOT EXISTS edg.users (
+      id INT PRIMARY KEY,
+      email TEXT,
+      name TEXT
+    )`
+
+  create_orders(type: exec) `CREATE TABLE IF NOT EXISTS edg.orders (
+      id INT PRIMARY KEY,
+      user_id INT,
+      amount DOUBLE,
+      status TEXT
+    )`
+}
+
+seed {
+  seed_users(type: exec_batch, count: user_count, size: batch_size) `INSERT INTO edg.users (id, email, name) VALUES ($1, $2, $3)` (
+      seq(1, 1),
+      gen('email'),
+      gen('name')
+  )
+
+  fetch_users `SELECT id FROM edg.users`
+
+  seed_orders(type: exec_batch, count: order_count, size: batch_size) `INSERT INTO edg.orders (id, user_id, amount, status) VALUES ($1, $2, $3, $4)` (
+      seq(1, 1),
+      ref_rand('fetch_users').id,
+      uniform_f(10.0, 500.0, 2),
+      set_rand(['pending', 'shipped', 'delivered', 'cancelled'],[40, 35, 20, 5])
+  )
+}
+
+deseed {
+  truncate_orders(type: exec) `TRUNCATE edg.orders`
+
+  truncate_users(type: exec) `TRUNCATE edg.users`
+}
+
+down {
+  drop_orders(type: exec) `DROP TABLE IF EXISTS edg.orders`
+
+  drop_users(type: exec) `DROP TABLE IF EXISTS edg.users`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}

@@ -1,0 +1,184 @@
+let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+
+expect {
+  error_rate < 25
+  lost_update `SELECT SUM(value) AS counter_total FROM edg.counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM edg.account` n == accounts
+  dirty_write `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts FROM edg.account` total == accounts * initial_balance
+  write_skew `SELECT SUM(version) AS total_versions FROM edg.cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM edg.blind_write` n == accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM edg.oncall WHERE on_duty = true ALLOW FILTERING` on_duty >= 1
+}
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_account(type: exec) `CREATE TABLE IF NOT EXISTS edg.account (
+      id BIGINT PRIMARY KEY,
+      balance BIGINT,
+      version BIGINT
+    )`
+
+  create_ledger(type: exec) `CREATE TABLE IF NOT EXISTS edg.ledger (
+      account_id BIGINT,
+      id TIMEUUID,
+      amount BIGINT,
+      PRIMARY KEY (account_id, id)
+    )`
+
+  create_counter(type: exec) `CREATE TABLE IF NOT EXISTS edg.counter (
+      id BIGINT PRIMARY KEY,
+      value BIGINT
+    )`
+
+  create_oncall(type: exec) `CREATE TABLE IF NOT EXISTS edg.oncall (
+      doctor_id BIGINT PRIMARY KEY,
+      on_duty BOOLEAN
+    )`
+
+  create_blind_write(type: exec) `CREATE TABLE IF NOT EXISTS edg.blind_write (
+      id BIGINT PRIMARY KEY,
+      value BIGINT
+    )`
+
+  create_cas(type: exec) `CREATE TABLE IF NOT EXISTS edg.cas (
+      id BIGINT PRIMARY KEY,
+      value BIGINT,
+      version BIGINT
+    )`
+}
+
+seed {
+  populate_accounts(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.account (id, balance, version) VALUES ($1, $2, 0)` (
+      iter(),
+      initial_balance
+  )
+
+  populate_counters(type: exec_batch, count: 2, size: 2) `INSERT INTO edg.counter (id, value) VALUES ($1, 0)` (iter())
+
+  populate_oncall(type: exec_batch, count: 3, size: 3) `INSERT INTO edg.oncall (doctor_id, on_duty) VALUES ($1, true)` (iter())
+
+  populate_blind_write(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.blind_write (id, value) VALUES ($1, 0)` (iter())
+
+  populate_cas(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.cas (id, value, version) VALUES ($1, 0, 0)` (iter())
+}
+
+deseed {
+  truncate_ledger(type: exec) `TRUNCATE edg.ledger`
+
+  truncate_account(type: exec) `TRUNCATE edg.account`
+
+  truncate_counter(type: exec) `TRUNCATE edg.counter`
+
+  truncate_oncall(type: exec) `TRUNCATE edg.oncall`
+
+  truncate_blind_write(type: exec) `TRUNCATE edg.blind_write`
+
+  truncate_cas(type: exec) `TRUNCATE edg.cas`
+
+  reseed_accounts(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.account (id, balance, version) VALUES ($1, $2, 0)` (
+      iter(),
+      initial_balance
+  )
+
+  reseed_counters(type: exec_batch, count: 2, size: 2) `INSERT INTO edg.counter (id, value) VALUES ($1, 0)` (iter())
+
+  reseed_oncall(type: exec_batch, count: 3, size: 3) `INSERT INTO edg.oncall (doctor_id, on_duty) VALUES ($1, true)` (iter())
+
+  reseed_blind_write(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.blind_write (id, value) VALUES ($1, 0)` (iter())
+
+  reseed_cas(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.cas (id, value, version) VALUES ($1, 0, 0)` (iter())
+}
+
+down {
+  drop_ledger(type: exec) `DROP TABLE IF EXISTS edg.ledger`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
+
+  drop_oncall(type: exec) `DROP TABLE IF EXISTS edg.oncall`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS edg.counter`
+
+  drop_blind_write(type: exec) `DROP TABLE IF EXISTS edg.blind_write`
+
+  drop_cas(type: exec) `DROP TABLE IF EXISTS edg.cas`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+weights {
+  blind_write         = 10
+  cas_update          = 10
+  check_total_balance = 10
+  count_ledger        = 10
+  go_off_duty         = 10
+  increment_counter   = 10
+  insert_ledger       = 10
+  transfer            = 10
+}
+
+run {
+  count_ledger(type: query) `SELECT COUNT(*) AS entry_count, SUM(amount) AS total
+    FROM edg.ledger
+    WHERE account_id = $1` (gen('number:1,' + string(accounts)))
+
+  insert_ledger(type: exec) `INSERT INTO edg.ledger (account_id, id, amount) VALUES ($1, now(), $2)` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,500')
+  )
+
+  transaction increment_counter {
+    let counter_id = gen('number:1,2')
+    read_counter(type: query) `SELECT id, value FROM edg.counter WHERE id = $1` (local('counter_id'))
+    write_counter(type: exec) `UPDATE edg.counter SET value = $2 WHERE id = $1` (
+        local('counter_id'),
+        ref_same('read_counter').value + 1
+    )
+  }
+
+  transaction transfer {
+    let amount = gen('number:1,100')
+    let from_id = gen('number:1,' + string(accounts))
+    let to_id = gen('number:1,' + string(accounts))
+    rollback_if local('from_id') == local('to_id')
+    read_from(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (local('from_id'))
+    read_to(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (local('to_id'))
+    debit_from(type: exec) `UPDATE edg.account SET balance = $2 WHERE id = $1` (
+        local('from_id'),
+        ref_same('read_from').balance - local('amount')
+    )
+    credit_to(type: exec) `UPDATE edg.account SET balance = $2 WHERE id = $1` (
+        local('to_id'),
+        ref_same('read_to').balance + local('amount')
+    )
+  }
+
+  blind_write(type: exec) `UPDATE edg.blind_write SET value = $2 WHERE id = $1` (
+      gen('number:1,' + string(accounts)),
+      gen('number:100,900')
+  )
+
+  transaction cas_update {
+    let amount = gen('number:1,100')
+    let overwrite_id = gen('number:1,' + string(accounts))
+    read_version(type: query) `SELECT id, value, version FROM edg.cas WHERE id = $1` (local('overwrite_id'))
+    update_if_match(type: exec) `UPDATE edg.cas SET value = $2, version = $3 WHERE id = $1 IF version = $4` (
+        local('overwrite_id'),
+        ref_same('read_version').value + local('amount'),
+        ref_same('read_version').version + 1,
+        ref_same('read_version').version
+    )
+  }
+
+  check_total_balance(type: query) `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts
+    FROM edg.account`
+
+  transaction go_off_duty {
+    let doctor_id = gen('number:1,3')
+    count_on_duty(type: query) `SELECT COUNT(*) AS n FROM edg.oncall WHERE on_duty = true ALLOW FILTERING`
+    rollback_if ref_same('count_on_duty').n <= 1
+    set_off_duty(type: exec) `UPDATE edg.oncall SET on_duty = false WHERE doctor_id = $1` (local('doctor_id'))
+  }
+}

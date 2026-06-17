@@ -1,0 +1,93 @@
+seq emp_id(start: 1, step: 1)
+
+seq dep_id(start: 1, step: 1)
+
+up {
+  create_employees `CREATE TABLE IF NOT EXISTS employees (
+      id INT PRIMARY KEY,
+      name STRING NOT NULL,
+      role STRING NOT NULL,
+      manager_id INT REFERENCES employees(id)
+    )`
+
+  create_dependencies `CREATE TABLE IF NOT EXISTS dependencies (
+      id INT PRIMARY KEY,
+      name STRING NOT NULL,
+      dependency_id INT REFERENCES dependencies(id)
+    )`
+}
+
+seed {
+  org_level_0(type: exec_batch, count: 1) `INSERT INTO employees (id, name, role, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      role: const('CEO'),
+      manager_id: const(nil)
+  )
+
+  org_level_1(type: exec_batch, count: 5) `INSERT INTO employees (id, name, role, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      role: const('VP'),
+      manager_id: ref_rand('org_level_0').id
+  )
+
+  org_level_2(type: exec_batch, count: 15) `INSERT INTO employees (id, name, role, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      role: const('Director'),
+      manager_id: ref_rand('org_level_1').id
+  )
+
+  org_level_3(type: exec_batch, count: 50) `INSERT INTO employees (id, name, role, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      role: const('Manager'),
+      manager_id: ref_rand('org_level_2').id
+  )
+
+  org_level_4(type: exec_batch, count: 200) `INSERT INTO employees (id, name, role, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      role: set_rand(['Engineer', 'IC'],[]),
+      manager_id: ref_rand('org_level_3').id
+  )
+
+  deps_level_0(type: exec_batch, count: 3) `INSERT INTO dependencies (id, name, dependency_id)
+    __values__` (
+      id: seq_global('dep_id'),
+      name: template('pkg-%d', iter()),
+      dependency_id: const(nil)
+  )
+
+  deps_level_1(type: exec_batch, count: 8) `INSERT INTO dependencies (id, name, dependency_id)
+    __values__` (
+      id: seq_global('dep_id'),
+      name: template('pkg-%d', iter()),
+      dependency_id: ref_rand(set_rand(['deps_level_0'],[])).id
+  )
+
+  deps_level_2(type: exec_batch, count: 20) `INSERT INTO dependencies (id, name, dependency_id)
+    __values__` (
+      id: seq_global('dep_id'),
+      name: template('pkg-%d', iter()),
+      dependency_id: ref_rand(set_rand(['deps_level_0', 'deps_level_1'],[])).id
+  )
+}
+
+deseed {
+  truncate_employees(type: exec) `TRUNCATE TABLE employees CASCADE`
+
+  truncate_dependencies(type: exec) `TRUNCATE TABLE dependencies CASCADE`
+}
+
+down {
+  drop_employees(type: exec) `DROP TABLE IF EXISTS employees`
+
+  drop_dependencies(type: exec) `DROP TABLE IF EXISTS dependencies`
+}

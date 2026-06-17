@@ -1,0 +1,34 @@
+include 'shared/globals.edg'
+include 'shared/schema_mysql.edg'
+include 'shared/teardown_mysql.edg'
+include 'shared/run_queries_mysql.edg'
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
+    __values__` (gen('email'))
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2, c.id
+    FROM customer c
+    ORDER BY c.id
+    LIMIT $3 OFFSET $1` (
+      batch(customers / batch_size, batch_size),
+      initial_balance,
+      batch_size
+  )
+}
+
+deseed {
+  delete_account(type: exec) `DELETE FROM account`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY RAND()`
+}
+
+weights {
+  check_balance  = 50
+  credit_account = 50
+}

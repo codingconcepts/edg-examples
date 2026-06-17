@@ -1,0 +1,45 @@
+let contacts   = 10000
+let batch_size = 1000
+
+up {
+  create_contact(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE contact (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          name VARCHAR2(255) NOT NULL,
+          email VARCHAR2(255),
+          phone VARCHAR2(50),
+          PRIMARY KEY (id),
+          CHECK (
+            (email IS NOT NULL AND phone IS NULL) OR
+            (email IS NULL AND phone IS NOT NULL)
+          )
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_contact(type: exec) `TRUNCATE TABLE contact`
+
+  populate_contact(type: exec_batch, count: contacts, size: 100) `INSERT ALL __values__(contact(name, email, phone))` (
+      gen('name'),
+      bool(),
+      cond(arg(1), gen('email'), nil),
+      cond(! arg(1), gen('phone'), nil)
+  )
+}
+
+deseed {
+  truncate_contact(type: exec) `TRUNCATE TABLE contact`
+}
+
+down {
+  drop_contact(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE contact CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}

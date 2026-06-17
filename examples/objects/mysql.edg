@@ -1,0 +1,64 @@
+let orders = 1000
+
+object order {
+  email      = gen('email')
+  product    = gen('productname')
+  quantity   = int(uniform(1, 100))
+  ordered_at = timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z')
+}
+
+up {
+  create_order(type: exec) `CREATE TABLE IF NOT EXISTS ``order`` (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      email VARCHAR(255) NOT NULL,
+      product VARCHAR(255) NOT NULL,
+      quantity INT NOT NULL,
+      ordered_at DATETIME NOT NULL
+    )`
+}
+
+seed {
+  populate_order(type: exec_batch, count: orders, size: 100, object: order) `INSERT INTO ``order`` (email, product, quantity, ordered_at)
+    __values__`
+}
+
+deseed {
+  delete_order(type: exec) `DELETE FROM ``order```
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS ``order```
+}
+
+init {
+  fetch_orders(type: query) `SELECT id FROM ``order```
+}
+
+run {
+  insert_order_row(type: exec, object: order) `INSERT INTO ``order`` (email, product, quantity, ordered_at)
+    VALUES (?, ?, ?, ?)`
+
+  insert_order_field(type: exec, object: order) `INSERT INTO ``order`` (email, product, quantity, ordered_at)
+    VALUES (?, ?, ?, ?)` (
+      field('email'),
+      field('product'),
+      field('quantity'),
+      field('ordered_at')
+  )
+
+  insert_order_obj(type: exec) `INSERT INTO ``order`` (email, product, quantity, ordered_at)
+    VALUES (?, ?, ?, ?)` (
+      obj('order', 'email'),
+      obj('order', 'product'),
+      obj('order', 'quantity'),
+      obj('order', 'ordered_at')
+  )
+
+  insert_order_dot(type: exec) `INSERT INTO ``order`` (email, product, quantity, ordered_at)
+    VALUES (?, ?, ?, ?)` (
+      obj('order').email,
+      obj('order').product,
+      obj('order').quantity,
+      obj('order').ordered_at
+  )
+}

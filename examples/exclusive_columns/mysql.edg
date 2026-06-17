@@ -1,0 +1,33 @@
+let contacts   = 10000
+let batch_size = 1000
+
+up {
+  create_contact(type: exec) `CREATE TABLE IF NOT EXISTS contact (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255),
+      phone VARCHAR(50),
+      CHECK (
+        (email IS NOT NULL AND phone IS NULL) OR
+        (email IS NULL AND phone IS NOT NULL)
+      )
+    )`
+}
+
+seed {
+  populate_contact(type: exec_batch, count: contacts, size: batch_size) `INSERT INTO contact (name, email, phone)
+    __values__` (
+      gen('name'),
+      bool(),
+      cond(arg(1), gen('email'), nil),
+      cond(! arg(1), gen('phone'), nil)
+  )
+}
+
+deseed {
+  delete_contact(type: exec) `DELETE FROM contact`
+}
+
+down {
+  drop_contact(type: exec) `DROP TABLE IF EXISTS contact`
+}

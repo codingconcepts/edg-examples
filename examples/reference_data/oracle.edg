@@ -1,0 +1,45 @@
+let customers = 100
+
+ref regions [
+  {cities: '[a b c]', name: 'us'}
+  {cities: '[d e f]', name: 'eu'}
+  {cities: '[g h i]', name: 'ap'}
+]
+
+up {
+  create_customer(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE customer (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          email VARCHAR2(255) NOT NULL,
+          region VARCHAR2(50) NOT NULL,
+          city VARCHAR2(50) NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_customer(type: exec) `TRUNCATE TABLE customer`
+
+  populate_customer(type: exec_batch, count: customers, size: 10) `INSERT ALL __values__(customer(email, region, city))` (
+      gen('email'),
+      ref_same('regions').name,
+      set_rand(ref_same('regions').cities,[])
+  )
+}
+
+deseed {
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+}
+
+down {
+  drop_customer(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}

@@ -1,0 +1,68 @@
+let orders = 1000
+
+object order {
+  email      = gen('email')
+  product    = gen('productname')
+  quantity   = int(uniform(1, 100))
+  ordered_at = timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z')
+}
+
+up {
+  create_order(type: exec) `CREATE TABLE IF NOT EXISTS "order" (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      product STRING NOT NULL,
+      quantity INT NOT NULL,
+      ordered_at TIMESTAMPTZ NOT NULL
+    )`
+}
+
+seed {
+  populate_order_columns(type: exec_batch, count: orders / 2, size: 100, object: order) `INSERT INTO "order"
+    __columns__
+    __values__`
+
+  populate_order(type: exec_batch, count: orders / 2, size: 100, object: order) `INSERT INTO "order" (email, product, quantity, ordered_at)
+    __values__`
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE "order" CASCADE`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS "order"`
+}
+
+init {
+  fetch_orders(type: query) `SELECT id FROM "order"`
+}
+
+run {
+  insert_order_row(type: exec, object: order) `INSERT INTO "order" (email, product, quantity, ordered_at)
+    VALUES ($1, $2, $3, $4)`
+
+  insert_order_field(type: exec, object: order) `INSERT INTO "order" (email, product, quantity, ordered_at)
+    VALUES ($1, $2, $3, $4)` (
+      field('email'),
+      field('product'),
+      field('quantity'),
+      field('ordered_at')
+  )
+
+  insert_order_obj(type: exec) `INSERT INTO "order" (email, product, quantity, ordered_at)
+    VALUES ($1, $2, $3, $4)` (
+      obj('order', 'email'),
+      obj('order', 'product'),
+      obj('order', 'quantity'),
+      obj('order', 'ordered_at')
+  )
+
+  insert_order_dot(type: exec) `INSERT INTO "order" (email, product, quantity, ordered_at)
+    VALUES ($1, $2, $3, $4)` (
+      obj('order').email,
+      obj('order').product,
+      obj('order').quantity,
+      obj('order').ordered_at
+  )
+}

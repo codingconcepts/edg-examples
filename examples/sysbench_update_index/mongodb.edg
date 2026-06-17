@@ -1,0 +1,33 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_sbtest1(type: exec) `{"create": "sbtest1"}`
+}
+
+seed {
+  populate_sbtest1(type: exec_batch, count: records, size: batch_size) `{"insert": "sbtest1", "documents": [{"_id": $1, "k": $2, "c": "$3", "pad": "$4"}]}` (
+      seq(1, 1),
+      gen('number:0,10000'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+
+  create_idx_k(type: exec) `{"createIndexes": "sbtest1", "indexes": [{"key": {"k": 1}, "name": "k_1"}]}`
+}
+
+deseed {
+  delete_sbtest1(type: exec) `{"delete": "sbtest1", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_sbtest1(type: exec) `{"drop": "sbtest1"}`
+}
+
+run {
+  update_index(type: exec) `{"update": "sbtest1", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"k": 1}}}]}` (gen('number:1,' + string(records)))
+}

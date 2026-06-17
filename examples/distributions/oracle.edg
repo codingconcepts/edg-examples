@@ -1,0 +1,70 @@
+let rows       = 10000
+let batch_size = 1000
+
+up {
+  create_distributions(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE distributions (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          dist_type VARCHAR2(50) NOT NULL,
+          value NUMBER NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_distributions(type: exec) `TRUNCATE TABLE distributions`
+
+  seed_uniform `INSERT INTO distributions (dist_type, value)
+    SELECT 'uniform', DBMS_RANDOM.VALUE * 100
+    FROM DUAL
+    CONNECT BY LEVEL <= $2` (
+      batch(rows / batch_size),
+      batch_size
+  )
+}
+
+deseed {
+  truncate_distributions(type: exec) `TRUNCATE TABLE distributions`
+}
+
+down {
+  drop_distributions(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE distributions CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+weights {
+  insert_exponential = 20
+  insert_lognormal   = 20
+  insert_normal      = 20
+  insert_pareto      = 20
+  insert_uniform     = 20
+  insert_zipfian     = 20
+}
+
+run {
+  insert_uniform(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('uniform', :1)` (uniform(0, 100))
+
+  insert_zipfian(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('zipfian', :1)` (zipf(2.0, 1.0, 99))
+
+  insert_normal(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('normal', :1)` (norm_f(50, 15, 0, 100, 2))
+
+  insert_exponential(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('exponential', :1)` (exp_f(0.5, 0, 100, 2))
+
+  insert_lognormal(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('lognormal', :1)` (lognorm_f(2.0, 0.5, 0, 100, 2))
+
+  insert_pareto(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('pareto', :1)` (pareto(2.0, 99))
+}

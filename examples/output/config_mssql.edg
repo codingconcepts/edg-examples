@@ -1,0 +1,54 @@
+let customers  = 10
+let batch_size = 5
+
+seq customer_id(start: 1, step: 1)
+
+seq order_id(start: 1, step: 1)
+
+up {
+  create_customer `IF OBJECT_ID('customer', 'U') IS NULL
+    CREATE TABLE customer (
+      id INT PRIMARY KEY,
+      name NVARCHAR(255) NOT NULL,
+      email NVARCHAR(255) NOT NULL
+    )`
+
+  create_order `IF OBJECT_ID('purchase_order', 'U') IS NULL
+    CREATE TABLE purchase_order (
+      id INT PRIMARY KEY,
+      customer_id INT NOT NULL,
+      amount DECIMAL(10,2) NOT NULL,
+      status NVARCHAR(255) NOT NULL
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers) `INSERT INTO customer (id, name, email)
+    __values__` (
+      id: seq_global('customer_id'),
+      name: gen('name'),
+      email: gen('email')
+  )
+
+  populate_order(type: exec_batch, count: customers * 3) `INSERT INTO purchase_order (id, customer_id, amount, status)
+    __values__` (
+      id: seq_global('order_id'),
+      customer_id: seq_rand('customer_id'),
+      amount: uniform_f(9.99, 499.99, 2),
+      status: set_rand(['pending', 'shipped', 'delivered'],[])
+  )
+}
+
+deseed {
+  delete_orders `DELETE FROM purchase_order`
+
+  delete_customers `DELETE FROM customer`
+}
+
+down {
+  drop_order `IF OBJECT_ID('purchase_order', 'U') IS NOT NULL
+    DROP TABLE purchase_order`
+
+  drop_customer `IF OBJECT_ID('customer', 'U') IS NOT NULL
+    DROP TABLE customer`
+}

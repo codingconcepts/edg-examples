@@ -1,0 +1,77 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_sbtest1(type: exec) `CREATE TABLE IF NOT EXISTS edg.sbtest1 (
+      id INT PRIMARY KEY,
+      k INT,
+      c TEXT,
+      pad TEXT
+    )`
+}
+
+seed {
+  populate_sbtest1(type: exec_batch, count: records, size: 50) `INSERT INTO edg.sbtest1 (id, k, c, pad) VALUES ($1, $2, $3, $4)` (
+      seq(1, 1),
+      gen('number:0,9999'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}
+
+deseed {
+  truncate_sbtest1(type: exec) `TRUNCATE edg.sbtest1`
+}
+
+down {
+  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS edg.sbtest1`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+weights {
+  delete_insert    = 10
+  point_select     = 50
+  range_distinct   = 5
+  range_order      = 5
+  range_select     = 5
+  range_sum        = 5
+  update_index     = 10
+  update_non_index = 10
+}
+
+run {
+  point_select(type: query) `SELECT c FROM edg.sbtest1 WHERE id = $1` (gen('number:1,' + string(records)))
+
+  range_select(type: query) `SELECT c FROM edg.sbtest1 WHERE id = $1` (gen('number:1,' + string(records)))
+
+  range_sum(type: query) `SELECT k FROM edg.sbtest1 WHERE id = $1` (gen('number:1,' + string(records)))
+
+  range_order(type: query) `SELECT c FROM edg.sbtest1 WHERE id = $1` (gen('number:1,' + string(records)))
+
+  range_distinct(type: query) `SELECT c FROM edg.sbtest1 WHERE id = $1` (gen('number:1,' + string(records)))
+
+  update_index(type: exec) `UPDATE edg.sbtest1 SET k = $2 WHERE id = $1` (
+      gen('number:1,' + string(records)),
+      gen('number:0,9999')
+  )
+
+  update_non_index(type: exec) `UPDATE edg.sbtest1 SET c = $2 WHERE id = $1` (
+      gen('number:1,' + string(records)),
+      regex('[a-zA-Z0-9]{120}')
+  )
+
+  delete_insert(type: exec) `INSERT INTO edg.sbtest1 (id, k, c, pad) VALUES ($1, $2, $3, $4)` (
+      gen('number:1,' + string(records)),
+      gen('number:0,9999'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}

@@ -1,0 +1,49 @@
+let rows       = 100
+let batch_size = 50
+
+seq global_num_1(start: 1, step: 1)
+
+seq global_num_10(start: 1, step: 10)
+
+seq global_alpha_3(length: 3)
+
+seq global_alpha_4(length: 4)
+
+up {
+  create_table `CREATE TABLE IF NOT EXISTS sequences (
+      id INT PRIMARY KEY DEFAULT unique_rowid(),
+      worker_num INT NOT NULL,
+      worker_alpha STRING NOT NULL,
+      global_num_1 INT NOT NULL,
+      global_num_10 INT NOT NULL,
+      global_alpha_3 STRING NOT NULL,
+      global_alpha_4 STRING NOT NULL
+    )`
+}
+
+seed {
+  seed_sequences(type: exec_batch, count: rows, size: batch_size) `INSERT INTO sequences (
+      worker_num,
+      worker_alpha,
+      global_num_1,
+      global_num_10,
+      global_alpha_3,
+      global_alpha_4
+    )
+    __values__` (
+      seq(1, 1),
+      seq_alpha(3),
+      seq_global('global_num_1'),
+      seq_global('global_num_10'),
+      seq_alpha_global('global_alpha_3'),
+      upper(seq_alpha_global('global_alpha_4'))
+  )
+}
+
+deseed {
+  delete_sequences(type: exec) `DELETE FROM sequences WHERE true`
+}
+
+down {
+  drop_table `DROP TABLE IF EXISTS sequences`
+}

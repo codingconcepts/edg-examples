@@ -1,0 +1,77 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_sbtest1(type: exec) `{"create": "sbtest1"}`
+
+  create_idx_k(type: exec) `{"createIndexes": "sbtest1", "indexes": [{"key": {"k": 1}, "name": "k_1"}]}`
+}
+
+seed {
+  populate_sbtest1(type: exec_batch, count: records, size: batch_size) `{"insert": "sbtest1", "documents": [{"_id": $1, "k": $2, "c": "$3", "pad": "$4"}]}` (
+      seq(1, 1),
+      gen('number:0,9999'),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}
+
+deseed {
+  delete_sbtest1(type: exec) `{"delete": "sbtest1", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_sbtest1(type: exec) `{"drop": "sbtest1"}`
+}
+
+weights {
+  delete_insert    = 10
+  point_select     = 50
+  range_distinct   = 5
+  range_order      = 5
+  range_select     = 5
+  range_sum        = 5
+  update_index     = 10
+  update_non_index = 10
+}
+
+run {
+  point_select(type: query) `{"find": "sbtest1", "filter": {"_id": $1}}` (gen('number:1,' + string(records)))
+
+  range_select(type: query) `{"find": "sbtest1", "filter": {"_id": {"$gte": $1, "$lte": $2}}}` (
+      gen('number:1,' + string(records)),
+      gen('number:1,' + string(records)) + 99
+  )
+
+  range_sum(type: query) `{"aggregate": "sbtest1", "pipeline": [{"$match": {"_id": {"$gte": $1, "$lte": $2}}}, {"$group": {"_id": null, "total": {"$sum": "$k"}}}], "cursor": {}}` (
+      gen('number:1,' + string(records)),
+      gen('number:1,' + string(records)) + 99
+  )
+
+  range_order(type: query) `{"aggregate": "sbtest1", "pipeline": [{"$match": {"_id": {"$gte": $1, "$lte": $2}}}, {"$sort": {"c": 1}}], "cursor": {}}` (
+      gen('number:1,' + string(records)),
+      gen('number:1,' + string(records)) + 99
+  )
+
+  range_distinct(type: query) `{"aggregate": "sbtest1", "pipeline": [{"$match": {"_id": {"$gte": $1, "$lte": $2}}}, {"$group": {"_id": "$c"}}, {"$sort": {"_id": 1}}], "cursor": {}}` (
+      gen('number:1,' + string(records)),
+      gen('number:1,' + string(records)) + 99
+  )
+
+  update_index(type: exec) `{"update": "sbtest1", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"k": 1}}}]}` (gen('number:1,' + string(records)))
+
+  update_non_index(type: exec) `{"update": "sbtest1", "updates": [{"q": {"_id": $1}, "u": {"$set": {"c": "$2"}}}]}` (
+      gen('number:1,' + string(records)),
+      regex('[a-zA-Z0-9]{120}')
+  )
+
+  delete_insert(type: exec) `{"update": "sbtest1", "updates": [{"q": {"_id": $1}, "u": {"$set": {"k": $1, "c": "$2", "pad": "$3"}}, "upsert": true}]}` (
+      gen('number:1,' + string(records)),
+      regex('[a-zA-Z0-9]{120}'),
+      regex('[a-zA-Z0-9]{60}')
+  )
+}

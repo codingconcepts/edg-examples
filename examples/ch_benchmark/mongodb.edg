@@ -1,0 +1,307 @@
+let warehouses = int(coalesce(env_nil('WAREHOUSES'), 1))
+let districts  = int(coalesce(env_nil('DISTRICTS'), 10))
+let customers  = int(coalesce(env_nil('CUSTOMERS'), 300))
+let orders     = int(coalesce(env_nil('ORDERS'), 300))
+let stock      = int(coalesce(env_nil('STOCK'), 1000))
+let items      = int(coalesce(env_nil('ITEMS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_warehouse(type: exec) `{"create": "warehouse"}`
+
+  create_district(type: exec) `{"create": "district"}`
+
+  create_customer(type: exec) `{"create": "customer"}`
+
+  create_history(type: exec) `{"create": "history"}`
+
+  create_oorder(type: exec) `{"create": "oorder"}`
+
+  create_new_order(type: exec) `{"create": "new_order"}`
+
+  create_order_line(type: exec) `{"create": "order_line"}`
+
+  create_item(type: exec) `{"create": "item"}`
+
+  create_stock(type: exec) `{"create": "stock"}`
+
+  create_nation(type: exec) `{"create": "nation"}`
+
+  create_region(type: exec) `{"create": "region"}`
+
+  create_supplier(type: exec) `{"create": "supplier"}`
+
+  create_idx_customer_name(type: exec) `{"createIndexes": "customer", "indexes": [{"key": {"c_w_id": 1, "c_d_id": 1, "c_last": 1, "c_first": 1}, "name": "idx_customer_name"}]}`
+
+  create_idx_oorder_customer(type: exec) `{"createIndexes": "oorder", "indexes": [{"key": {"o_w_id": 1, "o_d_id": 1, "o_c_id": 1, "o_id": -1}, "name": "idx_oorder_customer"}]}`
+
+  create_idx_district_pk(type: exec) `{"createIndexes": "district", "indexes": [{"key": {"d_w_id": 1, "d_id": 1}, "name": "idx_district_pk", "unique": true}]}`
+
+  create_idx_new_order_pk(type: exec) `{"createIndexes": "new_order", "indexes": [{"key": {"no_w_id": 1, "no_d_id": 1, "no_o_id": 1}, "name": "idx_new_order_pk", "unique": true}]}`
+
+  create_idx_stock_pk(type: exec) `{"createIndexes": "stock", "indexes": [{"key": {"s_w_id": 1, "s_i_id": 1}, "name": "idx_stock_pk", "unique": true}]}`
+
+  create_idx_order_line_delivery(type: exec) `{"createIndexes": "order_line", "indexes": [{"key": {"ol_delivery_d": 1}, "name": "idx_order_line_delivery"}]}`
+
+  create_idx_oorder_carrier(type: exec) `{"createIndexes": "oorder", "indexes": [{"key": {"o_carrier_id": 1}, "name": "idx_oorder_carrier"}]}`
+}
+
+seed {
+  populate_region(type: exec) `{"insert": "region", "documents": [
+      {"_id": 0, "r_regionkey": 0, "r_name": "AFRICA", "r_comment": "ref"},
+      {"_id": 1, "r_regionkey": 1, "r_name": "AMERICA", "r_comment": "ref"},
+      {"_id": 2, "r_regionkey": 2, "r_name": "ASIA", "r_comment": "ref"},
+      {"_id": 3, "r_regionkey": 3, "r_name": "EUROPE", "r_comment": "ref"},
+      {"_id": 4, "r_regionkey": 4, "r_name": "MIDDLE EAST", "r_comment": "ref"}
+    ]}`
+
+  populate_nation(type: exec) `{"insert": "nation", "documents": [
+      {"_id": 0, "n_nationkey": 0, "n_name": "ALGERIA", "n_regionkey": 0, "n_comment": ""},
+      {"_id": 1, "n_nationkey": 1, "n_name": "ARGENTINA", "n_regionkey": 1, "n_comment": ""},
+      {"_id": 2, "n_nationkey": 2, "n_name": "BRAZIL", "n_regionkey": 1, "n_comment": ""},
+      {"_id": 3, "n_nationkey": 3, "n_name": "CANADA", "n_regionkey": 1, "n_comment": ""},
+      {"_id": 4, "n_nationkey": 4, "n_name": "EGYPT", "n_regionkey": 4, "n_comment": ""},
+      {"_id": 5, "n_nationkey": 5, "n_name": "ETHIOPIA", "n_regionkey": 0, "n_comment": ""},
+      {"_id": 6, "n_nationkey": 6, "n_name": "FRANCE", "n_regionkey": 3, "n_comment": ""},
+      {"_id": 7, "n_nationkey": 7, "n_name": "GERMANY", "n_regionkey": 3, "n_comment": ""},
+      {"_id": 8, "n_nationkey": 8, "n_name": "INDIA", "n_regionkey": 2, "n_comment": ""},
+      {"_id": 9, "n_nationkey": 9, "n_name": "INDONESIA", "n_regionkey": 2, "n_comment": ""},
+      {"_id": 10, "n_nationkey": 10, "n_name": "IRAN", "n_regionkey": 4, "n_comment": ""},
+      {"_id": 11, "n_nationkey": 11, "n_name": "IRAQ", "n_regionkey": 4, "n_comment": ""},
+      {"_id": 12, "n_nationkey": 12, "n_name": "JAPAN", "n_regionkey": 2, "n_comment": ""},
+      {"_id": 13, "n_nationkey": 13, "n_name": "JORDAN", "n_regionkey": 4, "n_comment": ""},
+      {"_id": 14, "n_nationkey": 14, "n_name": "KENYA", "n_regionkey": 0, "n_comment": ""},
+      {"_id": 15, "n_nationkey": 15, "n_name": "MOROCCO", "n_regionkey": 0, "n_comment": ""},
+      {"_id": 16, "n_nationkey": 16, "n_name": "MOZAMBIQUE", "n_regionkey": 0, "n_comment": ""},
+      {"_id": 17, "n_nationkey": 17, "n_name": "PERU", "n_regionkey": 1, "n_comment": ""},
+      {"_id": 18, "n_nationkey": 18, "n_name": "CHINA", "n_regionkey": 2, "n_comment": ""},
+      {"_id": 19, "n_nationkey": 19, "n_name": "ROMANIA", "n_regionkey": 3, "n_comment": ""},
+      {"_id": 20, "n_nationkey": 20, "n_name": "SAUDI ARABIA", "n_regionkey": 4, "n_comment": ""},
+      {"_id": 21, "n_nationkey": 21, "n_name": "VIETNAM", "n_regionkey": 2, "n_comment": ""},
+      {"_id": 22, "n_nationkey": 22, "n_name": "RUSSIA", "n_regionkey": 3, "n_comment": ""},
+      {"_id": 23, "n_nationkey": 23, "n_name": "UNITED KINGDOM", "n_regionkey": 3, "n_comment": ""},
+      {"_id": 24, "n_nationkey": 24, "n_name": "UNITED STATES", "n_regionkey": 1, "n_comment": ""}
+    ]}`
+
+  populate_supplier(type: exec_batch, count: 10000, size: batch_size) `{"insert": "supplier", "documents": [{"_id": $1, "su_suppkey": $1, "su_name": "$2", "su_address": "$3", "su_nationkey": $4, "su_phone": "$5", "su_acctbal": $6, "su_comment": "$7"}]}` (
+      iter(),
+      regex('[a-zA-Z]{15,25}'),
+      regex('[a-zA-Z]{15,40}'),
+      gen('number:0,24'),
+      regex('[a-zA-Z]{15,15}'),
+      uniform_f(-1000.00, 9000.00, 2),
+      regex('[a-zA-Z]{10,30}')
+  )
+
+  populate_item(type: exec_batch, count: items, size: batch_size) `{"insert": "item", "documents": [{"_id": $1, "i_id": $1, "i_im_id": $2, "i_name": "$3", "i_price": $4, "i_data": "$5"}]}` (
+      iter(),
+      gen('number:1,10000'),
+      regex('[a-zA-Z]{6,24}'),
+      uniform_f(1.00, 100.00, 2),
+      regex('[a-zA-Z]{26,50}')
+  )
+
+  populate_warehouse(type: exec_batch, count: warehouses, size: batch_size) `{"insert": "warehouse", "documents": [{"_id": $1, "w_id": $1, "w_name": "$2", "w_street_1": "$3", "w_street_2": "$4", "w_city": "$5", "w_state": "$6", "w_zip": "$7", "w_tax": $8, "w_ytd": 300000}]}` (
+      iter(),
+      regex('[a-zA-Z]{6,10}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{2,2}'),
+      regex('[a-zA-Z]{9,9}'),
+      uniform_f(0.0000, 0.2000, 4)
+  )
+
+  fetch_warehouses `{"find": "warehouse", "filter": {}, "projection": {"w_id": 1}}`
+
+  populate_district(type: exec_batch, count: districts, size: batch_size) `{"insert": "district", "documents": [{"d_w_id": $1, "d_id": $2, "d_name": "$3", "d_street_1": "$4", "d_street_2": "$5", "d_city": "$6", "d_state": "$7", "d_zip": "$8", "d_tax": $9, "d_ytd": 30000, "d_next_o_id": 3001}]}` (
+      ref_rand('fetch_warehouses').w_id,
+      iter(),
+      regex('[a-zA-Z]{6,10}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{2,2}'),
+      regex('[a-zA-Z]{9,9}'),
+      uniform_f(0.0000, 0.2000, 4)
+  )
+
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `{"insert": "customer", "documents": [{"c_w_id": $1, "c_d_id": $2, "c_id": $3, "c_first": "$4", "c_middle": "OE", "c_last": "$5", "c_street_1": "$6", "c_street_2": "$7", "c_city": "$8", "c_state": "$9", "c_zip": "$10", "c_phone": "$11", "c_since": {"$date": "2024-01-01T00:00:00Z"}, "c_credit": "GC", "c_credit_lim": 50000, "c_discount": $12, "c_balance": -10, "c_ytd_payment": 10, "c_payment_cnt": 1, "c_delivery_cnt": 0, "c_data": "$13"}]}` (
+      ref_rand('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      iter(),
+      regex('[a-zA-Z]{6,16}'),
+      regex('[a-zA-Z]{6,16}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{10,20}'),
+      regex('[a-zA-Z]{2,2}'),
+      regex('[a-zA-Z]{9,9}'),
+      regex('[a-zA-Z]{16,16}'),
+      uniform_f(0.0000, 0.5000, 4),
+      regex('[a-zA-Z]{300,500}')
+  )
+
+  populate_history(type: exec_batch, count: customers, size: batch_size) `{"insert": "history", "documents": [{"_id": {"$oid": "$1"}, "h_c_id": $2, "h_c_d_id": $3, "h_c_w_id": $4, "h_d_id": $3, "h_w_id": $4, "h_date": {"$date": "2024-01-01T00:00:00Z"}, "h_amount": 10, "h_data": "$5"}]}` (
+      objectid(),
+      iter(),
+      gen('number:1,10'),
+      ref_rand('fetch_warehouses').w_id,
+      regex('[a-zA-Z]{12,24}')
+  )
+
+  populate_oorder(type: exec_batch, count: orders, size: batch_size) `{"insert": "oorder", "documents": [{"o_w_id": $1, "o_d_id": $2, "o_id": $3, "o_c_id": $4, "o_entry_d": {"$date": "2024-01-01T00:00:00Z"}, "o_carrier_id": 1, "o_ol_cnt": $5, "o_all_local": 1}]}` (
+      ref_rand('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      iter(),
+      gen('number:1,3000'),
+      gen('number:5,15')
+  )
+
+  populate_new_order(type: exec_batch, count: districts, size: batch_size) `{"insert": "new_order", "documents": [{"no_w_id": $1, "no_d_id": $2, "no_o_id": $3}]}` (
+      ref_rand('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      iter()
+  )
+
+  populate_order_line(type: exec_batch, count: orders, size: batch_size) `{"insert": "order_line", "documents": [{"ol_w_id": $1, "ol_d_id": $2, "ol_o_id": $3, "ol_number": $4, "ol_i_id": $5, "ol_supply_w_id": $1, "ol_delivery_d": {"$date": "2024-01-01T00:00:00Z"}, "ol_quantity": 5, "ol_amount": $6, "ol_dist_info": "$7"}]}` (
+      ref_rand('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      gen('number:1,3000'),
+      gen('number:1,15'),
+      gen('number:1,100000'),
+      uniform_f(0.00, 9999.99, 2),
+      regex('[a-zA-Z]{24,24}')
+  )
+
+  populate_stock(type: exec_batch, count: stock, size: batch_size) `{"insert": "stock", "documents": [{"s_w_id": $1, "s_i_id": $2, "s_quantity": $3, "s_dist_01": "$4", "s_dist_02": "$5", "s_dist_03": "$6", "s_dist_04": "$7", "s_dist_05": "$8", "s_dist_06": "$9", "s_dist_07": "$10", "s_dist_08": "$11", "s_dist_09": "$12", "s_dist_10": "$13", "s_ytd": 0, "s_order_cnt": 0, "s_remote_cnt": 0, "s_data": "$14"}]}` (
+      ref_rand('fetch_warehouses').w_id,
+      iter(),
+      gen('number:10,100'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{24,24}'),
+      regex('[a-zA-Z]{26,50}')
+  )
+}
+
+deseed {
+  delete_order_line(type: exec) `{"delete": "order_line", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_new_order(type: exec) `{"delete": "new_order", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_oorder(type: exec) `{"delete": "oorder", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_history(type: exec) `{"delete": "history", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_stock(type: exec) `{"delete": "stock", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_customer(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_district(type: exec) `{"delete": "district", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_warehouse(type: exec) `{"delete": "warehouse", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_item(type: exec) `{"delete": "item", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_supplier(type: exec) `{"delete": "supplier", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_nation(type: exec) `{"delete": "nation", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_region(type: exec) `{"delete": "region", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_order_line(type: exec) `{"drop": "order_line"}`
+
+  drop_new_order(type: exec) `{"drop": "new_order"}`
+
+  drop_oorder(type: exec) `{"drop": "oorder"}`
+
+  drop_history(type: exec) `{"drop": "history"}`
+
+  drop_stock(type: exec) `{"drop": "stock"}`
+
+  drop_customer(type: exec) `{"drop": "customer"}`
+
+  drop_district(type: exec) `{"drop": "district"}`
+
+  drop_warehouse(type: exec) `{"drop": "warehouse"}`
+
+  drop_item(type: exec) `{"drop": "item"}`
+
+  drop_supplier(type: exec) `{"drop": "supplier"}`
+
+  drop_nation(type: exec) `{"drop": "nation"}`
+
+  drop_region(type: exec) `{"drop": "region"}`
+}
+
+init {
+  fetch_warehouses(type: query) `{"find": "warehouse", "filter": {}, "projection": {"w_id": 1}}`
+}
+
+weights {
+  delivery               = 4
+  new_order              = 36
+  order_status           = 4
+  payment                = 34
+  q11_important_stock    = 5
+  q12_shipping_modes     = 5
+  q1_pricing_summary     = 5
+  q6_forecasting_revenue = 5
+  stock_level            = 2
+}
+
+run {
+  new_order(type: query, wait: 18s) `{"findAndModify": "district", "query": {"d_w_id": $1, "d_id": $2}, "update": {"$inc": {"d_next_o_id": 1}}, "new": true}` (
+      ref_perm('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      nurand(1023, 1, customers / districts),
+      nurand_n(8191, 1, items, 5, 15)
+  )
+
+  payment(type: query, wait: 3s) `{"findAndModify": "customer", "query": {"c_w_id": $1, "c_d_id": $2, "c_id": $3}, "update": {"$inc": {"c_balance": $4, "c_ytd_payment": $4, "c_payment_cnt": 1}}, "new": true}` (
+      ref_perm('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      nurand(1023, 1, customers / districts),
+      gen('number:100,500000')
+  )
+
+  order_status(type: query, wait: 2s) `{"find": "oorder", "filter": {"o_w_id": $1, "o_d_id": $2, "o_c_id": $3}, "sort": {"o_id": -1}, "limit": 1}` (
+      ref_perm('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      nurand(1023, 1, customers / districts)
+  )
+
+  delivery(type: exec, wait: 2s) `{"findAndModify": "new_order", "query": {"no_w_id": $1}, "sort": {"no_d_id": 1, "no_o_id": 1}, "remove": true}` (
+      ref_perm('fetch_warehouses').w_id,
+      gen('number:1,10')
+  )
+
+  stock_level(type: query, wait: 2s) `{"aggregate": "stock", "pipeline": [{"$match": {"s_w_id": $1, "s_quantity": {"$lt": $3}}}, {"$count": "low_stock"}], "cursor": {}}` (
+      ref_perm('fetch_warehouses').w_id,
+      gen('number:1,10'),
+      gen('number:10,20')
+  )
+
+  q1_pricing_summary(type: query) `{"aggregate": "order_line", "pipeline": [{"$match": {"ol_delivery_d": {"$ne": null}}}, {"$group": {"_id": "$ol_number", "sum_qty": {"$sum": "$ol_quantity"}, "sum_amount": {"$sum": "$ol_amount"}, "avg_qty": {"$avg": "$ol_quantity"}, "avg_amount": {"$avg": "$ol_amount"}, "count_order": {"$sum": 1}}}, {"$sort": {"_id": 1}}], "cursor": {}}`
+
+  q6_forecasting_revenue(type: query) `{"aggregate": "order_line", "pipeline": [{"$match": {"ol_delivery_d": {"$ne": null}, "ol_quantity": {"$gte": 1, "$lte": 100000}}}, {"$group": {"_id": null, "revenue": {"$sum": "$ol_amount"}}}], "cursor": {}}`
+
+  q11_important_stock(type: query) `{"aggregate": "stock", "pipeline": [{"$match": {"s_w_id": $1}}, {"$group": {"_id": "$s_i_id", "total_qty": {"$sum": "$s_quantity"}}}, {"$sort": {"total_qty": -1}}, {"$limit": 100}], "cursor": {}}` (ref_perm('fetch_warehouses').w_id)
+
+  q12_shipping_modes(type: query) `{"aggregate": "oorder", "pipeline": [{"$group": {"_id": "$o_ol_cnt", "high_line_count": {"$sum": {"$cond": [{"$and": [{"$gte": ["$o_carrier_id", 1]}, {"$lte": ["$o_carrier_id", 5]}]}, 1, 0]}}, "low_line_count": {"$sum": {"$cond": [{"$or": [{"$gt": ["$o_carrier_id", 5]}, {"$eq": ["$o_carrier_id", null]}]}, 1, 0]}}}}, {"$sort": {"_id": 1}}], "cursor": {}}`
+}

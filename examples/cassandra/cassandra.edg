@@ -1,0 +1,47 @@
+let customers       = 100
+let initial_balance = 10000
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_customer(type: exec) `CREATE TABLE IF NOT EXISTS edg.customer (
+      id UUID PRIMARY KEY,
+      email TEXT
+    )`
+
+  create_account(type: exec) `CREATE TABLE IF NOT EXISTS edg.account (
+      id UUID PRIMARY KEY,
+      customer_id UUID,
+      balance DOUBLE
+    )`
+}
+
+seed {
+  insert_customer(type: exec_batch, count: customers) `INSERT INTO edg.customer (id, email) VALUES ($1, $2)` (
+      gen('uuid'),
+      gen('email')
+  )
+
+  fetch_customers `SELECT id FROM edg.customer`
+
+  insert_account(type: exec_batch, count: customers) `INSERT INTO edg.account (id, customer_id, balance) VALUES ($1, $2, $3)` (
+      gen('uuid'),
+      ref_rand('fetch_customers').id,
+      initial_balance
+  )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE edg.account`
+
+  truncate_customer(type: exec) `TRUNCATE edg.customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}

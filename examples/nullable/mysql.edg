@@ -1,0 +1,30 @@
+let users      = 10000
+let batch_size = 1000
+
+up {
+  create_user `CREATE TABLE IF NOT EXISTS app_user (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(50),
+      bio TEXT,
+      referred_by CHAR(36)
+    )`
+}
+
+seed {
+  populate_user(type: exec_batch, count: users, size: batch_size) `INSERT INTO app_user (email, phone, bio, referred_by)
+    __values__` (
+      gen('email'),
+      nullable(gen('phone'), 0.3),
+      nullable(gen('sentence:5'), 0.5),
+      nullable(uuid_v4(), 0.8)
+  )
+}
+
+deseed {
+  delete_user(type: exec) `DELETE FROM app_user`
+}
+
+down {
+  drop_user(type: exec) `DROP TABLE IF EXISTS app_user`
+}

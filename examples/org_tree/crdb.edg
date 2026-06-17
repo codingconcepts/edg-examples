@@ -1,0 +1,65 @@
+let total_vps       = 5
+let total_directors = 15
+let total_managers  = 50
+let total_ics       = 200
+
+seq emp_id(start: 1, step: 1)
+
+up {
+  create_employees `CREATE TABLE IF NOT EXISTS employees (
+      id INT PRIMARY KEY,
+      name STRING NOT NULL,
+      title STRING NOT NULL,
+      manager_id INT REFERENCES employees(id)
+    )`
+}
+
+seed {
+  ceo(type: exec) `INSERT INTO employees (id, name, title, manager_id)
+    VALUES ($1, $2, $3, $4)` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      title: const('CEO'),
+      manager_id: const(nil)
+  )
+
+  vps(type: exec_batch, count: total_vps) `INSERT INTO employees (id, name, title, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      title: const('VP'),
+      manager_id: ref_rand('ceo').id
+  )
+
+  directors(type: exec_batch, count: total_directors) `INSERT INTO employees (id, name, title, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      title: const('Director'),
+      manager_id: ref_rand('vps').id
+  )
+
+  managers(type: exec_batch, count: total_managers) `INSERT INTO employees (id, name, title, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      title: const('Manager'),
+      manager_id: ref_rand('directors').id
+  )
+
+  ics(type: exec_batch, count: total_ics) `INSERT INTO employees (id, name, title, manager_id)
+    __values__` (
+      id: seq_global('emp_id'),
+      name: gen('name'),
+      title: const('IC'),
+      manager_id: ref_rand('managers').id
+  )
+}
+
+deseed {
+  truncate_employees(type: exec) `TRUNCATE TABLE employees CASCADE`
+}
+
+down {
+  drop_employees(type: exec) `DROP TABLE IF EXISTS employees`
+}

@@ -1,0 +1,53 @@
+let articles   = 1000
+let batch_size = 100
+
+up {
+  create_article(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE article (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          title VARCHAR2(500) NOT NULL,
+          embedding_uniform VARCHAR2(4000) NOT NULL,
+          embedding_zipf VARCHAR2(4000) NOT NULL,
+          embedding_norm VARCHAR2(4000) NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_article(type: exec) `TRUNCATE TABLE article`
+
+  populate_article(type: exec_batch, count: articles, size: 100) `INSERT ALL __values__(article(title, embedding_uniform, embedding_zipf, embedding_norm))` (
+      gen('sentence:3'),
+      vector(32, 5, 0.1),
+      vector_zipf(32, 5, 0.1, 2.0, 1.0),
+      vector_norm(32, 5, 0.1, 2.0, 0.8)
+  )
+}
+
+deseed {
+  truncate_article(type: exec) `TRUNCATE TABLE article`
+}
+
+down {
+  drop_article(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE article CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+run {
+  insert_article(type: exec) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm)
+    VALUES ($1, $2, $3, $4)` (
+      gen('sentence:3'),
+      vector(32, 5, 0.1),
+      vector_zipf(32, 5, 0.1, 2.0, 1.0),
+      vector_norm(32, 5, 0.1, 2.0, 0.8)
+  )
+}

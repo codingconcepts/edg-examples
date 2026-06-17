@@ -1,0 +1,76 @@
+let orders = 1000
+
+object order {
+  email      = gen('email')
+  product    = gen('productname')
+  quantity   = int(uniform(1, 100))
+  ordered_at = timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z')
+}
+
+up {
+  create_order(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE order_tbl (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          email VARCHAR2(255) NOT NULL,
+          product VARCHAR2(255) NOT NULL,
+          quantity NUMBER NOT NULL,
+          ordered_at TIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_order(type: exec) `TRUNCATE TABLE order_tbl`
+
+  populate_order(type: exec_batch, count: orders, size: 100, object: order) `INSERT ALL __values__(order_tbl(email, product, quantity, ordered_at))`
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE order_tbl`
+}
+
+down {
+  drop_order(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE order_tbl CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+init {
+  fetch_orders(type: query) `SELECT id FROM order_tbl`
+}
+
+run {
+  insert_order_row(type: exec, object: order) `INSERT INTO order_tbl (email, product, quantity, ordered_at)
+    VALUES (:1, :2, :3, :4)`
+
+  insert_order_field(type: exec, object: order) `INSERT INTO order_tbl (email, product, quantity, ordered_at)
+    VALUES (:1, :2, :3, :4)` (
+      field('email'),
+      field('product'),
+      field('quantity'),
+      field('ordered_at')
+  )
+
+  insert_order_obj(type: exec) `INSERT INTO order_tbl (email, product, quantity, ordered_at)
+    VALUES (:1, :2, :3, :4)` (
+      obj('order', 'email'),
+      obj('order', 'product'),
+      obj('order', 'quantity'),
+      obj('order', 'ordered_at')
+  )
+
+  insert_order_dot(type: exec) `INSERT INTO order_tbl (email, product, quantity, ordered_at)
+    VALUES (:1, :2, :3, :4)` (
+      obj('order').email,
+      obj('order').product,
+      obj('order').quantity,
+      obj('order').ordered_at
+  )
+}

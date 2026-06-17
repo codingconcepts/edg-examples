@@ -1,0 +1,232 @@
+let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+
+expect {
+  error_rate < 25
+  lost_update `SELECT CAST(COALESCE(SUM(value), 0) AS NUMBER(19)) AS counter_total FROM counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM account` n = = accounts
+  dirty_write `SELECT CAST(COALESCE(SUM(balance), 0) AS NUMBER(19)) AS total FROM account` total = = accounts * initial_balance
+  write_skew `SELECT CAST(COALESCE(SUM(version), 0) AS NUMBER(19)) AS total_versions FROM cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n = = accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = 1` on_duty >= 1
+}
+
+up {
+  create_account(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE account (
+          id NUMBER(19) PRIMARY KEY,
+          balance NUMBER(19) NOT NULL,
+          version NUMBER(19) DEFAULT 0 NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_ledger(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE ledger (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          account_id NUMBER(19) NOT NULL,
+          amount NUMBER(19) NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_counter(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE counter (
+          id NUMBER(19) PRIMARY KEY,
+          value NUMBER(19) DEFAULT 0 NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_oncall(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE oncall (
+          doctor_id NUMBER(19) PRIMARY KEY,
+          on_duty NUMBER(1) DEFAULT 1 NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_blind_write(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE blind_write (
+          id NUMBER(19) PRIMARY KEY,
+          value NUMBER(19) DEFAULT 0 NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_cas(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE cas (
+          id NUMBER(19) PRIMARY KEY,
+          value NUMBER(19) DEFAULT 0 NOT NULL,
+          version NUMBER(19) DEFAULT 0 NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  populate_accounts `MERGE INTO account tgt
+    USING (SELECT LEVEL AS id, $2 AS balance FROM DUAL CONNECT BY LEVEL <= $1) src
+    ON (tgt.id = src.id)
+    WHEN NOT MATCHED THEN INSERT (id, balance) VALUES (src.id, src.balance)` (
+      accounts,
+      initial_balance
+  )
+
+  populate_counters `MERGE INTO counter tgt
+    USING (SELECT 1 AS id, 0 AS value FROM DUAL UNION ALL SELECT 2, 0 FROM DUAL) src
+    ON (tgt.id = src.id)
+    WHEN NOT MATCHED THEN INSERT (id, value) VALUES (src.id, src.value)`
+
+  populate_oncall `MERGE INTO oncall tgt
+    USING (SELECT 1 AS doctor_id, 1 AS on_duty FROM DUAL
+           UNION ALL SELECT 2, 1 FROM DUAL
+           UNION ALL SELECT 3, 1 FROM DUAL) src
+    ON (tgt.doctor_id = src.doctor_id)
+    WHEN NOT MATCHED THEN INSERT (doctor_id, on_duty) VALUES (src.doctor_id, src.on_duty)`
+
+  populate_blind_write `MERGE INTO blind_write tgt
+    USING (SELECT LEVEL AS id, 0 AS value FROM DUAL CONNECT BY LEVEL <= $1) src
+    ON (tgt.id = src.id)
+    WHEN NOT MATCHED THEN INSERT (id, value) VALUES (src.id, src.value)` (accounts)
+
+  populate_cas `MERGE INTO cas tgt
+    USING (SELECT LEVEL AS id, 0 AS value FROM DUAL CONNECT BY LEVEL <= $1) src
+    ON (tgt.id = src.id)
+    WHEN NOT MATCHED THEN INSERT (id, value) VALUES (src.id, src.value)` (accounts)
+}
+
+deseed {
+  truncate_ledger(type: exec) `TRUNCATE TABLE ledger`
+
+  reset_accounts(type: exec) `UPDATE account SET balance = $1, version = 0` (initial_balance)
+
+  reset_counters(type: exec) `UPDATE counter SET value = 0`
+
+  reset_oncall(type: exec) `UPDATE oncall SET on_duty = 1`
+
+  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0`
+
+  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0`
+}
+
+down {
+  drop_ledger(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE ledger CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_account(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE account CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_oncall(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE oncall CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_counter(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE counter CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_blind_write(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE blind_write CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_cas(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE cas CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+weights {
+  blind_write         = 10
+  cas_update          = 10
+  check_total_balance = 10
+  count_ledger        = 10
+  go_off_duty         = 10
+  increment_counter   = 10
+  insert_ledger       = 10
+  transfer            = 10
+}
+
+run {
+  count_ledger(type: query) `SELECT COUNT(*) AS entries, COALESCE(SUM(amount), 0) AS total
+    FROM ledger
+    WHERE account_id = :1` (gen('number:1,' + string(accounts)))
+
+  insert_ledger(type: exec) `INSERT INTO ledger (account_id, amount)
+    VALUES (:1, :2)` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,500')
+  )
+
+  increment_counter(type: exec) `UPDATE counter SET value = value + 1 WHERE id = :1` (gen('number:1,2'))
+
+  transfer(type: exec) `DECLARE
+      v_from_id NUMBER := :1;
+      v_to_id NUMBER := :2;
+      v_amount NUMBER := :3;
+    BEGIN
+      UPDATE account SET
+        balance = CASE
+                    WHEN id = v_to_id THEN balance + v_amount
+                    WHEN id = v_from_id THEN balance - v_amount
+                  END
+      WHERE id IN (v_from_id, v_to_id)
+        AND v_from_id != v_to_id;
+    END;` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,' + string(accounts)),
+      gen('number:1,100')
+  )
+
+  blind_write(type: exec) `UPDATE blind_write SET value = :2 WHERE id = :1` (
+      gen('number:1,' + string(accounts)),
+      gen('number:100,900')
+  )
+
+  cas_update(type: exec) `UPDATE cas
+    SET value = value + :2, version = version + 1
+    WHERE id = :1
+      AND version = (SELECT version FROM cas WHERE id = :1)` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,100')
+  )
+
+  check_total_balance(type: query) `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts
+    FROM account`
+
+  go_off_duty(type: exec) `UPDATE oncall SET on_duty = 0
+    WHERE doctor_id = :1
+      AND (SELECT COUNT(*) FROM oncall WHERE on_duty = 1) > 1` (gen('number:1,3'))
+}

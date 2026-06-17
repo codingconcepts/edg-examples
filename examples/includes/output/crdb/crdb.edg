@@ -1,0 +1,35 @@
+include 'shared/globals.edg'
+include 'shared/schema.edg'
+include 'shared/teardown.edg'
+include 'shared/run_queries.edg'
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
+    __values__` (gen('email'))
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2::FLOAT, c.id
+    FROM customer c
+    ORDER BY c.id
+    OFFSET $1::INT * $3::INT
+    LIMIT $3::INT` (
+      batch(customers / batch_size),
+      initial_balance,
+      batch_size
+  )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+}
+
+weights {
+  check_balance  = 50
+  credit_account = 50
+}

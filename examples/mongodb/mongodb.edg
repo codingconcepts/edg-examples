@@ -1,0 +1,35 @@
+let customers       = 100
+let initial_balance = 10000
+
+up {
+  create_customer(type: exec) `{"create": "customer"}`
+
+  create_account(type: exec) `{"create": "account"}`
+}
+
+seed {
+  insert_customer(type: exec_batch, count: customers) `{"insert": "customer", "documents": [{"_id": $1, "email": $2}]}` (
+      gen('uuid'),
+      gen('email')
+  )
+
+  fetch_customers `{"find": "customer", "filter": {}}`
+
+  insert_account(type: exec_batch, count: customers) `{"insert": "account", "documents": [{"_id": $1, "customer_id": $2, "balance": $3}]}` (
+      gen('uuid'),
+      ref_rand('fetch_customers')._id,
+      initial_balance
+  )
+}
+
+deseed {
+  delete_accounts(type: exec) `{"delete": "account", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_customers(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_account(type: exec) `{"drop": "account"}`
+
+  drop_customer(type: exec) `{"drop": "customer"}`
+}

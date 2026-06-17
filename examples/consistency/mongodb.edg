@@ -1,0 +1,132 @@
+let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+
+expect {
+  error_rate < 25
+  lost_update `{"aggregate": "counter", "pipeline": [{"$group": {"_id": null, "counter_total": {"$sum": "$value"}}}], "cursor": {}}` counter_total >= increment_counter.success_count
+  phantom_row `{"count": "account", "query": {}}` n == accounts
+  dirty_write `{"aggregate": "account", "pipeline": [{"$group": {"_id": null, "total": {"$sum": "$balance"}}}], "cursor": {}}` total == accounts * initial_balance
+  write_skew `{"aggregate": "cas", "pipeline": [{"$group": {"_id": null, "total_versions": {"$sum": "$version"}}}], "cursor": {}}` total_versions <= cas_update.success_count
+  dirty_read `{"count": "blind_write", "query": {}}` n == accounts
+  read_skew `{"count": "oncall", "query": {"on_duty": true}}` n >= 1
+}
+
+up {
+  create_account(type: exec) `{"create": "account"}`
+
+  create_ledger(type: exec) `{"create": "ledger"}`
+
+  create_counter(type: exec) `{"create": "counter"}`
+
+  create_oncall(type: exec) `{"create": "oncall"}`
+
+  create_blind_write(type: exec) `{"create": "blind_write"}`
+
+  create_cas(type: exec) `{"create": "cas"}`
+}
+
+seed {
+  populate_accounts(type: exec_batch, count: accounts, size: accounts) `{"insert": "account", "documents": [{"_id": $1, "balance": $2, "version": 0}]}` (
+      iter(),
+      initial_balance
+  )
+
+  populate_counters(type: exec_batch, count: 2, size: 2) `{"insert": "counter", "documents": [{"_id": $1, "value": 0}]}` (iter())
+
+  populate_oncall(type: exec_batch, count: 3, size: 3) `{"insert": "oncall", "documents": [{"_id": $1, "on_duty": true}]}` (iter())
+
+  populate_blind_write(type: exec_batch, count: accounts, size: accounts) `{"insert": "blind_write", "documents": [{"_id": $1, "value": 0}]}` (iter())
+
+  populate_cas(type: exec_batch, count: accounts, size: accounts) `{"insert": "cas", "documents": [{"_id": $1, "value": 0, "version": 0}]}` (iter())
+}
+
+deseed {
+  delete_ledger(type: exec) `{"delete": "ledger", "deletes": [{"q": {}, "limit": 0}]}`
+
+  reset_accounts(type: exec) `{"update": "account", "updates": [{"q": {}, "u": {"$set": {"balance": $1, "version": 0}}, "multi": true}]}` (initial_balance)
+
+  reset_counters(type: exec) `{"update": "counter", "updates": [{"q": {}, "u": {"$set": {"value": 0}}, "multi": true}]}`
+
+  reset_oncall(type: exec) `{"update": "oncall", "updates": [{"q": {}, "u": {"$set": {"on_duty": true}}, "multi": true}]}`
+
+  reset_blind_write(type: exec) `{"update": "blind_write", "updates": [{"q": {}, "u": {"$set": {"value": 0}}, "multi": true}]}`
+
+  reset_cas(type: exec) `{"update": "cas", "updates": [{"q": {}, "u": {"$set": {"value": 0, "version": 0}}, "multi": true}]}`
+}
+
+down {
+  drop_ledger(type: exec) `{"drop": "ledger"}`
+
+  drop_account(type: exec) `{"drop": "account"}`
+
+  drop_oncall(type: exec) `{"drop": "oncall"}`
+
+  drop_counter(type: exec) `{"drop": "counter"}`
+
+  drop_blind_write(type: exec) `{"drop": "blind_write"}`
+
+  drop_cas(type: exec) `{"drop": "cas"}`
+}
+
+weights {
+  blind_write         = 10
+  cas_update          = 10
+  check_total_balance = 10
+  count_ledger        = 10
+  go_off_duty         = 10
+  increment_counter   = 10
+  insert_ledger       = 10
+  transfer            = 10
+}
+
+run {
+  count_ledger(type: query) `{"aggregate": "ledger", "pipeline": [{"$match": {"account_id": $1}}, {"$group": {"_id": null, "entries": {"$sum": 1}, "total": {"$sum": "$amount"}}}], "cursor": {}}` (gen('number:1,' + string(accounts)))
+
+  insert_ledger(type: exec) `{"insert": "ledger", "documents": [{"_id": {"$oid": "$1"}, "account_id": $2, "amount": $3}]}` (
+      objectid(),
+      gen('number:1,' + string(accounts)),
+      gen('number:1,500')
+  )
+
+  increment_counter(type: exec) `{"update": "counter", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"value": 1}}}]}` (gen('number:1,2'))
+
+  transaction transfer {
+    let amount = gen('number:1,100')
+    let from_id = gen('number:1,' + string(accounts))
+    let to_id = gen('number:1,' + string(accounts))
+    rollback_if local('from_id') == local('to_id')
+    debit_from(type: exec) `{"update": "account", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"balance": -$2}}}]}` (
+        local('from_id'),
+        local('amount')
+    )
+    credit_to(type: exec) `{"update": "account", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"balance": $2}}}]}` (
+        local('to_id'),
+        local('amount')
+    )
+  }
+
+  blind_write(type: exec) `{"update": "blind_write", "updates": [{"q": {"_id": $1}, "u": {"$set": {"value": $2}}}]}` (
+      gen('number:1,' + string(accounts)),
+      gen('number:100,900')
+  )
+
+  transaction cas_update {
+    let amount = gen('number:1,100')
+    let overwrite_id = gen('number:1,' + string(accounts))
+    read_version(type: query) `{"find": "cas", "filter": {"_id": $1}, "projection": {"version": 1}}` (local('overwrite_id'))
+    update_if_match(type: exec) `{"update": "cas", "updates": [{"q": {"_id": $1, "version": $2}, "u": {"$inc": {"value": $3, "version": 1}}}]}` (
+        local('overwrite_id'),
+        ref_same('read_version').version,
+        local('amount')
+    )
+  }
+
+  check_total_balance(type: query) `{"aggregate": "account", "pipeline": [{"$group": {"_id": null, "total": {"$sum": "$balance"}, "num_accounts": {"$sum": 1}}}], "cursor": {}}`
+
+  transaction go_off_duty {
+    let doctor_id = gen('number:1,3')
+    count_on_duty(type: query) `{"aggregate": "oncall", "pipeline": [{"$group": {"_id": null, "n": {"$sum": {"$cond": [{"$eq": ["$on_duty", true]}, 1, 0]}}}}], "cursor": {}}`
+    rollback_if ref_same('count_on_duty').n <= 1
+    set_off_duty(type: exec) `{"update": "oncall", "updates": [{"q": {"_id": $1}, "u": {"$set": {"on_duty": false}}}]}` (local('doctor_id'))
+  }
+}

@@ -1,0 +1,54 @@
+let batch_size = 1000
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_type STRING NOT NULL,
+      occurred_at TIMESTAMPTZ NOT NULL
+    )`
+
+  create_metrics `CREATE TABLE IF NOT EXISTS metrics (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      sensor_id INT NOT NULL,
+      reading FLOAT8 NOT NULL,
+      recorded_at TIMESTAMPTZ NOT NULL
+    )`
+}
+
+seed {
+  populate_events(type: exec_batch, count: timestamp_steps('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z', '5m'), size: batch_size) `INSERT INTO events (event_type, occurred_at)
+    __values__` (
+      set_rand(['click', 'view', 'purchase', 'signup'],[40, 35, 15, 10]),
+      timestamp_step()
+  )
+
+  populate_metrics(type: exec_batch, count: timestamp_steps('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z', 10000), size: batch_size) `INSERT INTO metrics (sensor_id, reading, recorded_at)
+    __values__` (
+      int(uniform(1, 50)),
+      norm_f(100, 15, 0, 200, 2),
+      timestamp_step()
+  )
+}
+
+deseed {
+  truncate_events(type: exec) `TRUNCATE TABLE events`
+
+  truncate_metrics(type: exec) `TRUNCATE TABLE metrics`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+
+  drop_metrics(type: exec) `DROP TABLE IF EXISTS metrics`
+}
+
+init {
+  fetch_events(type: query) `SELECT id, event_type, occurred_at FROM events LIMIT 1000`
+}
+
+run {
+  get_events_by_hour(type: query) `SELECT id, event_type, occurred_at
+    FROM events
+    WHERE occurred_at >= $1::TIMESTAMPTZ
+      AND occurred_at < $1::TIMESTAMPTZ + INTERVAL '1 hour'` (ref_rand('fetch_events').occurred_at)
+}

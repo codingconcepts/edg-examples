@@ -1,0 +1,193 @@
+let prices    = '[9.99 19.99 4.99 29.99 14.99]'
+let tags      = '[electronics books clothing food toys]'
+let names     = '[Alice Bob Charlie Diana Eve]'
+let threshold = 10
+let matrix    = '[[1 2] [3 4] [5 6]]'
+let products  = '[map[category:tools name:Widget price:29.99] map[category:electronics name:Gadget price:9.99] map[category:tools name:Gizmo price:19.99] map[category:toys name:Doohickey price:4.99] map[category:electronics name:Thingamajig price:49.99]]'
+
+expr grade = if args[0] >= 90 { 'A' } else if args[0] >= 70 { 'B' } else { 'F' }
+
+expr sum_of_squares = let a = float(args[0]); let b = float(args[1]); a ** 2 + b ** 2
+
+up {
+  create_expr_demo(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE expr_demo (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          label VARCHAR2(255) NOT NULL,
+          result VARCHAR2(4000) NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+deseed {
+  truncate(type: exec) `TRUNCATE TABLE expr_demo`
+}
+
+down {
+  drop(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE expr_demo CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+run {
+  array_predicates(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'all(# > 0)', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'any(# > 25)', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'one(# < 5)', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'none(# < 0)', TO_CHAR(:4) FROM DUAL` (
+      all(prices, # > 0),
+      any(prices, # > 25),
+      one(prices, # < 5),
+      none(prices, # < 0)
+  )
+
+  array_search(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'find(# > 20)', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'findIndex(# > 20)', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'findLast(# > 10)', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'findLastIndex(# > 10)', TO_CHAR(:4) FROM DUAL` (
+      find(prices, # > 20),
+      findIndex(prices, # > 20),
+      findLast(prices, # > 10),
+      findLastIndex(prices, # > 10)
+  )
+
+  array_transform(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'filter+map', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'map(# * 2)', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'sort', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'sortBy(#.price)', TO_CHAR(:4) FROM DUAL UNION ALL
+    SELECT 'reverse', TO_CHAR(:5) FROM DUAL UNION ALL
+    SELECT 'uniq+concat', TO_CHAR(:6) FROM DUAL UNION ALL
+    SELECT 'flatten', TO_CHAR(:7) FROM DUAL` (
+      join(map(filter(prices, # > threshold), string(#)), ','),
+      join(map(prices, string(# * 2)), ','),
+      join(map(sort(prices), string(#)), ','),
+      join(map(sortBy(products, #.price), #.name), ','),
+      join(reverse(names), ','),
+      join(uniq(concat(tags,['books', 'games'])), ','),
+      join(map(flatten(matrix), string(#)), ',')
+  )
+
+  array_aggregate(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'reduce(#acc + #)', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'mean', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'median', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'first', TO_CHAR(:4) FROM DUAL UNION ALL
+    SELECT 'last', TO_CHAR(:5) FROM DUAL UNION ALL
+    SELECT 'take(3)', TO_CHAR(:6) FROM DUAL UNION ALL
+    SELECT 'len(array)', TO_CHAR(:7) FROM DUAL` (
+      reduce(prices, #acc + #, 0),
+      mean(prices),
+      median(prices),
+      first(names),
+      last(names),
+      join(take(names, 3), ','),
+      len(names)
+  )
+
+  map_functions(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'keys', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'values', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'groupBy(#.category)', TO_CHAR(:3) FROM DUAL` (
+      join(keys({ a : 1, b : 2, c : 3 }), ','),
+      join(map(values({ a : 1, b : 2, c : 3 }), string(#)), ','),
+      join(keys(groupBy(products, #.category)), ',')
+  )
+
+  string_operators(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'contains', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'startsWith', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'endsWith', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'matches (regex)', TO_CHAR(:4) FROM DUAL UNION ALL
+    SELECT 'in (membership)', TO_CHAR(:5) FROM DUAL` (
+      'hello world' contains 'world',
+      'hello' startsWith 'hel',
+      'world' endsWith 'rld',
+      'hello123' matches '^[a-z]+[0-9]+$',
+      'books' in tags
+  )
+
+  string_functions(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'trimPrefix', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'trimSuffix', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'splitAfter', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'repeat', TO_CHAR(:4) FROM DUAL UNION ALL
+    SELECT 'indexOf', TO_CHAR(:5) FROM DUAL UNION ALL
+    SELECT 'lastIndexOf', TO_CHAR(:6) FROM DUAL UNION ALL
+    SELECT 'hasPrefix', TO_CHAR(:7) FROM DUAL UNION ALL
+    SELECT 'hasSuffix', TO_CHAR(:8) FROM DUAL` (
+      trimPrefix('test_value', 'test_'),
+      trimSuffix('image.png', '.png'),
+      join(splitAfter('a.b.c', '.'), '|'),
+      repeat('ab', 3),
+      indexOf('hello world', 'world'),
+      lastIndexOf('abcabc', 'abc'),
+      hasPrefix('hello', 'hel'),
+      hasSuffix('hello', 'llo')
+  )
+
+  type_conversion(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'type', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'toJSON', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'fromJSON', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'toBase64', TO_CHAR(:4) FROM DUAL UNION ALL
+    SELECT 'fromBase64', TO_CHAR(:5) FROM DUAL UNION ALL
+    SELECT 'toPairs', TO_CHAR(:6) FROM DUAL UNION ALL
+    SELECT 'fromPairs', TO_CHAR(:7) FROM DUAL` (
+      type(42),
+      toJSON({ name : 'test', value : 42 }),
+      string(fromJSON('{"a": 1}').a),
+      toBase64('hello'),
+      fromBase64('aGVsbG8='),
+      len(toPairs({ x : 1, y : 2 })),
+      join(keys(fromPairs([['x', 1],['y', 2]])), ',')
+  )
+
+  operators(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'range 1..5', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'slice [1:3]', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT '?. + ??', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'if/else', TO_CHAR(:4) FROM DUAL UNION ALL
+    SELECT 'let bindings', TO_CHAR(:5) FROM DUAL` (
+      reduce(1..5, #acc + #, 0),
+      join(names[1 : 3], ','),
+      { name : 'test' }?.missing ?? 'default',
+      grade(85),
+      sum_of_squares(3, 4)
+  )
+
+  bitwise(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'bitand(0xFF, 0x0F)', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'bitor(0xF0, 0x0F)', TO_CHAR(:2) FROM DUAL UNION ALL
+    SELECT 'bitxor(0xFF, 0x0F)', TO_CHAR(:3) FROM DUAL UNION ALL
+    SELECT 'bitnand(0xFF, 0x0F)', TO_CHAR(:4) FROM DUAL UNION ALL
+    SELECT 'bitnot(0)', TO_CHAR(:5) FROM DUAL UNION ALL
+    SELECT 'bitshl(1, 8)', TO_CHAR(:6) FROM DUAL UNION ALL
+    SELECT 'bitshr(256, 4)', TO_CHAR(:7) FROM DUAL UNION ALL
+    SELECT 'bitushr(256, 4)', TO_CHAR(:8) FROM DUAL` (
+      bitand(0 xFF, 0 x0F),
+      bitor(0 xF0, 0 x0F),
+      bitxor(0 xFF, 0 x0F),
+      bitnand(0 xFF, 0 x0F),
+      bitnot(0),
+      bitshl(1, 8),
+      bitshr(256, 4),
+      bitushr(256, 4)
+  )
+
+  misc(type: exec) `INSERT INTO expr_demo (label, result)
+    SELECT 'len(string)', TO_CHAR(:1) FROM DUAL UNION ALL
+    SELECT 'get + ??', TO_CHAR(:2) FROM DUAL` (
+      len('hello'),
+      get({ a : 1, b : 2 }, 'c') ?? 'missing'
+  )
+}

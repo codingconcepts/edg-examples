@@ -1,0 +1,245 @@
+let countries               = int(coalesce(env_nil('COUNTRIES'), 50))
+let airports                = int(coalesce(env_nil('AIRPORTS'), 200))
+let airlines                = int(coalesce(env_nil('AIRLINES'), 20))
+let customers               = int(coalesce(env_nil('CUSTOMERS'), 1000))
+let flights                 = int(coalesce(env_nil('FLIGHTS'), 500))
+let seats_per_flight        = int(coalesce(env_nil('SEATS_PER_FLIGHT'), 150))
+let reservations_per_flight = int(coalesce(env_nil('RESERVATIONS_PER_FLIGHT'), 120))
+let batch_size              = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_country(type: exec) `CREATE TABLE IF NOT EXISTS edg.country (
+      co_id INT PRIMARY KEY,
+      co_name TEXT
+    )`
+
+  create_airport(type: exec) `CREATE TABLE IF NOT EXISTS edg.airport (
+      ap_id INT PRIMARY KEY,
+      ap_code TEXT,
+      ap_name TEXT,
+      ap_city TEXT,
+      ap_co_id INT
+    )`
+
+  create_airline(type: exec) `CREATE TABLE IF NOT EXISTS edg.airline (
+      al_id INT PRIMARY KEY,
+      al_iata_code TEXT,
+      al_name TEXT
+    )`
+
+  create_customer(type: exec) `CREATE TABLE IF NOT EXISTS edg.customer (
+      c_id INT PRIMARY KEY,
+      c_base_ap_id INT,
+      c_balance DECIMAL,
+      c_sattr00 TEXT,
+      c_sattr01 TEXT,
+      c_iattr00 INT,
+      c_iattr01 INT
+    )`
+
+  create_flight(type: exec) `CREATE TABLE IF NOT EXISTS edg.flight (
+      f_id INT,
+      f_al_id INT,
+      f_depart_ap_id INT,
+      f_arrive_ap_id INT,
+      f_depart_time TIMESTAMP,
+      f_arrive_time TIMESTAMP,
+      f_seats_total INT,
+      f_seats_left INT,
+      f_base_price DECIMAL,
+      PRIMARY KEY ((f_depart_ap_id), f_id)
+    )`
+
+  create_flight_by_id(type: exec) `CREATE TABLE IF NOT EXISTS edg.flight_by_id (
+      f_id INT PRIMARY KEY,
+      f_depart_ap_id INT,
+      f_seats_total INT,
+      f_seats_left INT,
+      f_base_price DECIMAL
+    )`
+
+  create_reservation(type: exec) `CREATE TABLE IF NOT EXISTS edg.reservation (
+      r_id UUID,
+      r_c_id INT,
+      r_f_id INT,
+      r_seat INT,
+      r_price DECIMAL,
+      r_iattr00 INT,
+      r_iattr01 INT,
+      PRIMARY KEY ((r_f_id), r_id)
+    )`
+}
+
+seed {
+  populate_country(type: exec_batch, count: countries, size: 50) `INSERT INTO edg.country (co_id, co_name)
+    VALUES ($1, $2)` (
+      iter(),
+      regex('Country_[0-9]{3}')
+  )
+
+  populate_airport(type: exec_batch, count: airports, size: 50) `INSERT INTO edg.airport (ap_id, ap_code, ap_name, ap_city, ap_co_id)
+    VALUES ($1, $2, $3, $4, $5)` (
+      iter(),
+      regex('[A-Z]{3}'),
+      regex('Airport_[0-9]{4}'),
+      regex('City_[0-9]{4}'),
+      gen('number:1,50')
+  )
+
+  fetch_airports_seed `SELECT ap_id FROM edg.airport`
+
+  populate_airline(type: exec_batch, count: airlines, size: 50) `INSERT INTO edg.airline (al_id, al_iata_code, al_name)
+    VALUES ($1, $2, $3)` (
+      iter(),
+      regex('[A-Z]{2}'),
+      regex('Airline_[0-9]{3}')
+  )
+
+  populate_customer(type: exec_batch, count: customers, size: 50) `INSERT INTO edg.customer (c_id, c_base_ap_id, c_balance,
+      c_sattr00, c_sattr01, c_iattr00, c_iattr01)
+    VALUES ($1, $2, 0, $3, $4, $5, $6)` (
+      iter(),
+      ref_rand('fetch_airports_seed').ap_id,
+      regex('[a-z]{16}'),
+      regex('[a-z]{16}'),
+      gen('number:0,999'),
+      gen('number:0,999')
+  )
+
+  populate_flight(type: exec_batch, count: flights, size: 50) `INSERT INTO edg.flight (f_id, f_al_id, f_depart_ap_id, f_arrive_ap_id,
+      f_depart_time, f_arrive_time, f_seats_total, f_seats_left, f_base_price)
+    VALUES ($1, $2, $3, $4, $5, $6, 150, 150, $7)` (
+      iter(),
+      gen('number:1,20'),
+      ref_rand('fetch_airports_seed').ap_id,
+      ref_rand('fetch_airports_seed').ap_id,
+      timestamp('2020-01-01T00:00:00Z', '2025-01-01T00:00:00Z'),
+      timestamp('2020-01-01T00:00:00Z', '2025-01-01T00:00:00Z'),
+      gen('number:100,999')
+  )
+
+  populate_flight_by_id(type: exec_batch, count: flights, size: 50) `INSERT INTO edg.flight_by_id (f_id, f_depart_ap_id,
+      f_seats_total, f_seats_left, f_base_price)
+    VALUES ($1, $2, 150, 150, $3)` (
+      iter(),
+      ref_rand('fetch_airports_seed').ap_id,
+      gen('number:100,999')
+  )
+
+  fetch_flights_seed `SELECT f_id, f_depart_ap_id FROM edg.flight_by_id`
+
+  fetch_customers_seed `SELECT c_id FROM edg.customer`
+
+  populate_reservation(type: exec_batch, count: flights, size: 50) `INSERT INTO edg.reservation (r_id, r_c_id, r_f_id, r_seat,
+      r_price, r_iattr00, r_iattr01)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)` (
+      gen('uuid'),
+      ref_rand('fetch_customers_seed').c_id,
+      ref_rand('fetch_flights_seed').f_id,
+      gen('number:1,150'),
+      gen('number:50,1000'),
+      gen('number:0,99'),
+      gen('number:0,99')
+  )
+}
+
+deseed {
+  truncate_reservation(type: exec) `TRUNCATE edg.reservation`
+
+  truncate_flight_by_id(type: exec) `TRUNCATE edg.flight_by_id`
+
+  truncate_flight(type: exec) `TRUNCATE edg.flight`
+
+  truncate_customer(type: exec) `TRUNCATE edg.customer`
+
+  truncate_airline(type: exec) `TRUNCATE edg.airline`
+
+  truncate_airport(type: exec) `TRUNCATE edg.airport`
+
+  truncate_country(type: exec) `TRUNCATE edg.country`
+}
+
+down {
+  drop_reservation(type: exec) `DROP TABLE IF EXISTS edg.reservation`
+
+  drop_flight_by_id(type: exec) `DROP TABLE IF EXISTS edg.flight_by_id`
+
+  drop_flight(type: exec) `DROP TABLE IF EXISTS edg.flight`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
+
+  drop_airline(type: exec) `DROP TABLE IF EXISTS edg.airline`
+
+  drop_airport(type: exec) `DROP TABLE IF EXISTS edg.airport`
+
+  drop_country(type: exec) `DROP TABLE IF EXISTS edg.country`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+init {
+  fetch_flights(type: query) `SELECT f_id, f_depart_ap_id, f_seats_left FROM edg.flight_by_id`
+
+  fetch_customers(type: query) `SELECT c_id FROM edg.customer`
+
+  fetch_reservations(type: query) `SELECT r_id, r_c_id, r_f_id FROM edg.reservation`
+
+  fetch_airports(type: query) `SELECT ap_id FROM edg.airport`
+}
+
+weights {
+  delete_reservation = 20
+  find_flights       = 10
+  find_open_seats    = 35
+  new_reservation    = 15
+  update_customer    = 10
+  update_reservation = 10
+}
+
+run {
+  find_flights(type: query) `SELECT f_id, f_al_id, f_depart_ap_id, f_arrive_ap_id,
+      f_depart_time, f_arrive_time, f_seats_left, f_base_price
+    FROM edg.flight
+    WHERE f_depart_ap_id = $1
+    LIMIT 10` (ref_rand('fetch_airports').ap_id)
+
+  find_open_seats(type: query) `SELECT f_seats_left FROM edg.flight_by_id
+    WHERE f_id = $1` (ref_rand('fetch_flights').f_id)
+
+  new_reservation(type: exec) `INSERT INTO edg.reservation (r_id, r_c_id, r_f_id, r_seat,
+      r_price, r_iattr00, r_iattr01)
+    VALUES ($1, $2, $3, $4, $5, 0, 0)` (
+      gen('uuid'),
+      ref_rand('fetch_customers').c_id,
+      ref_rand('fetch_flights').f_id,
+      gen('number:1,150'),
+      gen('number:50,1000')
+  )
+
+  update_customer(type: exec) `UPDATE edg.customer SET c_iattr00 = $2, c_iattr01 = $3
+    WHERE c_id = $1` (
+      ref_rand('fetch_customers').c_id,
+      gen('number:0,1000'),
+      gen('number:0,1000')
+  )
+
+  update_reservation(type: exec) `UPDATE edg.reservation SET r_iattr00 = $3
+    WHERE r_f_id = $2 AND r_id = $1` (
+      ref_rand('fetch_reservations').r_id,
+      ref_rand('fetch_reservations').r_f_id,
+      gen('number:0,100')
+  )
+
+  delete_reservation(type: exec) `DELETE FROM edg.reservation
+    WHERE r_f_id = $2 AND r_id = $1` (
+      ref_rand('fetch_reservations').r_id,
+      ref_rand('fetch_reservations').r_f_id
+  )
+}

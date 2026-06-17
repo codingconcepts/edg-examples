@@ -1,0 +1,60 @@
+include 'products.edg'
+
+let products = 5
+
+complete {
+  tool review(system: 'You are a product review generator. Generate realistic reviews
+for consumer electronics. IMPORTANT: vary ratings across the full
+1-5 range. Most products should get 2-4 stars. 5-star and 1-star
+reviews should be rare. Match sentiment and review_text to the
+rating you choose.') {
+    rating(description: 'Star rating from 1 to 5', type: 'integer', required: true)
+    review_text(description: 'A 2-3 sentence product review from a customer', type: 'string', required: true)
+    sentiment(description: 'Overall sentiment of the review', enum: '[positive negative neutral]', type: 'string', required: true)
+  }
+}
+
+up {
+  create_product `CREATE TABLE IF NOT EXISTS product (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL,
+      description STRING NOT NULL
+    )`
+
+  create_review `CREATE TABLE IF NOT EXISTS review (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      product_name STRING NOT NULL,
+      review_text STRING NOT NULL,
+      sentiment STRING NOT NULL,
+      rating INT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+}
+
+seed {
+  populate_product(type: exec_batch, count: products, size: products) `INSERT INTO product (name, description)
+    __values__` (
+      ref_each(product_catalog).name,
+      ref_each(product_catalog).description
+  )
+
+  populate_review(type: exec_batch, count: products, size: products) `INSERT INTO review (product_name, review_text, sentiment, rating)
+    __values__` (
+      ref_each(product_catalog).name,
+      ref_each(local('reviews')).review_text,
+      ref_each(local('reviews')).sentiment,
+      ref_each(local('reviews')).rating
+  )
+}
+
+deseed {
+  truncate_review(type: exec) `TRUNCATE TABLE review`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE IF EXISTS review`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+}

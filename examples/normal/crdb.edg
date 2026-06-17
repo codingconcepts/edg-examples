@@ -1,0 +1,57 @@
+let products   = 100
+let batch_size = 100
+
+up {
+  create_product `CREATE TABLE IF NOT EXISTS product (
+      id INT PRIMARY KEY,
+      name STRING NOT NULL,
+      price DECIMAL(10,2) NOT NULL
+    )`
+
+  create_review `CREATE TABLE IF NOT EXISTS review (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      product_id INT NOT NULL REFERENCES product(id),
+      rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+}
+
+seed {
+  populate_product `INSERT INTO product (id, name, price)
+    SELECT
+      s,
+      'product-' || s::TEXT,
+      (random()::FLOAT8 * 99 + 1)::DECIMAL(10,2)
+    FROM generate_series(1, $1) AS s` (products)
+}
+
+deseed {
+  truncate_review(type: exec) `TRUNCATE TABLE review`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE IF EXISTS review`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+}
+
+init {
+  fetch_products(type: query) `SELECT id FROM product`
+}
+
+run {
+  add_review(type: exec) `INSERT INTO review (product_id, rating)
+    VALUES ($1::INT, $2::INT)` (
+      ref_rand('fetch_products').id,
+      norm(4, 1, 1, 5)
+  )
+
+  add_batch_reviews(type: exec) `INSERT INTO review (product_id, rating)
+    SELECT id::INT, $2::INT
+    FROM unnest(string_to_array($1, ',')) AS id` (
+      norm_n(50, 15, 1, 100, 3, 8),
+      norm(4, 1, 1, 5)
+  )
+}

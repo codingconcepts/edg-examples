@@ -1,0 +1,61 @@
+let rows       = 10000
+let batch_size = 1000
+
+up {
+  create_distributions `CREATE TABLE IF NOT EXISTS distributions (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      dist_type VARCHAR(50) NOT NULL,
+      value DOUBLE NOT NULL
+    )`
+}
+
+seed {
+  seed_uniform `INSERT INTO distributions (dist_type, value)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $2
+    )
+    SELECT 'uniform', RAND() * 100
+    FROM seq` (
+      batch(rows / batch_size),
+      batch_size
+  )
+}
+
+deseed {
+  delete_distributions(type: exec) `DELETE FROM distributions`
+}
+
+down {
+  drop_distributions(type: exec) `DROP TABLE IF EXISTS distributions`
+}
+
+weights {
+  insert_exponential = 20
+  insert_lognormal   = 20
+  insert_normal      = 20
+  insert_pareto      = 20
+  insert_uniform     = 20
+  insert_zipfian     = 20
+}
+
+run {
+  insert_uniform(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('uniform', ?)` (uniform(0, 100))
+
+  insert_zipfian(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('zipfian', ?)` (zipf(2.0, 1.0, 99))
+
+  insert_normal(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('normal', ?)` (norm_f(50, 15, 0, 100, 2))
+
+  insert_exponential(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('exponential', ?)` (exp_f(0.5, 0, 100, 2))
+
+  insert_lognormal(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('lognormal', ?)` (lognorm_f(2.0, 0.5, 0, 100, 2))
+
+  insert_pareto(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('pareto', ?)` (pareto(2.0, 99))
+}

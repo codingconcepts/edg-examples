@@ -1,0 +1,42 @@
+let users      = 10000
+let batch_size = 1000
+
+up {
+  create_user(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE "user" (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          email VARCHAR2(255) NOT NULL,
+          phone VARCHAR2(50),
+          bio VARCHAR2(4000),
+          referred_by VARCHAR2(36),
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_user(type: exec) `TRUNCATE TABLE "user"`
+
+  populate_user(type: exec_batch, count: users, size: 100) `INSERT ALL __values__("user"(email, phone, bio, referred_by))` (
+      gen('email'),
+      nullable(gen('phone'), 0.3),
+      nullable(gen('sentence:5'), 0.5),
+      nullable(uuid_v4(), 0.8)
+  )
+}
+
+deseed {
+  truncate_user(type: exec) `TRUNCATE TABLE "user"`
+}
+
+down {
+  drop_user(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE "user" CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}

@@ -1,0 +1,100 @@
+let records    = 10000
+let batch_size = 1000
+let zipf_s     = 1.2
+
+up {
+  create_usertable `IF OBJECT_ID('usertable', 'U') IS NULL
+    CREATE TABLE usertable (
+      ycsb_key VARCHAR(255) PRIMARY KEY,
+      field0 VARCHAR(100) NOT NULL,
+      field1 VARCHAR(100) NOT NULL,
+      field2 VARCHAR(100) NOT NULL,
+      field3 VARCHAR(100) NOT NULL,
+      field4 VARCHAR(100) NOT NULL,
+      field5 VARCHAR(100) NOT NULL,
+      field6 VARCHAR(100) NOT NULL,
+      field7 VARCHAR(100) NOT NULL,
+      field8 VARCHAR(100) NOT NULL,
+      field9 VARCHAR(100) NOT NULL
+    )`
+}
+
+seed {
+  populate_usertable `WITH seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $2
+    )
+    INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    SELECT
+      CONCAT('user', RIGHT(REPLICATE('0', 10) + CAST($1 * $2 + s - 1 AS NVARCHAR), 10)),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100),
+      LEFT(REPLICATE(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 4), 100)
+    FROM seq
+    OPTION (MAXRECURSION 10000)` (
+      batch(records / batch_size),
+      batch_size
+  )
+}
+
+deseed {
+  delete_usertable(type: exec) `DELETE FROM usertable`
+}
+
+down {
+  drop_usertable(type: exec) `DROP TABLE IF EXISTS usertable`
+}
+
+weights {
+  read   = 50
+  update = 50
+}
+
+run {
+  read(type: query) `SELECT * FROM usertable WHERE ycsb_key = @p1` (template('user%010d', zipf(zipf_s, 1, records - 1)))
+
+  update(type: exec) `UPDATE usertable SET field0 = @p1
+    WHERE ycsb_key = @p2` (
+      regex('[a-zA-Z0-9]{100}'),
+      template('user%010d', zipf(zipf_s, 1, records - 1))
+  )
+
+  insert(type: exec) `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11)` (
+      uuid_v7(),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}'),
+      regex('[a-zA-Z0-9]{100}')
+  )
+
+  scan(type: query) `SELECT * FROM usertable
+    WHERE ycsb_key >= @p1
+    ORDER BY ycsb_key
+    OFFSET 0 ROWS FETCH NEXT CAST(@p2 AS INT) ROWS ONLY` (
+      template('user%010d', zipf(zipf_s, 1, records - 1)),
+      gen('number:1,100')
+  )
+
+  read_modify_write(type: exec) `UPDATE usertable SET field0 = @p1
+    WHERE ycsb_key = @p2` (
+      regex('[a-zA-Z0-9]{100}'),
+      template('user%010d', zipf(zipf_s, 1, records - 1))
+  )
+}

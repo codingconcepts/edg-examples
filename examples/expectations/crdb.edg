@@ -1,0 +1,72 @@
+let customers       = 10000
+let initial_balance = 10000
+let batch_size      = 5000
+
+expect {
+  error_rate < 1
+  check_balance.p99 < 50
+  credit_account.p99 < 59
+  tpm > 1000
+  check_5 `SELECT COUNT(*) AS cnt FROM account` cnt > 0
+  check_6 `SELECT SUM(balance) AS total FROM account` total > 0
+}
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL
+    )`
+
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      balance FLOAT NOT NULL,
+      customer_id UUID NOT NULL REFERENCES customer(id)
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
+    __values__` (gen('email'))
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2::FLOAT, c.id
+    FROM customer c
+    ORDER BY c.id
+    OFFSET $1::INT * $3::INT
+    LIMIT $3::INT` (
+      batch(customers / batch_size),
+      initial_balance,
+      batch_size
+  )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+}
+
+weights {
+  check_balance  = 50
+  credit_account = 50
+}
+
+run {
+  check_balance(type: query) `SELECT balance FROM account WHERE id = $1::UUID` (ref_rand('fetch_accounts').id)
+
+  credit_account(type: exec) `UPDATE account SET balance = balance + $2::FLOAT
+    WHERE id = $1::UUID` (
+      ref_rand('fetch_accounts').id,
+      gen('number:1,1000')
+  )
+}

@@ -1,0 +1,65 @@
+let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+up {
+  create_customer `IF OBJECT_ID('customer', 'U') IS NULL
+    CREATE TABLE customer (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      email NVARCHAR(255) NOT NULL
+    )`
+
+  create_account `IF OBJECT_ID('account', 'U') IS NULL
+    CREATE TABLE account (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      balance FLOAT NOT NULL,
+      customer_id UNIQUEIDENTIFIER NOT NULL,
+      FOREIGN KEY (customer_id) REFERENCES customer(id)
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
+    __values__` (gen('email'))
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2, c.id
+    FROM customer c
+    ORDER BY c.id
+    OFFSET $1 * $3 ROWS FETCH NEXT $3 ROWS ONLY` (
+      batch(customers / batch_size),
+      initial_balance,
+      batch_size
+  )
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY NEWID()`
+}
+
+weights {
+  check_balance = 25
+  credit_account = 25
+  make_transfer = 75
+}
+
+run {
+  check_balance(type: query) `SELECT balance FROM account WHERE id = @p1` (ref_rand('fetch_accounts').id)
+
+  credit_account(type: exec) `UPDATE account SET balance = balance + @p1
+    WHERE id = @p2` (
+      gen('number:1,1000'),
+      ref_rand('fetch_accounts').id
+  )
+
+  make_transfer(type: exec) `UPDATE account
+    SET balance = CASE
+                    WHEN id = @p2 THEN balance + CAST(@p3 AS FLOAT)
+                    WHEN id = @p1 THEN balance - CAST(@p3 AS FLOAT)
+                  END
+    WHERE id IN (@p1, @p2)` (
+      ref_diff('fetch_accounts').id,
+      ref_diff('fetch_accounts').id,
+      gen('number:1,100')
+  )
+}

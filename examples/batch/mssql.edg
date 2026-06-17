@@ -1,0 +1,45 @@
+let products = 20
+let reviews  = 50
+
+up {
+  create_product(type: exec) `IF OBJECT_ID('product', 'U') IS NULL
+    CREATE TABLE product (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      name NVARCHAR(255) NOT NULL
+    )`
+
+  create_review(type: exec) `IF OBJECT_ID('review', 'U') IS NULL
+    CREATE TABLE review (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      product_id UNIQUEIDENTIFIER NOT NULL,
+      rating INT NOT NULL,
+      body NVARCHAR(MAX) NOT NULL,
+      FOREIGN KEY (product_id) REFERENCES product(id)
+    )`
+}
+
+seed {
+  insert_products(type: exec_batch, count: products) `INSERT INTO product (name)
+    __values__` (gen('productname'))
+
+  fetch_products(type: query) `SELECT id, name FROM product`
+
+  insert_reviews(type: exec_batch, count: reviews, size: 10) `INSERT INTO review (product_id, rating, body)
+    __values__` (
+      ref_rand('fetch_products').id,
+      norm(4, 1, 1, 5),
+      gen('loremipsumsentence:5')
+  )
+}
+
+deseed {
+  delete_review(type: exec) `DELETE FROM review`
+
+  delete_product(type: exec) `DELETE FROM product`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE IF EXISTS review`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+}

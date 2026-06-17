@@ -1,0 +1,268 @@
+let tenants             = 10
+let users_per_tenant    = 100
+let projects_per_tenant = 5
+let tasks_per_project   = 100
+
+up {
+  create_tenant `CREATE TABLE IF NOT EXISTS tenant (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      name VARCHAR(255) NOT NULL,
+      plan VARCHAR(20) NOT NULL DEFAULT 'free',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+
+  create_app_user `CREATE TABLE IF NOT EXISTS app_user (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      tenant_id CHAR(36) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      role VARCHAR(20) NOT NULL DEFAULT 'member',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenant(id)
+    )`
+
+  create_project `CREATE TABLE IF NOT EXISTS project (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      tenant_id CHAR(36) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenant(id)
+    )`
+
+  create_task `CREATE TABLE IF NOT EXISTS task (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      project_id CHAR(36) NOT NULL,
+      tenant_id CHAR(36) NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'open',
+      assignee_id CHAR(36),
+      deleted_at TIMESTAMP NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES project(id),
+      FOREIGN KEY (tenant_id) REFERENCES tenant(id),
+      FOREIGN KEY (assignee_id) REFERENCES app_user(id)
+    )`
+
+  create_task_comment `CREATE TABLE IF NOT EXISTS task_comment (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      task_id CHAR(36) NOT NULL,
+      tenant_id CHAR(36) NOT NULL,
+      author_id CHAR(36) NOT NULL,
+      body TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (task_id) REFERENCES task(id),
+      FOREIGN KEY (tenant_id) REFERENCES tenant(id),
+      FOREIGN KEY (author_id) REFERENCES app_user(id)
+    )`
+
+  create_billing_usage `CREATE TABLE IF NOT EXISTS billing_usage (
+      tenant_id CHAR(36) PRIMARY KEY,
+      api_calls INT NOT NULL DEFAULT 0,
+      storage_bytes BIGINT NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenant(id)
+    )`
+
+  create_idx_task_tenant_status `CREATE INDEX idx_task_tenant_status
+    ON task (tenant_id, status, deleted_at)`
+
+  create_idx_task_project `CREATE INDEX idx_task_project
+    ON task (project_id, status, deleted_at)`
+
+  create_idx_app_user_tenant `CREATE INDEX idx_app_user_tenant
+    ON app_user (tenant_id)`
+
+  create_idx_task_comment_task `CREATE INDEX idx_task_comment_task
+    ON task_comment (task_id, created_at DESC)`
+}
+
+seed {
+  populate_tenant `INSERT INTO tenant (name, plan)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    SELECT
+      CONCAT('tenant-', s),
+      ELT(FLOOR(RAND() * 4) + 1, 'free','starter','pro','enterprise')
+    FROM seq` (tenants)
+
+  populate_billing_usage `INSERT INTO billing_usage (tenant_id, api_calls, storage_bytes)
+    SELECT id, 0, 0
+    FROM tenant`
+
+  populate_app_user `INSERT INTO app_user (tenant_id, email, role)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $2
+    )
+    SELECT
+      '$1',
+      CONCAT('user_', s, '_', SUBSTRING('$1', 1, 8), '@example.com'),
+      CASE WHEN s = 1 THEN 'admin'
+           WHEN s <= 5 THEN 'manager'
+           ELSE 'member'
+      END
+    FROM seq` (
+      ref_each('SELECT id FROM tenant'),
+      users_per_tenant
+  )
+
+  populate_project `INSERT INTO project (tenant_id, name)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $2
+    )
+    SELECT
+      '$1',
+      CONCAT('project-', s, '-', SUBSTRING('$1', 1, 8))
+    FROM seq` (
+      ref_each('SELECT id FROM tenant'),
+      projects_per_tenant
+  )
+
+  populate_task `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $3
+    )
+    SELECT
+      '$1',
+      '$2',
+      CONCAT('task-', s, '-', SUBSTRING('$1', 1, 8)),
+      ELT(FLOOR(RAND() * 4) + 1, 'open','in_progress','review','done'),
+      (SELECT id FROM app_user WHERE tenant_id = '$2' ORDER BY RAND() LIMIT 1)
+    FROM seq` (
+      ref_each('SELECT p.id AS project_id, p.tenant_id FROM project p'),
+      tasks_per_project
+  )
+}
+
+deseed {
+  delete_task_comment(type: exec) `DELETE FROM task_comment`
+
+  delete_task(type: exec) `DELETE FROM task`
+
+  delete_project(type: exec) `DELETE FROM project`
+
+  delete_billing_usage(type: exec) `DELETE FROM billing_usage`
+
+  delete_app_user(type: exec) `DELETE FROM app_user`
+
+  delete_tenant(type: exec) `DELETE FROM tenant`
+}
+
+down {
+  drop_task_comment(type: exec) `DROP TABLE IF EXISTS task_comment`
+
+  drop_task(type: exec) `DROP TABLE IF EXISTS task`
+
+  drop_project(type: exec) `DROP TABLE IF EXISTS project`
+
+  drop_billing_usage(type: exec) `DROP TABLE IF EXISTS billing_usage`
+
+  drop_app_user(type: exec) `DROP TABLE IF EXISTS app_user`
+
+  drop_tenant(type: exec) `DROP TABLE IF EXISTS tenant`
+}
+
+init {
+  fetch_tenants(type: query) `SELECT id FROM tenant`
+
+  fetch_users(type: query) `SELECT id, tenant_id FROM app_user ORDER BY RAND()`
+
+  fetch_projects(type: query) `SELECT id, tenant_id FROM project ORDER BY RAND()`
+
+  fetch_tasks(type: query) `SELECT id, tenant_id, project_id FROM task WHERE deleted_at IS NULL ORDER BY RAND()`
+}
+
+weights {
+  add_comment      = 10
+  admin_overview   = 10
+  create_task      = 15
+  list_tasks       = 30
+  soft_delete      = 5
+  tenant_dashboard = 15
+  update_task      = 15
+}
+
+run {
+  list_tasks(type: query) `SELECT t.id, t.title, t.status, t.created_at,
+      u.email AS assignee_email
+    FROM task t
+    LEFT JOIN app_user u ON u.id = t.assignee_id
+    WHERE t.tenant_id = ?
+      AND t.deleted_at IS NULL
+      AND t.status = ELT(?, 'open','in_progress','review','done')
+    ORDER BY t.updated_at DESC
+    LIMIT 20` (
+      ref_perm('fetch_tenants').id,
+      gen('number:1,4')
+  )
+
+  create_task(type: exec) `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
+    SELECT ?, ?, ?, 'open', ?
+    FROM dual
+    WHERE EXISTS (
+      SELECT 1 FROM project WHERE id = ? AND tenant_id = ?
+    )` (
+      ref_same('fetch_projects').id,
+      ref_perm('fetch_tenants').id,
+      gen('sentence:5'),
+      ref_rand('fetch_users').id,
+      ref_same('fetch_projects').id,
+      ref_perm('fetch_tenants').id
+  )
+
+  update_task(type: exec) `UPDATE task SET
+      status = CASE status
+        WHEN 'open' THEN 'in_progress'
+        WHEN 'in_progress' THEN 'review'
+        WHEN 'review' THEN 'done'
+        ELSE status
+      END,
+      updated_at = NOW()
+    WHERE id = ? AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+
+  add_comment(type: exec) `INSERT INTO task_comment (task_id, tenant_id, author_id, body)
+    VALUES (?, ?, ?, ?)` (
+      ref_rand('fetch_tasks').id,
+      ref_same('fetch_users').tenant_id,
+      ref_same('fetch_users').id,
+      gen('sentence:6')
+  )
+
+  soft_delete(type: exec) `UPDATE task
+    SET deleted_at = NOW(), updated_at = NOW()
+    WHERE id = ? AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+
+  tenant_dashboard(type: query) `SELECT
+      p.name AS project_name,
+      SUM(t.status = 'open') AS open_count,
+      SUM(t.status = 'in_progress') AS in_progress_count,
+      SUM(t.status = 'review') AS review_count,
+      SUM(t.status = 'done') AS done_count,
+      COUNT(*) AS total
+    FROM task t
+    JOIN project p ON p.id = t.project_id
+    WHERE t.tenant_id = ? AND t.deleted_at IS NULL
+    GROUP BY p.name` (ref_perm('fetch_tenants').id)
+
+  admin_overview(type: query) `SELECT
+      tn.name AS tenant_name,
+      tn.plan,
+      bu.api_calls,
+      COUNT(DISTINCT t.id) AS task_count,
+      COUNT(DISTINCT u.id) AS user_count
+    FROM tenant tn
+    LEFT JOIN billing_usage bu ON bu.tenant_id = tn.id
+    LEFT JOIN task t ON t.tenant_id = tn.id AND t.deleted_at IS NULL
+    LEFT JOIN app_user u ON u.tenant_id = tn.id
+    GROUP BY tn.id, tn.name, tn.plan, bu.api_calls
+    ORDER BY bu.api_calls DESC
+    LIMIT 20`
+}

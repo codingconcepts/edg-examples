@@ -1,0 +1,123 @@
+let counters        = 100
+let accounts        = 10000
+let doctors         = 200
+let initial_balance = 10000
+
+expect {
+  error_rate < 5
+  check_2 `SELECT COUNT(*) AS cnt FROM counter` cnt == counters
+  check_3 `SELECT SUM(value)::INT AS total FROM counter` total > 0
+  check_4 `SELECT COUNT(*) AS cnt FROM account` cnt == accounts
+  check_5 `SELECT COUNT(*) AS cnt FROM account WHERE balance < 0` cnt == 0
+  check_6 `SELECT COUNT(*) AS uncovered
+FROM (
+  SELECT shift_date
+  FROM on_call
+  GROUP BY shift_date
+  HAVING COUNT(*) FILTER (WHERE on_duty = true) = 0
+)` uncovered == 0
+}
+
+up {
+  create_counter `CREATE TABLE IF NOT EXISTS counter (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      value INT NOT NULL DEFAULT 0
+    )`
+
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      balance FLOAT NOT NULL
+    )`
+
+  create_on_call `CREATE TABLE IF NOT EXISTS on_call (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      doctor_name STRING NOT NULL,
+      shift_date DATE NOT NULL,
+      on_duty BOOL NOT NULL DEFAULT true
+    )`
+}
+
+seed {
+  populate_counter `INSERT INTO counter (value)
+    SELECT 0
+    FROM generate_series(1, $1::INT)` (counters)
+
+  populate_account `INSERT INTO account (balance)
+    SELECT $2::FLOAT
+    FROM generate_series(1, $1::INT)` (
+      accounts,
+      initial_balance
+  )
+
+  populate_on_call `INSERT INTO on_call (doctor_name, shift_date, on_duty)
+    SELECT
+      'doctor-' || s::TEXT,
+      current_date + (s % 10)::INT,
+      true
+    FROM generate_series(1, $1::INT) AS s` (doctors)
+}
+
+deseed {
+  truncate_on_call(type: exec) `TRUNCATE TABLE on_call`
+
+  truncate_account(type: exec) `TRUNCATE TABLE account`
+
+  truncate_counter(type: exec) `TRUNCATE TABLE counter`
+}
+
+down {
+  drop_on_call(type: exec) `DROP TABLE IF EXISTS on_call`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
+}
+
+init {
+  fetch_counters(type: query) `SELECT id FROM counter ORDER BY random()`
+
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+
+  fetch_on_call(type: query) `SELECT id FROM on_call WHERE on_duty = true ORDER BY random()`
+}
+
+weights {
+  credit_account = 20
+  lost_update    = 30
+  stale_read     = 20
+  write_skew     = 30
+}
+
+run {
+  transaction lost_update {
+    read_counter(type: query) `SELECT id, value FROM counter WHERE id = $1::UUID` (ref_rand('fetch_counters').id)
+    write_counter(type: exec) `UPDATE counter SET value = $2::INT + 1 WHERE id = $1::UUID` (
+        ref_same('read_counter').id,
+        ref_same('read_counter').value
+    )
+  }
+
+  credit_account(type: exec) `UPDATE account SET balance = balance + $2::FLOAT
+    WHERE id = $1::UUID` (
+      ref_rand('fetch_accounts').id,
+      gen('number:1,500')
+  )
+
+  transaction stale_read {
+    read_balance(type: query) `SELECT id, balance FROM account WHERE id = $1::UUID` (ref_rand('fetch_accounts').id)
+    rollback_if ref_same('read_balance').balance < 100
+    debit_account(type: exec) `UPDATE account SET balance = balance - 100 WHERE id = $1::UUID` (ref_same('read_balance').id)
+  }
+
+  transaction write_skew {
+    read_doctor(type: query) `SELECT id, shift_date
+      FROM on_call
+      WHERE id = $1::UUID AND on_duty = true` (ref_rand('fetch_on_call').id)
+    check_coverage(type: query) `SELECT COUNT(*) AS cnt
+      FROM on_call
+      WHERE shift_date = (SELECT shift_date FROM on_call WHERE id = $1::UUID)
+        AND on_duty = true` (ref_same('read_doctor').id)
+    rollback_if ref_same('check_coverage').cnt <= 1
+    go_off_duty(type: exec) `UPDATE on_call SET on_duty = false WHERE id = $1::UUID` (ref_same('read_doctor').id)
+  }
+}

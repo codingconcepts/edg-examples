@@ -1,0 +1,3 @@
+let customers       = 100000
+let initial_balance = 10000
+let batch_size      = 10000

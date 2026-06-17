@@ -1,0 +1,57 @@
+include 'products.edg'
+
+let products   = 50
+let batch_size = 10
+
+up {
+  create_product `CREATE TABLE IF NOT EXISTS product (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL,
+      description STRING NOT NULL,
+      embedding VECTOR(512) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+
+  create_embedding_index `CREATE VECTOR INDEX IF NOT EXISTS idx_product_embedding
+    ON product (embedding)`
+}
+
+seed {
+  populate_product(type: exec_batch, count: products, size: batch_size) `INSERT INTO product (name, description, embedding)
+    SELECT n, d, e::VECTOR
+    FROM unnest(
+      ARRAY[$1],
+      ARRAY[$2],
+      ARRAY[$3]
+    ) AS t(n, d, e)` (
+      ref_each(product_catalog).name,
+      ref_each(product_catalog).description,
+      embed(ref_each(product_catalog).name, ref_each(product_catalog).description)
+  )
+}
+
+deseed {
+  truncate_product(type: exec) `TRUNCATE TABLE product`
+}
+
+down {
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+}
+
+init {
+  fetch_products(type: query) `SELECT id, name FROM product`
+}
+
+run {
+  insert_product(type: exec) `INSERT INTO product (name, description, embedding)
+    VALUES ($1, $2, $3::VECTOR)` (
+      ref_same('product_catalog').name,
+      ref_same('product_catalog').description,
+      embed(ref_same('product_catalog').name, ref_same('product_catalog').description)
+  )
+
+  find_similar(type: query) `SELECT id, name, embedding <=> $1::VECTOR AS distance
+    FROM product
+    ORDER BY embedding <=> $1::VECTOR
+    LIMIT 10` (embed(ref_rand('product_catalog').name))
+}

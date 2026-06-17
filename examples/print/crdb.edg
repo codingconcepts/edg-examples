@@ -1,0 +1,59 @@
+let customers = 100
+
+ref regions [
+  {cities: '[new-york chicago dallas]', name: 'us'}
+  {cities: '[london berlin paris]', name: 'eu'}
+  {cities: '[tokyo sydney mumbai]', name: 'ap'}
+]
+
+up {
+  create_order(type: exec) `CREATE TABLE IF NOT EXISTS print_order (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      region STRING NOT NULL,
+      city STRING NOT NULL,
+      amount DECIMAL(10,2) NOT NULL
+    )`
+}
+
+seed {
+  populate_order(type: exec_batch, count: customers, size: 10) `INSERT INTO print_order (email, region, city, amount)
+    __values__` (
+      gen('email'),
+      ref_same('regions').name,
+      set_rand(ref_same('regions').cities,[]),
+      uniform(1, 500)
+  )
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE print_order`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS print_order`
+}
+
+run {
+  insert_order(
+    type: exec,
+    print: ref_same('regions').name,
+    print: arg(3),
+    print: { expr : set_rand(ref_same('regions').cities,[]), agg : "join(map(sortBy(toPairs(freq), -#[1])[:5], #[0] + '=' + string(#[1])), ' ')" },
+    print: { expr : arg(3), agg : 'avg $' + string(int(avg)) + ' n=' + string(count) },
+    print: { expr : arg(3), agg : 'total=$' + string(int(sum)) },
+    print: { expr : arg(3), agg : string(int(min)) + ' - ' + string(int(max)) },
+    print: { expr : set_rand(ref_same('regions').cities,[]), agg : string(len(freq)) + ' unique' }
+  ) `INSERT INTO print_order (email, region, city, amount)
+    VALUES ($1, $2, $3, $4::DECIMAL)` (
+      gen('email'),
+      ref_same('regions').name,
+      set_rand(ref_same('regions').cities,[]),
+      uniform(1, 500)
+  )
+
+  read_order(
+    print: { expr : ref_same('regions').name, agg : "join(map(sortBy(toPairs(freq), -#[1]), #[0] + '=' + string(#[1])), ' ')" },
+    print: { expr : arg(0), agg : string(count) }
+  ) `SELECT id, amount FROM print_order WHERE region = $1 LIMIT 1` (ref_same('regions').name)
+}

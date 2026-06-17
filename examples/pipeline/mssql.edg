@@ -1,0 +1,79 @@
+let a_rows     = 1000
+let b_rows     = 5000
+let c_rows     = 20000
+let batch_size = 5000
+
+up {
+  create_a `IF OBJECT_ID('a', 'U') IS NULL
+    CREATE TABLE a (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      name NVARCHAR(255) NOT NULL
+    )`
+
+  create_b `IF OBJECT_ID('b', 'U') IS NULL
+    CREATE TABLE b (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      a_id UNIQUEIDENTIFIER NOT NULL,
+      value INT NOT NULL,
+      FOREIGN KEY (a_id) REFERENCES a(id)
+    )`
+
+  create_c `IF OBJECT_ID('c', 'U') IS NULL
+    CREATE TABLE c (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      b_id UNIQUEIDENTIFIER NOT NULL,
+      status NVARCHAR(20) NOT NULL DEFAULT 'new',
+      FOREIGN KEY (b_id) REFERENCES b(id)
+    )`
+}
+
+seed {
+  populate_a(type: exec_batch, count: a_rows, size: batch_size) `INSERT INTO a (name)
+    __values__` (gen('word'))
+
+  populate_b `INSERT INTO b (a_id, value)
+    SELECT TOP $2 a.id, ABS(CHECKSUM(NEWID()) % 100)
+    FROM a
+    ORDER BY NEWID()` (
+      batch(b_rows / batch_size),
+      batch_size
+  )
+
+  populate_c `INSERT INTO c (b_id)
+    SELECT TOP $2 b.id
+    FROM b
+    ORDER BY NEWID()` (
+      batch(c_rows / batch_size),
+      batch_size
+  )
+}
+
+deseed {
+  delete_c(type: exec) `DELETE FROM c`
+
+  delete_b(type: exec) `DELETE FROM b`
+
+  delete_a(type: exec) `DELETE FROM a`
+}
+
+down {
+  drop_c(type: exec) `DROP TABLE IF EXISTS c`
+
+  drop_b(type: exec) `DROP TABLE IF EXISTS b`
+
+  drop_a(type: exec) `DROP TABLE IF EXISTS a`
+}
+
+run {
+  find_a(type: query) `SELECT TOP 1 id AS a_id, name
+    FROM a
+    ORDER BY NEWID()`
+
+  find_b(type: query) `SELECT TOP 1 id AS b_id, value
+    FROM b
+    WHERE a_id = @p1` (ref_rand('find_a').a_id)
+
+  update_c(type: exec) `UPDATE TOP (1) c SET status = 'processed'
+    WHERE b_id = @p1
+      AND status = 'new'` (ref_rand('find_b').b_id)
+}

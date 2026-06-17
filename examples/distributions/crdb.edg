@@ -1,0 +1,56 @@
+let rows       = 10000
+let batch_size = 1000
+
+up {
+  create_distributions `CREATE TABLE IF NOT EXISTS distributions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      dist_type STRING NOT NULL,
+      value FLOAT8 NOT NULL
+    )`
+}
+
+seed {
+  seed_uniform `INSERT INTO distributions (dist_type, value)
+    SELECT 'uniform', (random() * 100)::FLOAT8
+    FROM generate_series(1, $2::INT)` (
+      batch(rows / batch_size),
+      batch_size
+  )
+}
+
+deseed {
+  truncate_distributions(type: exec) `TRUNCATE TABLE distributions`
+}
+
+down {
+  drop_distributions(type: exec) `DROP TABLE IF EXISTS distributions`
+}
+
+weights {
+  insert_exponential = 20
+  insert_lognormal   = 20
+  insert_normal      = 20
+  insert_pareto      = 20
+  insert_uniform     = 20
+  insert_zipfian     = 20
+}
+
+run {
+  insert_uniform(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('uniform', $1::FLOAT8)` (uniform(0, 100))
+
+  insert_zipfian(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('zipfian', $1::FLOAT8)` (zipf(2.0, 1.0, 99))
+
+  insert_normal(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('normal', $1::FLOAT8)` (norm_f(50, 15, 0, 100, 2))
+
+  insert_exponential(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('exponential', $1::FLOAT8)` (exp_f(0.5, 0, 100, 2))
+
+  insert_lognormal(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('lognormal', $1::FLOAT8)` (lognorm_f(2.0, 0.5, 0, 100, 2))
+
+  insert_pareto(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('pareto', $1::FLOAT8)` (pareto(2.0, 99))
+}

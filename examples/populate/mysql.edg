@@ -1,0 +1,44 @@
+let customers       = 1000000
+let initial_balance = 10000
+let batch_size      = 10000
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      email VARCHAR(255) NOT NULL
+    )`
+
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+      balance DOUBLE NOT NULL,
+      customer_id CHAR(36) NOT NULL,
+      FOREIGN KEY (customer_id) REFERENCES customer(id)
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
+    __values__` (gen('email'))
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2, c.id
+    FROM customer c
+    ORDER BY c.id
+    LIMIT $3 OFFSET $1` (
+      batch(customers / batch_size, batch_size),
+      initial_balance,
+      batch_size
+  )
+}
+
+deseed {
+  delete_account(type: exec) `DELETE FROM account`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}

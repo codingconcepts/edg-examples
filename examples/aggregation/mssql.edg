@@ -1,0 +1,68 @@
+let products   = 500
+let batch_size = 100
+
+up {
+  create_product `IF OBJECT_ID('product', 'U') IS NULL
+    CREATE TABLE product (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      category NVARCHAR(50) NOT NULL,
+      price DECIMAL(10,2) NOT NULL,
+      stock_qty INT NOT NULL
+    )`
+
+  create_agg_snapshot `IF OBJECT_ID('agg_snapshot', 'U') IS NULL
+    CREATE TABLE agg_snapshot (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      total_products INT NOT NULL,
+      total_value DECIMAL(12,2) NOT NULL,
+      avg_price DECIMAL(10,2) NOT NULL,
+      min_price DECIMAL(10,2) NOT NULL,
+      max_price DECIMAL(10,2) NOT NULL,
+      distinct_categories INT NOT NULL,
+      created_at DATETIME2 NOT NULL DEFAULT GETDATE()
+    )`
+}
+
+seed {
+  populate_product `WITH seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    INSERT INTO product (category, price, stock_qty)
+    SELECT
+      CASE ABS(CHECKSUM(NEWID()) % 5) WHEN 0 THEN 'electronics' WHEN 1 THEN 'clothing' WHEN 2 THEN 'books' WHEN 3 THEN 'food' ELSE 'toys' END,
+      CAST(RAND(CHECKSUM(NEWID())) * 499 + 1 AS DECIMAL(10,2)),
+      ABS(CHECKSUM(NEWID()) % 200) + 1
+    FROM seq
+    OPTION (MAXRECURSION 0)` (products)
+}
+
+deseed {
+  delete_agg_snapshot(type: exec) `DELETE FROM agg_snapshot`
+
+  delete_product(type: exec) `DELETE FROM product`
+}
+
+down {
+  drop_agg_snapshot(type: exec) `DROP TABLE IF EXISTS agg_snapshot`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+}
+
+run {
+  fetch_products(type: query) `SELECT id, category, price, stock_qty
+    FROM product
+    ORDER BY NEWID()
+    OFFSET 0 ROWS FETCH NEXT CAST(@p1 AS INT) ROWS ONLY` (gen('number:1,10'))
+
+  record_snapshot(type: exec) `INSERT INTO agg_snapshot (total_products, total_value, avg_price, min_price, max_price, distinct_categories)
+    VALUES (@p1, @p2, @p3, @p4, @p5, @p6)` (
+      count('fetch_products'),
+      sum('fetch_products', 'price'),
+      avg('fetch_products', 'price'),
+      min('fetch_products', 'price'),
+      max('fetch_products', 'price'),
+      distinct('fetch_products', 'category')
+  )
+}

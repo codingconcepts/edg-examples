@@ -1,0 +1,58 @@
+let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+up {
+  create_customer(type: exec) `{"create": "customer"}`
+
+  create_account(type: exec) `{"create": "account"}`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `{"insert": "customer", "documents": [{"_id": {"$oid": "$1"}, "email": "$2"}]}` (
+      objectid(),
+      gen('email')
+  )
+
+  fetch_customers(type: query) `{"find": "customer", "filter": {}}`
+
+  populate_account(type: exec_batch, count: customers, size: batch_size) `{"insert": "account", "documents": [{"_id": {"$oid": "$1"}, "customer_id": {"$oid": "$2"}, "balance": $3}]}` (
+      objectid(),
+      ref_rand('fetch_customers')._id,
+      initial_balance
+  )
+}
+
+init {
+  fetch_accounts(type: query) `{"find": "account", "filter": {}}`
+}
+
+weights {
+  check_balance = 50
+  credit_account = 5
+  make_transfer = 45
+}
+
+run {
+  check_balance(type: query) `{"find": "account", "filter": {"_id": {"$oid": "$1"}}}` (ref_rand('fetch_accounts')._id)
+
+  credit_account(type: exec) `{"update": "account", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$inc": {"balance": $2}}}]}` (
+      ref_rand('fetch_accounts')._id,
+      gen('number:1,1000')
+  )
+
+  transaction make_transfer {
+    let amount = gen('number:1,100')
+    read_source(type: query) `{"find": "account", "filter": {"_id": {"$oid": "$1"}}}` (ref_diff('fetch_accounts')._id)
+    rollback_if ref_same('read_source').balance < local('amount')
+    read_target(type: query) `{"find": "account", "filter": {"_id": {"$oid": "$1"}}}` (ref_diff('fetch_accounts')._id)
+    debit_source(type: exec) `{"update": "account", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$inc": {"balance": -$2}}}]}` (
+        ref_same('read_source')._id,
+        local('amount')
+    )
+    credit_target(type: exec) `{"update": "account", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$inc": {"balance": $2}}}]}` (
+        ref_same('read_target')._id,
+        local('amount')
+    )
+  }
+}

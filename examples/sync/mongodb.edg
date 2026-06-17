@@ -1,0 +1,37 @@
+let user_count  = 1000
+let order_count = 5000
+
+up {
+  create_users(type: exec) `{"create": "users"}`
+
+  create_orders(type: exec) `{"create": "orders"}`
+}
+
+seed {
+  seed_users(type: exec_batch, count: user_count) `{"insert": "users", "documents": [{"id": $1, "email": $2, "name": $3}]}` (
+      seq(1, 1),
+      gen('email'),
+      gen('name')
+  )
+
+  fetch_users `{"find": "users", "filter": {}}`
+
+  seed_orders(type: exec_batch, count: order_count) `{"insert": "orders", "documents": [{"id": $1, "user_id": $2, "amount": $3, "status": $4}]}` (
+      seq(1, 1),
+      ref_rand('fetch_users').id,
+      uniform_f(10.0, 500.0, 2),
+      set_rand(['pending', 'shipped', 'delivered', 'cancelled'],[40, 35, 20, 5])
+  )
+}
+
+deseed {
+  delete_orders(type: exec) `{"delete": "orders", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_users(type: exec) `{"delete": "users", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_orders(type: exec) `{"drop": "orders"}`
+
+  drop_users(type: exec) `{"drop": "users"}`
+}

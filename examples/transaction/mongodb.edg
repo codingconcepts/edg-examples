@@ -1,0 +1,63 @@
+let customers       = 10000
+let initial_balance = 10000
+
+up {
+  create_customer(type: exec) `{"create": "customer"}`
+
+  create_account(type: exec) `{"create": "account"}`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers) `{"insert": "customer", "documents": [{"_id": "$1", "email": "$2"}]}` (
+      gen('uuid'),
+      gen('email')
+  )
+
+  fetch_customers(type: query) `{"find": "customer", "filter": {}}`
+
+  populate_account(type: exec_batch, count: customers) `{"insert": "account", "documents": [{"_id": "$1", "customer_id": "$2", "balance": $3}]}` (
+      gen('uuid'),
+      ref_rand('fetch_customers')._id,
+      initial_balance
+  )
+}
+
+deseed {
+  delete_accounts(type: exec) `{"delete": "account", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_customers(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_account(type: exec) `{"drop": "account"}`
+
+  drop_customer(type: exec) `{"drop": "customer"}`
+}
+
+init {
+  fetch_accounts(type: query) `{"find": "account", "filter": {}}`
+}
+
+weights {
+  check_balance = 50
+  make_transfer = 50
+}
+
+run {
+  check_balance(type: query) `{"find": "account", "filter": {"_id": "$1"}}` (ref_rand('fetch_accounts')._id)
+
+  transaction make_transfer {
+    let amount = gen('number:1,100')
+    read_source(type: query) `{"find": "account", "filter": {"_id": "$1"}}` (ref_diff('fetch_accounts')._id)
+    rollback_if ref_same('read_source').balance < local('amount')
+    read_target(type: query) `{"find": "account", "filter": {"_id": "$1"}}` (ref_diff('fetch_accounts')._id)
+    debit_source(type: exec) `{"update": "account", "updates": [{"q": {"_id": "$1"}, "u": {"$inc": {"balance": -$2}}}]}` (
+        ref_same('read_source')._id,
+        local('amount')
+    )
+    credit_target(type: exec) `{"update": "account", "updates": [{"q": {"_id": "$1"}, "u": {"$inc": {"balance": $2}}}]}` (
+        ref_same('read_target')._id,
+        local('amount')
+    )
+  }
+}

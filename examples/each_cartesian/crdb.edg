@@ -1,0 +1,49 @@
+let num_a = 10
+let num_b = 20
+
+up {
+  create_a `CREATE TABLE IF NOT EXISTS a (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL
+    )`
+
+  create_b `CREATE TABLE IF NOT EXISTS b (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL
+    )`
+
+  create_c `CREATE TABLE IF NOT EXISTS c (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      a_id UUID NOT NULL REFERENCES a(id),
+      b_id UUID NOT NULL REFERENCES b(id)
+    )`
+}
+
+seed {
+  populate_a(type: exec_batch, count: num_a, size: 1) `INSERT INTO a (name)
+    __values__` (gen('company'))
+
+  populate_b(type: exec_batch, count: num_b, size: 1) `INSERT INTO b (email)
+    __values__` (gen('email'))
+
+  populate_c `INSERT INTO c (a_id, b_id) VALUES ($1, $2)` (
+      ref_each('SELECT id FROM a ORDER BY id'),
+      ref_each('SELECT id FROM b ORDER BY id')
+  )
+}
+
+deseed {
+  truncate_c(type: exec) `TRUNCATE TABLE c CASCADE`
+
+  truncate_b(type: exec) `TRUNCATE TABLE b CASCADE`
+
+  truncate_a(type: exec) `TRUNCATE TABLE a CASCADE`
+}
+
+down {
+  drop_c(type: exec) `DROP TABLE IF EXISTS c`
+
+  drop_b(type: exec) `DROP TABLE IF EXISTS b`
+
+  drop_a(type: exec) `DROP TABLE IF EXISTS a`
+}

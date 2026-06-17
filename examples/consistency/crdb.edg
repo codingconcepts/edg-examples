@@ -1,0 +1,161 @@
+let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+
+expect {
+  error_rate < 25
+  lost_update `SELECT COALESCE(SUM(value), 0)::INT8 AS counter_total FROM counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM account` n = = accounts
+  dirty_write `SELECT COALESCE(SUM(balance), 0)::INT8 AS total FROM account` total = = accounts * initial_balance
+  write_skew `SELECT COALESCE(SUM(version), 0)::INT8 AS total_versions FROM cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n = = accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = true` on_duty >= 1
+}
+
+up {
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id INT8 PRIMARY KEY,
+      balance INT8 NOT NULL,
+      version INT8 NOT NULL DEFAULT 0
+    )`
+
+  create_ledger `CREATE TABLE IF NOT EXISTS ledger (
+      id INT8 PRIMARY KEY DEFAULT unique_rowid(),
+      account_id INT8 NOT NULL REFERENCES account(id),
+      amount INT8 NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+
+  create_counter `CREATE TABLE IF NOT EXISTS counter (
+      id INT8 PRIMARY KEY,
+      value INT8 NOT NULL DEFAULT 0
+    )`
+
+  create_blind_write `CREATE TABLE IF NOT EXISTS blind_write (
+      id INT8 PRIMARY KEY,
+      value INT8 NOT NULL DEFAULT 0
+    )`
+
+  create_cas `CREATE TABLE IF NOT EXISTS cas (
+      id INT8 PRIMARY KEY,
+      value INT8 NOT NULL DEFAULT 0,
+      version INT8 NOT NULL DEFAULT 0
+    )`
+
+  create_oncall `CREATE TABLE IF NOT EXISTS oncall (
+      doctor_id INT8 PRIMARY KEY,
+      on_duty BOOL NOT NULL DEFAULT true
+    )`
+}
+
+seed {
+  populate_accounts `INSERT INTO account (id, balance)
+    SELECT s, $2::INT8
+    FROM generate_series(1, $1::INT) AS s
+    ON CONFLICT (id) DO NOTHING` (
+      accounts,
+      initial_balance
+  )
+
+  populate_counters `INSERT INTO counter (id, value)
+    VALUES (1, 0), (2, 0)
+    ON CONFLICT (id) DO NOTHING`
+
+  populate_blind_write `INSERT INTO blind_write (id, value)
+    SELECT s, 0
+    FROM generate_series(1, $1::INT) AS s
+    ON CONFLICT (id) DO NOTHING` (accounts)
+
+  populate_cas `INSERT INTO cas (id, value)
+    SELECT s, 0
+    FROM generate_series(1, $1::INT) AS s
+    ON CONFLICT (id) DO NOTHING` (accounts)
+
+  populate_oncall `INSERT INTO oncall (doctor_id, on_duty)
+    VALUES (1, true), (2, true), (3, true)
+    ON CONFLICT (doctor_id) DO NOTHING`
+}
+
+deseed {
+  truncate_ledger(type: exec) `TRUNCATE TABLE ledger`
+
+  reset_accounts(type: exec) `UPDATE account SET balance = $1::INT8, version = 0` (initial_balance)
+
+  reset_counters(type: exec) `UPDATE counter SET value = 0`
+
+  reset_oncall(type: exec) `UPDATE oncall SET on_duty = true`
+
+  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0`
+
+  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0`
+}
+
+down {
+  drop_ledger(type: exec) `DROP TABLE IF EXISTS ledger`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_oncall(type: exec) `DROP TABLE IF EXISTS oncall`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
+
+  drop_blind_write(type: exec) `DROP TABLE IF EXISTS blind_write`
+
+  drop_cas(type: exec) `DROP TABLE IF EXISTS cas`
+}
+
+weights {
+  blind_write         = 10
+  cas_update          = 10
+  check_total_balance = 10
+  count_ledger        = 10
+  go_off_duty         = 10
+  increment_counter   = 10
+  insert_ledger       = 10
+  transfer            = 10
+}
+
+run {
+  count_ledger(type: query) `SELECT COUNT(*) AS entries, COALESCE(SUM(amount), 0) AS total
+    FROM ledger
+    WHERE account_id = $1::INT8` (gen('number:1,' + string(accounts)))
+
+  insert_ledger(type: exec) `INSERT INTO ledger (account_id, amount)
+    VALUES ($1::INT8, $2::INT8)` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,500')
+  )
+
+  increment_counter(type: exec) `UPDATE counter SET value = value + 1 WHERE id = $1::INT8` (gen('number:1,2'))
+
+  transfer(type: exec) `UPDATE account
+    SET balance = CASE
+                    WHEN id = $1::INT8 THEN balance - $3::INT8
+                    WHEN id = $2::INT8 THEN balance + $3::INT8
+                  END
+    WHERE id IN ($1::INT8, $2::INT8)
+      AND $1::INT8 != $2::INT8` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,' + string(accounts)),
+      gen('number:1,100')
+  )
+
+  blind_write(type: exec) `UPDATE blind_write SET value = $2::INT8 WHERE id = $1::INT8` (
+      gen('number:1,' + string(accounts)),
+      gen('number:100,900')
+  )
+
+  cas_update(type: exec) `UPDATE cas
+    SET value = value + $2::INT8, version = version + 1
+    WHERE id = $1::INT8
+      AND version = (SELECT version FROM cas WHERE id = $1::INT8)` (
+      gen('number:1,' + string(accounts)),
+      gen('number:1,100')
+  )
+
+  check_total_balance(type: query) `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts
+    FROM account`
+
+  go_off_duty(type: exec) `UPDATE oncall SET on_duty = false
+    WHERE doctor_id = $1::INT8
+      AND (SELECT COUNT(*) FROM oncall WHERE on_duty = true) > 1` (gen('number:1,3'))
+}

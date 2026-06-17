@@ -1,0 +1,131 @@
+let customers  = 1000
+let products   = 100
+let batch_size = 500
+
+expect {
+  check_1 `SELECT COUNT(DISTINCT check_type) AS cnt FROM compliance_log` cnt == 3
+  check_2 `SELECT COUNT(*) AS cnt
+FROM compliance_log cl
+JOIN customer c ON c.id = cl.customer_id
+WHERE (cl.check_type = 'gdpr'     AND c.market != 'uk')
+   OR (cl.check_type = 'ccpa'     AND c.market != 'us')
+   OR (cl.check_type = 'standard' AND c.market != 'eu')` cnt == 0
+  check_3 `SELECT COUNT(*) AS cnt
+FROM order_log
+WHERE (market = 'uk' AND currency != 'GBP')
+   OR (market = 'us' AND currency != 'USD')
+   OR (market = 'eu' AND currency != 'EUR')` cnt == 0
+  check_4 `SELECT COUNT(*) AS cnt
+FROM order_log
+WHERE (currency = 'GBP' AND abs(tax - subtotal * 0.20) > 0.01)
+   OR (currency = 'USD' AND abs(tax - subtotal * 0.10) > 0.01)
+   OR (currency = 'EUR' AND abs(tax - subtotal * 0.23) > 0.01)` cnt == 0
+  check_5 `SELECT COUNT(DISTINCT market) AS cnt FROM order_log` cnt == 3
+}
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      market STRING NOT NULL
+    )`
+
+  create_product `CREATE TABLE IF NOT EXISTS product (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL,
+      price FLOAT NOT NULL
+    )`
+
+  create_compliance_log `CREATE TABLE IF NOT EXISTS compliance_log (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      customer_id UUID NOT NULL,
+      market STRING NOT NULL,
+      check_type STRING NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+
+  create_order_log `CREATE TABLE IF NOT EXISTS order_log (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      customer_id UUID NOT NULL,
+      product_id UUID NOT NULL,
+      subtotal FLOAT NOT NULL,
+      tax FLOAT NOT NULL,
+      currency STRING NOT NULL,
+      market STRING NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email, market)
+    __values__` (
+      gen('email'),
+      set_rand(['uk', 'us', 'eu'],[34, 33, 33])
+  )
+
+  populate_product(type: exec_batch, count: products, size: batch_size) `INSERT INTO product (name, price)
+    __values__` (
+      gen('productname'),
+      uniform_f(5.00, 500.00, 2)
+  )
+}
+
+deseed {
+  truncate_order_log(type: exec) `TRUNCATE TABLE order_log`
+
+  truncate_compliance_log(type: exec) `TRUNCATE TABLE compliance_log`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_order_log(type: exec) `DROP TABLE IF EXISTS order_log`
+
+  drop_compliance_log(type: exec) `DROP TABLE IF EXISTS compliance_log`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+init {
+  fetch_customers(type: query) `SELECT id FROM customer ORDER BY random()`
+
+  fetch_products(type: query) `SELECT id, price FROM product ORDER BY random()`
+}
+
+run {
+  read_customer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref_rand('fetch_customers').id)
+
+  
+
+  transaction place_order {
+    read_buyer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref_rand('fetch_customers').id)
+    read_product(type: query) `SELECT id, price FROM product WHERE id = $1::UUID` (ref_rand('fetch_products').id)
+    match ref_same('read_buyer').market {
+      when 'uk' {
+        let tax_rate = 0.20
+        let currency = 'GBP'
+      }
+      when 'us' {
+        let tax_rate = 0.10
+        let currency = 'USD'
+      }
+      default {
+        let tax_rate = 0.23
+        let currency = 'EUR'
+      }
+    }
+    insert_order(type: exec) `INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
+      VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, $5::STRING, $6::STRING)` (
+        ref_same('read_buyer').id,
+        ref_same('read_product').id,
+        ref_same('read_product').price,
+        ref_same('read_product').price * local('tax_rate'),
+        local('currency'),
+        ref_same('read_buyer').market
+    )
+  }
+}

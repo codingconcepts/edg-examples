@@ -1,0 +1,51 @@
+let invoices = 100
+
+up {
+  create_invoice `CREATE TABLE IF NOT EXISTS invoice (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      total NUMERIC(12,2) NOT NULL,
+      subtotal NUMERIC(12,2) NOT NULL,
+      tax NUMERIC(12,2) NOT NULL,
+      shipping NUMERIC(12,2) NOT NULL
+    )`
+
+  create_line_item `CREATE TABLE IF NOT EXISTS line_item (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      invoice_id UUID NOT NULL REFERENCES invoice(id),
+      amount NUMERIC(12,2) NOT NULL
+    )`
+}
+
+seed {
+  populate(type: exec_batch, count: invoices, size: 1) `WITH inv AS (
+      INSERT INTO invoice (id, total, subtotal, tax, shipping)
+      VALUES (
+        '$1'::UUID,
+        $2,
+        split_part('$4', ',', 1)::NUMERIC,
+        split_part('$4', ',', 2)::NUMERIC,
+        split_part('$4', ',', 3)::NUMERIC
+      )
+      RETURNING id
+    )
+    INSERT INTO line_item (invoice_id, amount)
+    SELECT inv.id, unnest(string_to_array('$3', ',')::NUMERIC[])
+    FROM inv` (
+      uuid_v4(),
+      uniform_f(100, 10000, 2),
+      distribute_sum(arg(1), 3, 7, 2),
+      distribute_weighted(arg(1),[85, 10, 5], 0.1, 2)
+  )
+}
+
+deseed {
+  truncate_line_item(type: exec) `TRUNCATE TABLE line_item CASCADE`
+
+  truncate_invoice(type: exec) `TRUNCATE TABLE invoice CASCADE`
+}
+
+down {
+  drop_line_item(type: exec) `DROP TABLE IF EXISTS line_item`
+
+  drop_invoice(type: exec) `DROP TABLE IF EXISTS invoice`
+}

@@ -1,0 +1,31 @@
+let users      = 10000
+let batch_size = 1000
+
+up {
+  create_user `IF OBJECT_ID('user', 'U') IS NULL
+    CREATE TABLE [user] (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      email NVARCHAR(255) NOT NULL,
+      phone NVARCHAR(50),
+      bio NVARCHAR(MAX),
+      referred_by UNIQUEIDENTIFIER
+    )`
+}
+
+seed {
+  populate_user(type: exec_batch, count: users, size: batch_size) `INSERT INTO [user] (email, phone, bio, referred_by)
+    __values__` (
+      gen('email'),
+      nullable(gen('phone'), 0.3),
+      nullable(gen('sentence:5'), 0.5),
+      nullable(uuid_v4(), 0.8)
+  )
+}
+
+deseed {
+  delete_user(type: exec) `DELETE FROM [user]`
+}
+
+down {
+  drop_user(type: exec) `DROP TABLE IF EXISTS [user]`
+}

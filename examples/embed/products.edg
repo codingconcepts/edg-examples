@@ -1,0 +1,52 @@
+ref product_catalog [
+  {description: 'Over-ear Bluetooth headphones with active noise cancellation and 30-hour battery life', name: 'Wireless Noise-Cancelling Headphones'}
+  {description: 'Sweat-resistant wireless earbuds with secure ear hooks for running and gym workouts', name: 'Bluetooth Sport Earbuds'}
+  {description: 'Open-back wired headphones with flat frequency response for professional audio mixing', name: 'Studio Monitor Headphones'}
+  {description: 'Cardioid studio microphone with built-in pop filter for podcasting and voice recording', name: 'USB Condenser Microphone'}
+  {description: 'Waterproof compact speaker with 360-degree sound and 12-hour battery life', name: 'Portable Bluetooth Speaker'}
+  {description: '2.1-channel soundbar with wireless subwoofer and Dolby Atmos for home theater', name: 'Soundbar with Subwoofer'}
+  {description: 'USB MIDI controller with jog wheels and performance pads for digital DJing', name: 'DJ Turntable Controller'}
+  {description: 'Open-ear headphones that transmit sound through cheekbones for situational awareness while cycling', name: 'Bone Conduction Headphones'}
+  {description: 'RGB backlit keyboard with hot-swappable Cherry MX switches and programmable macros', name: 'Mechanical Gaming Keyboard'}
+  {description: 'Tented split-layout keyboard with curved key wells to reduce wrist strain during long typing sessions', name: 'Ergonomic Split Keyboard'}
+  {description: 'Lightweight mouse with 25K DPI optical sensor and customizable side buttons', name: 'Wireless Gaming Mouse'}
+  {description: 'Thumb-operated trackball with adjustable DPI and sculpted rest to minimize repetitive strain', name: 'Ergonomic Trackball Mouse'}
+  {description: '15-inch pen display with 8192 pressure levels for digital illustration and photo retouching', name: 'Drawing Tablet with Display'}
+  {description: 'Bluetooth number pad with mechanical switches for spreadsheet and accounting workflows', name: 'Compact Wireless Numpad'}
+  {description: '34-inch UWQHD IPS display with 144Hz refresh rate and USB-C docking for productivity', name: 'Ultrawide Curved Monitor'}
+  {description: 'Ultra HD webcam with auto-focus and built-in ring light for video conferencing', name: '4K Webcam'}
+  {description: '15.6-inch 1080p USB-C portable display for dual-screen setups on the go', name: 'Portable Monitor'}
+  {description: 'Screen-mounted LED light bar with adjustable color temperature to reduce eye strain', name: 'Monitor Light Bar'}
+  {description: 'Tri-band mesh network kit covering 6000 sq ft with parental controls and WPA3 security', name: 'Mesh Wi-Fi Router System'}
+  {description: 'Thunderbolt 4 dock with dual 4K display output, Ethernet, and 96W power delivery', name: 'Laptop Docking Station'}
+  {description: 'Multiport adapter with HDMI, SD card reader, USB-A, and Ethernet for ultrabook connectivity', name: 'USB-C Hub 7-in-1'}
+  {description: 'Gigabit powerline kit that extends wired network through household electrical wiring', name: 'Ethernet Powerline Adapter'}
+  {description: '65W GaN charger with dual USB-C ports for simultaneously charging laptop and phone', name: 'USB-C Fast Charger'}
+  {description: '20000mAh battery pack with USB-C PD output for charging laptops and tablets on the go', name: 'Portable Power Bank'}
+  {description: 'Qi2 magnetic charging pad with 15W fast charge for phones and earbuds', name: 'Wireless Charging Pad'}
+  {description: 'Foldable 28W solar panel with dual USB output for hiking and off-grid device charging', name: 'Solar Panel Charger'}
+  {description: '2TB portable solid-state drive with 2000MB/s read speeds over USB-C 3.2 Gen 2x2', name: 'External NVMe SSD'}
+  {description: 'Four-bay network storage enclosure with RAID support and 2.5GbE for home media servers', name: 'NAS Enclosure 4-Bay'}
+  {description: 'Metal unibody USB 3.2 flash drive with 400MB/s read speed and keyring loop', name: 'USB Flash Drive 256GB'}
+  {description: 'Adjustable color temperature desk lamp with wireless charging base and ambient light sensor', name: 'Smart LED Desk Lamp'}
+  {description: 'Height-adjustable desktop riser with gas spring lift for sit-stand ergonomic workstations', name: 'Standing Desk Converter'}
+  {description: 'White noise generator with brown noise and nature soundscapes to mask office distractions', name: 'Noise Machine for Focus'}
+  {description: 'Under-desk cable tray with clamp mount to organize power strips and adapter cables', name: 'Cable Management Tray'}
+  {description: '900x400mm microfiber desk pad with stitched edges and non-slip rubber base', name: 'Desk Mat XXL'}
+  {description: 'Aluminum laptop riser with height and angle adjustment for ergonomic screen positioning', name: 'Laptop Stand Adjustable'}
+  {description: 'Wi-Fi enabled surge protector with individually controllable outlets and energy monitoring', name: 'Smart Plug Power Strip'}
+  {description: 'Learning thermostat with room sensors and geofencing for automated heating and cooling schedules', name: 'Smart Thermostat'}
+  {description: 'Keyless deadbolt with fingerprint reader, keypad, and app-based remote access', name: 'Smart Door Lock'}
+  {description: '1080p Wi-Fi camera with night vision, two-way audio, and local microSD recording', name: 'Indoor Security Camera'}
+  {description: 'GPS-enabled smartwatch with heart rate monitor, sleep tracking, and 7-day battery life', name: 'Fitness Smartwatch'}
+  {description: 'Non-prescription lenses with blue light filter coating for reducing screen-related eye fatigue', name: 'Blue Light Glasses'}
+  {description: 'Wearable sensor that vibrates to remind you to straighten your back while sitting at a desk', name: 'Posture Corrector Device'}
+  {description: 'Slim sliding lens cover compatible with laptops and monitors for physical camera privacy', name: 'Webcam Privacy Cover'}
+  {description: 'Microfiber pad with spray bottle for streak-free cleaning of monitors, tablets, and phones', name: 'Reusable Screen Cleaner'}
+  {description: 'Memory foam wrist pad with cooling gel layer sized for tenkeyless mechanical keyboards', name: 'Keyboard Wrist Rest'}
+  {description: 'Dimmable LED ring light with tripod stand and phone holder for streaming and product photography', name: 'Ring Light 18-inch'}
+  {description: '3-axis handheld gimbal for mirrorless cameras with follow-focus and timelapse modes', name: 'Camera Gimbal Stabilizer'}
+  {description: 'Collapsible double-sided background in white and grey for product and portrait photography', name: 'Portable Photo Backdrop'}
+  {description: 'Hall-effect thumbstick gamepad with back buttons and low-latency 2.4GHz dongle for PC', name: 'Gaming Controller Wireless'}
+  {description: 'All-in-one virtual reality headset with inside-out tracking and hand gesture controls', name: 'VR Headset Standalone'}
+]

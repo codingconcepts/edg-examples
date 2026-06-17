@@ -1,0 +1,106 @@
+let jobs       = 500
+let batch_size = 100
+
+up {
+  create_job `CREATE TABLE IF NOT EXISTS job (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      kind STRING NOT NULL,
+      payload JSONB,
+      status STRING NOT NULL DEFAULT 'pending',
+      worker_id STRING,
+      lease_expires_at TIMESTAMPTZ,
+      attempts INT NOT NULL DEFAULT 0,
+      max_attempts INT NOT NULL DEFAULT 3,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      completed_at TIMESTAMPTZ
+    )`
+
+  create_job_status_idx `CREATE INDEX IF NOT EXISTS idx_job_status ON job (status, created_at)`
+
+  create_job_lease_idx `CREATE INDEX IF NOT EXISTS idx_job_lease ON job (status, lease_expires_at)`
+
+  create_job_log `CREATE TABLE IF NOT EXISTS job_log (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      job_id UUID NOT NULL REFERENCES job(id),
+      event STRING NOT NULL,
+      detail JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+}
+
+seed {
+  seed_jobs(type: exec_batch, count: jobs, size: batch_size) `INSERT INTO job (kind, payload)
+    __values__` (
+      set_rand(['email', 'report', 'sync', 'cleanup', 'notify'],[30, 20, 25, 10, 15]),
+      json_obj('priority', set_rand(['low', 'medium', 'high'],[50, 35, 15]), 'retryable', true)
+  )
+}
+
+deseed {
+  delete_job_log(type: exec) `DELETE FROM job_log WHERE true`
+
+  delete_job(type: exec) `DELETE FROM job WHERE true`
+}
+
+down {
+  drop_job_log `DROP TABLE IF EXISTS job_log`
+
+  drop_job `DROP TABLE IF EXISTS job`
+}
+
+init {
+  fetch_jobs(type: query) `SELECT id FROM job WHERE status = 'pending' ORDER BY random()`
+}
+
+run {
+  transaction process_job {
+    claim_job(type: query) `UPDATE job
+      SET status = 'running',
+          worker_id = 'edg',
+          lease_expires_at = now() + interval '10 seconds',
+          attempts = attempts + 1
+      WHERE id = (
+          SELECT id FROM job
+          WHERE status = 'pending'
+          ORDER BY created_at ASC
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+      )
+      RETURNING id, kind`
+    rollback_if count('claim_job') == 0
+    log_start(type: exec) `INSERT INTO job_log (job_id, event, detail)
+      VALUES ($1::UUID, 'started', json_build_object('kind', $2))` (
+        ref_same('claim_job').id,
+        ref_same('claim_job').kind
+    )
+    log_complete(type: exec, wait: 500ms) `INSERT INTO job_log (job_id, event, detail)
+      VALUES ($1::UUID, 'completed', $2::JSONB)` (
+        ref_same('claim_job').id,
+        json_obj('duration_ms', uniform(50, 2000))
+    )
+    complete_job(type: exec) `UPDATE job
+      SET status = 'completed',
+          completed_at = now()
+      WHERE id = $1::UUID` (
+        ref_same('claim_job').id,
+        json_obj('processed_by', 'edg', 'items', uniform(1, 100))
+    )
+  }
+}
+
+workers {
+  reap_expired(type: exec, rate: 1/5s) `UPDATE job
+    SET status = 'pending',
+        worker_id = NULL,
+        lease_expires_at = NULL
+    WHERE status = 'running'
+      AND lease_expires_at < now()
+      AND attempts < max_attempts`
+
+  fail_exhausted(type: exec, rate: 1/5s) `UPDATE job
+    SET status = 'failed',
+        completed_at = now()
+    WHERE status = 'running'
+      AND lease_expires_at < now()
+      AND attempts >= max_attempts`
+}

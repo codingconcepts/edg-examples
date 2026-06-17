@@ -1,0 +1,54 @@
+let products = 20
+let reviews  = 50
+
+up {
+  create_product(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE product (
+          id VARCHAR2(36) DEFAULT SYS_GUID() PRIMARY KEY,
+          name VARCHAR2(255) NOT NULL UNIQUE,
+          price NUMBER(10,2) DEFAULT 0 NOT NULL
+        )';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_review(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE review (
+          id VARCHAR2(36) DEFAULT SYS_GUID() PRIMARY KEY,
+          product_id VARCHAR2(36) NOT NULL,
+          rating NUMBER(1) NOT NULL,
+          body VARCHAR2(4000) NOT NULL
+        )';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  insert_products(type: exec_batch, count: products, size: 10) `INSERT ALL __values__(product(name, price))` (
+      gen('productname'),
+      uniform_f(1.00, 100.00, 2)
+  )
+
+  fetch_products(type: query) `SELECT id, name FROM product`
+
+  insert_reviews(type: exec_batch, count: reviews, size: 10) `INSERT ALL __values__(review(product_id, rating, body))` (
+      ref_rand('fetch_products').id,
+      norm(4, 1, 1, 5),
+      gen('loremipsumsentence:5')
+  )
+}
+
+deseed {
+  truncate_review(type: exec) `TRUNCATE TABLE review`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE review CASCADE CONSTRAINTS PURGE`
+
+  drop_product(type: exec) `DROP TABLE product CASCADE CONSTRAINTS PURGE`
+}
