@@ -112,7 +112,7 @@ seed:
     size: batch_size
     args:
       - seq(1, 1)
-      - template('%015d', seq(1, 1))
+      - template('%015d', arg(0))
       - gen('number:0,1')
       - gen('number:0,1')
       - gen('number:0,1')

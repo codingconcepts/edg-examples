@@ -1,0 +1,251 @@
+let subscribers = int(coalesce(env_nil('SUBSCRIBERS'), 1000))
+let batch_size  = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_subscriber `IF OBJECT_ID('subscriber', 'U') IS NULL
+    CREATE TABLE subscriber (
+      s_id INT NOT NULL PRIMARY KEY,
+      sub_nbr VARCHAR(15) NOT NULL,
+      bit_1 INT NOT NULL DEFAULT 0,
+      bit_2 INT NOT NULL DEFAULT 0,
+      bit_3 INT NOT NULL DEFAULT 0,
+      bit_4 INT NOT NULL DEFAULT 0,
+      bit_5 INT NOT NULL DEFAULT 0,
+      bit_6 INT NOT NULL DEFAULT 0,
+      bit_7 INT NOT NULL DEFAULT 0,
+      bit_8 INT NOT NULL DEFAULT 0,
+      bit_9 INT NOT NULL DEFAULT 0,
+      bit_10 INT NOT NULL DEFAULT 0,
+      hex_1 INT NOT NULL DEFAULT 0,
+      hex_2 INT NOT NULL DEFAULT 0,
+      hex_3 INT NOT NULL DEFAULT 0,
+      hex_4 INT NOT NULL DEFAULT 0,
+      hex_5 INT NOT NULL DEFAULT 0,
+      hex_6 INT NOT NULL DEFAULT 0,
+      hex_7 INT NOT NULL DEFAULT 0,
+      hex_8 INT NOT NULL DEFAULT 0,
+      hex_9 INT NOT NULL DEFAULT 0,
+      hex_10 INT NOT NULL DEFAULT 0,
+      byte2_1 INT NOT NULL DEFAULT 0,
+      byte2_2 INT NOT NULL DEFAULT 0,
+      byte2_3 INT NOT NULL DEFAULT 0,
+      byte2_4 INT NOT NULL DEFAULT 0,
+      byte2_5 INT NOT NULL DEFAULT 0,
+      byte2_6 INT NOT NULL DEFAULT 0,
+      byte2_7 INT NOT NULL DEFAULT 0,
+      byte2_8 INT NOT NULL DEFAULT 0,
+      byte2_9 INT NOT NULL DEFAULT 0,
+      byte2_10 INT NOT NULL DEFAULT 0,
+      msc_location INT NOT NULL DEFAULT 0,
+      vlr_location INT NOT NULL DEFAULT 0,
+      UNIQUE (sub_nbr)
+    )`
+
+  create_access_info `IF OBJECT_ID('access_info', 'U') IS NULL
+    CREATE TABLE access_info (
+      s_id INT NOT NULL,
+      ai_type INT NOT NULL,
+      data1 INT NOT NULL DEFAULT 0,
+      data2 INT NOT NULL DEFAULT 0,
+      data3 VARCHAR(3) NOT NULL DEFAULT '',
+      data4 VARCHAR(5) NOT NULL DEFAULT '',
+      PRIMARY KEY (s_id, ai_type)
+    )`
+
+  create_special_facility `IF OBJECT_ID('special_facility', 'U') IS NULL
+    CREATE TABLE special_facility (
+      s_id INT NOT NULL,
+      sf_type INT NOT NULL,
+      is_active INT NOT NULL DEFAULT 1,
+      error_cntrl INT NOT NULL DEFAULT 0,
+      data_a INT NOT NULL DEFAULT 0,
+      data_b VARCHAR(5) NOT NULL DEFAULT '',
+      PRIMARY KEY (s_id, sf_type)
+    )`
+
+  create_call_forwarding `IF OBJECT_ID('call_forwarding', 'U') IS NULL
+    CREATE TABLE call_forwarding (
+      s_id INT NOT NULL,
+      sf_type INT NOT NULL,
+      start_time INT NOT NULL,
+      end_time INT NOT NULL,
+      numberx VARCHAR(15) NOT NULL,
+      PRIMARY KEY (s_id, sf_type, start_time)
+    )`
+}
+
+seed {
+  populate_subscriber(type: exec_batch, count: subscribers, size: batch_size) `INSERT INTO subscriber (s_id, sub_nbr,
+      bit_1, bit_2, bit_3, bit_4, bit_5,
+      bit_6, bit_7, bit_8, bit_9, bit_10,
+      hex_1, hex_2, hex_3, hex_4, hex_5,
+      hex_6, hex_7, hex_8, hex_9, hex_10,
+      byte2_1, byte2_2, byte2_3, byte2_4, byte2_5,
+      byte2_6, byte2_7, byte2_8, byte2_9, byte2_10,
+      msc_location, vlr_location)
+    __values__` (
+      seq(1, 1),
+      template('%015d', arg(0)),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,1'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,15'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      gen('number:0,65535'),
+      gen('number:0,65535')
+  )
+
+  populate_access_info(type: exec_batch, count: subscribers, size: batch_size) `INSERT INTO access_info (s_id, ai_type, data1, data2, data3, data4)
+    __values__` (
+      seq(1, 1),
+      gen('number:1,4'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      regex('[a-z]{3}'),
+      regex('[a-z]{5}')
+  )
+
+  populate_special_facility(type: exec_batch, count: subscribers, size: batch_size) `INSERT INTO special_facility (s_id, sf_type, is_active,
+      error_cntrl, data_a, data_b)
+    __values__` (
+      seq(1, 1),
+      gen('number:1,4'),
+      gen('number:0,1'),
+      gen('number:0,255'),
+      gen('number:0,255'),
+      regex('[a-z]{5}')
+  )
+
+  populate_call_forwarding(type: exec_batch, count: subscribers, size: batch_size) `INSERT INTO call_forwarding (s_id, sf_type, start_time,
+      end_time, numberx)
+    __values__` (
+      seq(1, 1),
+      gen('number:1,4'),
+      gen('number:0,2') * 8,
+      arg(2) + gen('number:1,8'),
+      template('%015d', int(gen('number:1,999999999')))
+  )
+}
+
+deseed {
+  delete_call_forwarding(type: exec) `DELETE FROM call_forwarding`
+
+  delete_special_facility(type: exec) `DELETE FROM special_facility`
+
+  delete_access_info(type: exec) `DELETE FROM access_info`
+
+  delete_subscriber(type: exec) `DELETE FROM subscriber`
+}
+
+down {
+  drop_call_forwarding(type: exec) `DROP TABLE IF EXISTS call_forwarding`
+
+  drop_special_facility(type: exec) `DROP TABLE IF EXISTS special_facility`
+
+  drop_access_info(type: exec) `DROP TABLE IF EXISTS access_info`
+
+  drop_subscriber(type: exec) `DROP TABLE IF EXISTS subscriber`
+}
+
+init {
+  fetch_subscribers(type: query) `SELECT s_id, sub_nbr FROM subscriber ORDER BY NEWID()`
+}
+
+weights {
+  delete_call_forwarding = 2
+  get_access_data        = 35
+  get_new_destination    = 10
+  get_subscriber_data    = 35
+  insert_call_forwarding = 2
+  update_location        = 14
+  update_subscriber_data = 2
+}
+
+run {
+  get_subscriber_data(type: query) `SELECT * FROM subscriber WHERE s_id = @p1` (ref_rand('fetch_subscribers').s_id)
+
+  get_new_destination(type: query) `SELECT cf.numberx
+    FROM special_facility sf
+    JOIN call_forwarding cf
+      ON cf.s_id = sf.s_id AND cf.sf_type = sf.sf_type
+    WHERE sf.s_id = @p1 AND sf.sf_type = @p2
+      AND sf.is_active = 1
+      AND cf.start_time <= @p3 AND cf.end_time > @p4` (
+      ref_rand('fetch_subscribers').s_id,
+      gen('number:1,4'),
+      gen('number:0,23'),
+      gen('number:1,24')
+  )
+
+  get_access_data(type: query) `SELECT data1, data2, data3, data4
+    FROM access_info
+    WHERE s_id = @p1 AND ai_type = @p2` (
+      ref_rand('fetch_subscribers').s_id,
+      gen('number:1,4')
+  )
+
+  update_subscriber_data(type: exec) `UPDATE subscriber SET bit_1 = @p2
+    WHERE s_id = @p1` (
+      ref_rand('fetch_subscribers').s_id,
+      gen('number:0,1')
+  )
+
+  update_location(type: exec) `UPDATE subscriber SET vlr_location = @p2
+    WHERE sub_nbr = @p1` (
+      ref_rand('fetch_subscribers').sub_nbr,
+      gen('number:0,65535')
+  )
+
+  insert_call_forwarding(type: exec) `INSERT INTO call_forwarding (s_id, sf_type, start_time,
+      end_time, numberx)
+    SELECT TOP 1 @p1, @p2, @p3, @p4, @p5
+    FROM special_facility
+    WHERE s_id = @p1 AND sf_type = @p2
+      AND NOT EXISTS (
+        SELECT 1 FROM call_forwarding
+        WHERE s_id = @p1 AND sf_type = @p2 AND start_time = @p3
+      )` (
+      ref_rand('fetch_subscribers').s_id,
+      gen('number:1,4'),
+      gen('number:0,23'),
+      gen('number:1,24'),
+      template('%015d', int(gen('number:1,999999999')))
+  )
+
+  delete_call_forwarding(type: exec) `DELETE FROM call_forwarding
+    WHERE s_id = @p1 AND sf_type = @p2
+      AND start_time = @p3` (
+      ref_rand('fetch_subscribers').s_id,
+      gen('number:1,4'),
+      gen('number:0,23')
+  )
+}
