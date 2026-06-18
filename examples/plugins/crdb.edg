@@ -11,18 +11,22 @@ up {
       message STRING NOT NULL,
       roll INT NOT NULL,
       card_number STRING NOT NULL,
-      initials STRING NOT NULL
+      initials STRING NOT NULL,
+      slug STRING NOT NULL,
+      secret STRING NOT NULL
     )`
 }
 
 seed {
   populate_greetings(type: exec_batch, count: rows, size: batch_size)
-    `INSERT INTO greetings (message, roll, card_number, initials)
+    `INSERT INTO greetings (message, roll, card_number, initials, slug, secret)
     __values__` (
         hello(gen('firstname')),
         dice(20),
         card_mask(string(gen('creditcardnumber')), 4),
-        initials(gen('name'))
+        initials(gen('name')),
+        slug(gen('name')),
+        rot13(gen('firstname'))
     )
 }
 

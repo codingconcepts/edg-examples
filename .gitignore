@@ -4,5 +4,8 @@
 
 # Rust build artifacts.
 **/target/
-**/release/
 **/.rustc_info.json
+
+# Zig build artifacts.
+**/zig-out/
+**/.zig-cache/
