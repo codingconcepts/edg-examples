@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	edgplugins.SetPluginName("greetings")
+	edgplugins.SetPluginName("go_example")
 	edgplugins.Register(edgplugins.WasmFunction{
 		Name:        "hello",
 		Fn:          hello,

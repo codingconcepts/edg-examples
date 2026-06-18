@@ -9,16 +9,21 @@ up {
   create_greetings `CREATE TABLE IF NOT EXISTS greetings (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       message STRING NOT NULL,
-      roll INT NOT NULL
+      roll INT NOT NULL,
+      card_number STRING NOT NULL,
+      initials STRING NOT NULL
     )`
 }
 
 seed {
-  populate_greetings(type: exec_batch, count: rows, size: batch_size) `INSERT INTO greetings (message, roll)
+  populate_greetings(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO greetings (message, roll, card_number, initials)
     __values__` (
-      hello(gen('firstname')),
-      dice(20)
-  )
+        hello(gen('firstname')),
+        dice(20),
+        card_mask(string(gen('creditcardnumber')), 4),
+        initials(gen('name'))
+    )
 }
 
 deseed {

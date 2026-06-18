@@ -1,3 +1,8 @@
 # Sensitive.
 .env
 .env.keys
+
+# Rust build artifacts.
+**/target/
+**/release/
+**/.rustc_info.json
