@@ -12,7 +12,7 @@ GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o examples/plugins/go_exam
 
 ### Build the plugin (Rust)
 
-The Rust version implements the WASM ABI directly and provides `mask` and `initials` functions. From the repo root:
+The Rust version uses the [edg-plugin](https://crates.io/crates/edg-plugin) crate and provides `card_mask` and `initials` functions. From the repo root:
 
 ```sh
 rustup target add wasm32-wasip1
@@ -24,15 +24,11 @@ cp examples/plugins/rust_example/target/wasm32-wasip1/release/rust_example.wasm 
 
 ### Build the plugin (Zig)
 
-The Zig version implements the WASM ABI directly and provides `slug` and `rot13` functions. From the repo root:
+The Zig version uses the [edg-plugins](https://github.com/codingconcepts/edg-plugins) Zig SDK and provides `slug` and `rot13` functions. From the repo root:
 
 ```sh
-(cd examples/plugins/zig_example && \
-  zig build-exe -target wasm32-wasi -mcpu=mvp -OReleaseSmall -fno-entry \
-    --export=alloc --export=describe --export=call \
-    src/main.zig -femit-bin=zig_example.wasm)
-
-mv examples/plugins/zig_example/zig_example.wasm examples/plugins/zig_example.wasm
+(cd examples/plugins/zig_example && zig build)
+cp examples/plugins/zig_example/zig-out/bin/zig_example.wasm examples/plugins/zig_example.wasm
 ```
 
 ### REPL example

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	edgplugins "github.com/codingconcepts/edg-plugins"
+	edgplugins "github.com/codingconcepts/edg-plugins/go"
 )
 
 func init() {
