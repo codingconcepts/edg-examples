@@ -1,0 +1,41 @@
+let num_customers = 10000
+let batch_size = 1000
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL
+    )`
+
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      balance DECIMAL NOT NULL,
+      customer_id UUID NOT NULL REFERENCES customer(id)
+    )`
+}
+
+seed {
+  populate_customer(count: num_customers, size: batch_size) `INSERT INTO customer (name)
+    __values__` (gen('name'))
+
+  # Uses ref_cursor to page through all customers without loading
+  # them all into memory. Each page of 1000 rows becomes one
+  # multi-row INSERT via __values__.
+  populate_account `INSERT INTO account (balance, customer_id)
+    VALUES ($1, $2)` (
+    uniform_f(10.0, 10000.0, 2),
+    ref_cursor('SELECT id FROM customer ORDER BY id', batch_size, 'id')
+  )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
