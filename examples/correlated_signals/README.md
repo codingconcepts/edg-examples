@@ -13,24 +13,24 @@ Four tables driven by two pre-computed signal buffers (`traffic` and `promo_boos
 
 | Table | Signal source | Lag | Correlation | Effect |
 |---|---|---|---|---|
-| `page_views` | `traffic` + `promo_boost` | 0 | 1.0 (direct) | Exact signal sum — the "ground truth" |
+| `page_views` | `traffic` + `promo_boost` | 0 | 1.0 (direct) | Exact signal sum - the "ground truth" |
 | `orders` | `traffic` | 3 iterations (15m) | 0.7 | Orders follow traffic with short delay and moderate noise |
 | `support_tickets` | `traffic` | 24 iterations (2h) | 0.3 | Tickets lag traffic by 2 hours, mostly noise |
 | `server_errors` | `promo_boost` | 6 iterations (30m) | 0.5 | Errors spike after promos, half signal half noise |
 
 ## Key expressions
 
-**Direct signal read** — page views track the raw signal:
+**Direct signal read** - page views track the raw signal:
 ```
 signal_at('traffic', global_iter()) + signal_at('promo_boost', global_iter())
 ```
 
-**Lagged correlation with noise** — orders follow traffic with 15-minute delay:
+**Lagged correlation with noise** - orders follow traffic with 15-minute delay:
 ```
 floor(abs(signal_at('traffic', global_iter() - 3) * 0.7 + norm(0, 300, -500, 500) * 0.3))
 ```
 
-**Timestamp from iteration** — maps `global_iter()` to a week of 5-minute intervals, wrapping at 2016:
+**Timestamp from iteration** - maps `global_iter()` to a week of 5-minute intervals, wrapping at 2016:
 ```sql
 '2024-01-01T00:00:00Z'::TIMESTAMPTZ + (mod($1, 2016) * INTERVAL '5 minutes')
 ```
@@ -68,7 +68,7 @@ Connect
 cockroach sql --insecure
 ```
 
-Daily traffic pattern — view counts should show sine wave across 24h buckets:
+Daily traffic pattern - view counts should show sine wave across 24h buckets:
 ```sql
 SELECT
   extract(hour FROM ts) AS hour,
@@ -79,7 +79,7 @@ GROUP BY hour
 ORDER BY hour;
 ```
 
-Order-traffic correlation — orders should loosely follow page views with a lag:
+Order-traffic correlation - orders should loosely follow page views with a lag:
 ```sql
 SELECT
   extract(hour FROM v.ts)::INT AS hour,
@@ -92,7 +92,7 @@ ORDER BY hour
 LIMIT 24;
 ```
 
-Promo boost spikes — errors should spike shortly after promo periods:
+Promo boost spikes - errors should spike shortly after promo periods:
 ```sql
 SELECT
   date_trunc('hour', ts) AS hour,
@@ -104,7 +104,7 @@ ORDER BY hour
 LIMIT 24;
 ```
 
-Ticket lag — support tickets should trail traffic peaks by ~2 hours:
+Ticket lag - support tickets should trail traffic peaks by ~2 hours:
 ```sql
 SELECT
   extract(hour FROM v.ts)::INT AS hour,
