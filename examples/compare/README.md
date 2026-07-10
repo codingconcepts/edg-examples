@@ -38,10 +38,10 @@ Or step-by-step:
 edg compare up \
 --a-driver pgx \
 --a-url "postgres://root:password@localhost:5432/defaultdb?sslmode=disable" \
---a-config examples/compare/postgres.yaml \
+--a-config examples/compare/postgres.edg \
 --b-driver mysql \
 --b-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---b-config examples/compare/mysql.yaml
+--b-config examples/compare/mysql.edg
 
 edg compare seed \
 --a-driver pgx \
@@ -70,10 +70,10 @@ edg compare run \
 edg compare down \
 --a-driver pgx \
 --a-url "postgres://root:password@localhost:5432/defaultdb?sslmode=disable" \
---a-config examples/compare/postgres.yaml \
+--a-config examples/compare/postgres.edg \
 --b-driver mysql \
 --b-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---b-config examples/compare/mysql.yaml
+--b-config examples/compare/mysql.edg
 
 docker compose -f infra/compose_postgres.yml down
 docker compose -f infra/compose_mysql.yml down
