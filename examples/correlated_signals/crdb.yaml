@@ -1,0 +1,146 @@
+signals:
+  traffic:
+    from: '2024-01-01T00:00:00Z'
+    to: '2024-01-08T00:00:00Z'
+    interval: 5m
+    expr: 1000 + 400 * sin(2 * 3.14159265 * i / 288) + 200 * sin(2 * 3.14159265 * i / 2016)
+
+  promo_boost:
+    length: 2016
+    expr: floor(50 * pow(cos(3.14159265 * mod(i, 500) / 500), 20))
+
+up:
+  - name: create_page_views
+    type: exec
+    query: |-
+      CREATE TABLE IF NOT EXISTS page_views (
+        ts TIMESTAMPTZ NOT NULL,
+        view_count INT NOT NULL,
+        page STRING NOT NULL
+      )
+
+  - name: create_orders
+    type: exec
+    query: |-
+      CREATE TABLE IF NOT EXISTS orders (
+        ts TIMESTAMPTZ NOT NULL,
+        id UUID NOT NULL DEFAULT gen_random_uuid(),
+        order_count INT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL
+      )
+
+  - name: create_tickets
+    type: exec
+    query: |-
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        ts TIMESTAMPTZ NOT NULL,
+        id UUID NOT NULL DEFAULT gen_random_uuid(),
+        ticket_count INT NOT NULL,
+        category STRING NOT NULL
+      )
+
+  - name: create_errors
+    type: exec
+    query: |-
+      CREATE TABLE IF NOT EXISTS server_errors (
+        ts TIMESTAMPTZ NOT NULL,
+        error_count INT NOT NULL,
+        error_type STRING NOT NULL
+      )
+
+run:
+  - name: insert_page_views
+    type: exec
+    args:
+      - global_iter()
+      - floor(signal_at('traffic', int(global_iter())) + signal_at('promo_boost', int(global_iter())))
+      - set_rand(['home','product','cart','checkout'], [40,30,20,10])
+    query: |-
+      INSERT INTO page_views (ts, view_count, page)
+      VALUES (
+        '2024-01-01T00:00:00Z'::TIMESTAMPTZ + (mod($1, 2016) * INTERVAL '5 minutes'),
+        $2::INT,
+        $3
+      )
+
+  - name: insert_orders
+    type: exec
+    args:
+      - global_iter()
+      - floor(abs(signal_at('traffic', int(global_iter()) - 3) * 0.7 + norm(0, 300, -500, 500) * 0.3))
+      - uniform_f(10, 500, 2)
+    query: |-
+      INSERT INTO orders (ts, order_count, amount)
+      VALUES (
+        '2024-01-01T00:00:00Z'::TIMESTAMPTZ + (mod($1, 2016) * INTERVAL '5 minutes'),
+        $2::INT,
+        $3::DECIMAL
+      )
+
+  - name: insert_tickets
+    type: exec
+    args:
+      - global_iter()
+      - floor(abs(signal_at('traffic', int(global_iter()) - 24) * 0.3 + norm(0, 300, -500, 500) * 0.7))
+      - set_rand(['billing','shipping','refund','other'], [30,35,20,15])
+    query: |-
+      INSERT INTO support_tickets (ts, ticket_count, category)
+      VALUES (
+        '2024-01-01T00:00:00Z'::TIMESTAMPTZ + (mod($1, 2016) * INTERVAL '5 minutes'),
+        $2::INT,
+        $3
+      )
+
+  - name: insert_errors
+    type: exec
+    args:
+      - global_iter()
+      - floor(abs(signal_at('promo_boost', int(global_iter()) - 6) * 0.5 + norm(0, 10, -25, 25) * 0.5))
+      - set_rand(['timeout','500','oom','connection_reset'], [35,30,20,15])
+    query: |-
+      INSERT INTO server_errors (ts, error_count, error_type)
+      VALUES (
+        '2024-01-01T00:00:00Z'::TIMESTAMPTZ + (mod($1, 2016) * INTERVAL '5 minutes'),
+        $2::INT,
+        $3
+      )
+
+run_weights:
+  insert_page_views: 25
+  insert_orders: 25
+  insert_tickets: 25
+  insert_errors: 25
+
+deseed:
+  - name: truncate_page_views
+    type: exec
+    query: TRUNCATE TABLE page_views CASCADE
+
+  - name: truncate_orders
+    type: exec
+    query: TRUNCATE TABLE orders CASCADE
+
+  - name: truncate_tickets
+    type: exec
+    query: TRUNCATE TABLE support_tickets CASCADE
+
+  - name: truncate_errors
+    type: exec
+    query: TRUNCATE TABLE server_errors CASCADE
+
+down:
+  - name: drop_page_views
+    type: exec
+    query: DROP TABLE IF EXISTS page_views
+
+  - name: drop_orders
+    type: exec
+    query: DROP TABLE IF EXISTS orders
+
+  - name: drop_tickets
+    type: exec
+    query: DROP TABLE IF EXISTS support_tickets
+
+  - name: drop_errors
+    type: exec
+    query: DROP TABLE IF EXISTS server_errors
