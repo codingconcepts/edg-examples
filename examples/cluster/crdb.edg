@@ -1,0 +1,42 @@
+let user_count = 100
+let batch_size = 50
+
+up {
+  create_users `CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email STRING NOT NULL,
+    name STRING NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`
+}
+
+seed {
+  seed_users(count: user_count, size: batch_size)
+    `INSERT INTO users (email, name) __values__`
+    (gen('email'), gen('name'))
+}
+
+init {
+  fetch_users `SELECT id, email FROM users`
+}
+
+stages {
+  warmup(workers: 2, duration: 30s, qps: 10)
+  steady(workers: 5, duration: 1m, qps: 100)
+  peak(workers: 10, duration: 30s, qps: 500)
+}
+
+run {
+  read_user `SELECT * FROM users WHERE id = $1` (ref_rand('fetch_users').id)
+
+  insert_user `INSERT INTO users (email, name) VALUES ($1, $2)` (gen('email'), gen('name'))
+}
+
+weights {
+  read_user = 80
+  insert_user = 20
+}
+
+down {
+  drop_users `DROP TABLE IF EXISTS users`
+}

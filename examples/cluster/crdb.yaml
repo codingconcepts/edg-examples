@@ -1,0 +1,76 @@
+globals:
+  user_count: 100
+  batch_size: 50
+
+up:
+
+  - name: create_users
+    query: |-
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email STRING NOT NULL,
+        name STRING NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+
+seed:
+
+  - name: seed_users
+    type: exec_batch
+    count: user_count
+    size: batch_size
+    args:
+      - gen('email')
+      - gen('name')
+    query: |-
+      INSERT INTO users (email, name)
+      __values__
+
+init:
+
+  - name: fetch_users
+    type: query
+    query: SELECT id, email FROM users
+
+stages:
+
+  - name: warmup
+    workers: 2
+    duration: 30s
+    qps: 10
+
+  - name: steady
+    workers: 5
+    duration: 1m
+    qps: 100
+
+  - name: peak
+    workers: 10
+    duration: 30s
+    qps: 500
+
+run:
+
+  - name: read_user
+    type: query
+    args:
+      - ref_rand('fetch_users').id
+    query: |-
+      SELECT * FROM users WHERE id = $1
+
+  - name: insert_user
+    type: exec
+    args:
+      - gen('email')
+      - gen('name')
+    query: |-
+      INSERT INTO users (email, name) VALUES ($1, $2)
+
+run_weights:
+  read_user: 80
+  insert_user: 20
+
+down:
+
+  - name: drop_users
+    query: DROP TABLE IF EXISTS users
