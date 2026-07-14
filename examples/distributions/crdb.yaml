@@ -12,6 +12,13 @@ up:
         value FLOAT8 NOT NULL
       )
 
+  - name: create_orders
+    query: |-
+      CREATE TABLE IF NOT EXISTS orders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        status STRING NOT NULL
+      )
+
 seed:
 
   - name: seed_uniform
@@ -29,11 +36,19 @@ deseed:
     type: exec
     query: TRUNCATE TABLE distributions
 
+  - name: truncate_orders
+    type: exec
+    query: TRUNCATE TABLE orders
+
 down:
 
   - name: drop_distributions
     type: exec
     query: DROP TABLE IF EXISTS distributions
+
+  - name: drop_orders
+    type: exec
+    query: DROP TABLE IF EXISTS orders
 
 run:
 
@@ -50,7 +65,7 @@ run:
   - name: insert_zipfian
     type: exec
     args:
-      - zipf(2.0, 1.0, 99)
+      - zipf(1.1, 1.0, 99)
     query: |-
       INSERT INTO distributions (dist_type, value)
       VALUES ('zipfian', $1::FLOAT8)
@@ -91,10 +106,98 @@ run:
       INSERT INTO distributions (dist_type, value)
       VALUES ('pareto', $1::FLOAT8)
 
+  # Beta: flexible shape (U-shaped, bell, uniform) in [0, 100].
+  - name: insert_beta
+    type: exec
+    args:
+      - beta_f(2, 5, 0, 100, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('beta', $1::FLOAT8)
+
+  # Gamma: right-skewed, models wait times.
+  - name: insert_gamma
+    type: exec
+    args:
+      - gamma_f(2, 0.5, 0, 100, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('gamma', $1::FLOAT8)
+
+  # Weibull: reliability / time-to-failure.
+  - name: insert_weibull
+    type: exec
+    args:
+      - weibull_f(1.5, 50, 0, 100, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('weibull', $1::FLOAT8)
+
+  # Poisson: event count in a fixed interval.
+  - name: insert_poisson
+    type: exec
+    args:
+      - poisson(5.0)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('poisson', $1::FLOAT8)
+
+  # Binomial: count of successes in n trials.
+  - name: insert_binomial
+    type: exec
+    args:
+      - binomial(20, 0.3)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('binomial', $1::FLOAT8)
+
+  # Empirical: sample from observed data via CDF.
+  - name: insert_empirical
+    type: exec
+    args:
+      - empirical([5, 10, 10, 20, 30, 30, 30, 50, 80, 95])
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('empirical', $1::FLOAT8)
+
+  - name: insert_rwalk
+    type: exec
+    args:
+      - rwalk_f('walk', 50, 0.0, 0.5, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('rwalk', $1::FLOAT8)
+
+  # Markov: stateful order status progression.
+  - name: insert_order
+    type: exec
+    args:
+      - >-
+        markov('order_status',
+          ['pending', 'processing', 'shipped', 'delivered', 'returned'],
+          [
+            0.0, 1.0, 0.0, 0.0, 0.0,
+            0.0, 0.3, 0.7, 0.0, 0.0,
+            0.0, 0.0, 0.2, 0.8, 0.0,
+            0.0, 0.0, 0.0, 0.9, 0.1,
+            0.0, 0.0, 0.0, 0.0, 1.0
+          ]
+        )
+    query: |-
+      INSERT INTO orders (status) VALUES ($1)
+
 run_weights:
-  insert_uniform: 20
-  insert_zipfian: 20
-  insert_normal: 20
-  insert_exponential: 20
-  insert_lognormal: 20
-  insert_pareto: 20
+  insert_uniform: 10
+  insert_zipfian: 10
+  insert_normal: 10
+  insert_exponential: 10
+  insert_lognormal: 10
+  insert_pareto: 10
+  insert_beta: 10
+  insert_gamma: 10
+  insert_weibull: 10
+  insert_poisson: 10
+  insert_binomial: 10
+  insert_empirical: 10
+  insert_rwalk: 10
+  insert_order: 10

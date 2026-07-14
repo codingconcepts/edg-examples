@@ -60,7 +60,7 @@ run:
   - name: insert_zipfian
     type: exec
     args:
-      - zipf(2.0, 1.0, 99)
+      - zipf(1.1, 1.0, 99)
     query: |-
       INSERT INTO distributions (dist_type, value)
       VALUES ('zipfian', @p1)
@@ -97,10 +97,73 @@ run:
       INSERT INTO distributions (dist_type, value)
       VALUES ('pareto', @p1)
 
+  - name: insert_beta
+    type: exec
+    args:
+      - beta_f(2, 5, 0, 100, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('beta', @p1)
+
+  - name: insert_gamma
+    type: exec
+    args:
+      - gamma_f(2, 0.5, 0, 100, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('gamma', @p1)
+
+  - name: insert_weibull
+    type: exec
+    args:
+      - weibull_f(1.5, 50, 0, 100, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('weibull', @p1)
+
+  - name: insert_poisson
+    type: exec
+    args:
+      - poisson(5.0)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('poisson', @p1)
+
+  - name: insert_binomial
+    type: exec
+    args:
+      - binomial(20, 0.3)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('binomial', @p1)
+
+  - name: insert_empirical
+    type: exec
+    args:
+      - empirical([5, 10, 10, 20, 30, 30, 30, 50, 80, 95])
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('empirical', @p1)
+
+  - name: insert_rwalk
+    type: exec
+    args:
+      - rwalk_f('walk', 50, 0.0, 0.5, 2)
+    query: |-
+      INSERT INTO distributions (dist_type, value)
+      VALUES ('rwalk', @p1)
+
 run_weights:
-  insert_uniform: 20
-  insert_zipfian: 20
-  insert_normal: 20
-  insert_exponential: 20
-  insert_lognormal: 20
-  insert_pareto: 20
+  insert_uniform: 10
+  insert_zipfian: 10
+  insert_normal: 10
+  insert_exponential: 10
+  insert_lognormal: 10
+  insert_pareto: 10
+  insert_beta: 10
+  insert_gamma: 10
+  insert_weibull: 10
+  insert_poisson: 10
+  insert_binomial: 10
+  insert_empirical: 10
+  insert_rwalk: 10

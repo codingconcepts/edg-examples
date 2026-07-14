@@ -41,12 +41,19 @@ down {
 }
 
 weights {
-  insert_exponential = 20
-  insert_lognormal   = 20
-  insert_normal      = 20
-  insert_pareto      = 20
-  insert_uniform     = 20
-  insert_zipfian     = 20
+  insert_uniform     = 10
+  insert_zipfian     = 10
+  insert_normal      = 10
+  insert_exponential = 10
+  insert_lognormal   = 10
+  insert_pareto      = 10
+  insert_beta        = 10
+  insert_gamma       = 10
+  insert_weibull     = 10
+  insert_poisson     = 10
+  insert_binomial    = 10
+  insert_empirical   = 10
+  insert_rwalk       = 10
 }
 
 run {
@@ -54,7 +61,7 @@ run {
     VALUES ('uniform', :1)` (uniform(0, 100))
 
   insert_zipfian(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('zipfian', :1)` (zipf(2.0, 1.0, 99))
+    VALUES ('zipfian', :1)` (zipf(1.1, 1.0, 99))
 
   insert_normal(type: exec) `INSERT INTO distributions (dist_type, value)
     VALUES ('normal', :1)` (norm_f(50, 15, 0, 100, 2))
@@ -67,4 +74,25 @@ run {
 
   insert_pareto(type: exec) `INSERT INTO distributions (dist_type, value)
     VALUES ('pareto', :1)` (pareto(2.0, 99))
+
+  insert_beta(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('beta', :1)` (beta_f(2, 5, 0, 100, 2))
+
+  insert_gamma(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('gamma', :1)` (gamma_f(2, 0.5, 0, 100, 2))
+
+  insert_weibull(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('weibull', :1)` (weibull_f(1.5, 50, 0, 100, 2))
+
+  insert_poisson(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('poisson', :1)` (poisson(5.0))
+
+  insert_binomial(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('binomial', :1)` (binomial(20, 0.3))
+
+  insert_empirical(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('empirical', :1)` (empirical([5, 10, 10, 20, 30, 30, 30, 50, 80, 95]))
+
+  insert_rwalk(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('rwalk', :1)` (rwalk_f('walk', 50, 0.0, 0.5, 2))
 }
