@@ -15,7 +15,7 @@ Demonstrates all four sequence types side by side: per-worker numeric, per-worke
 
 Global sequences are defined in the `seq:` section. Numeric entries use `start`/`step`, alpha entries use `length`:
 
-```yaml
+```edg
 seq:
   - name: global_num_1
     start: 1
@@ -40,12 +40,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/sequences/crdb.yaml \
+--config examples/sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/sequences/crdb.yaml \
+--config examples/sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -75,11 +75,11 @@ FROM sequences ORDER BY id LIMIT 20;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/sequences/crdb.yaml \
+--config examples/sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/sequences/crdb.yaml \
+--config examples/sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

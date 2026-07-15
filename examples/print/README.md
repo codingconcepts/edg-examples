@@ -8,7 +8,7 @@ Print entries can be a simple string (auto-aggregated) or a map with `expr` and 
 
 A plain string auto-detects the value type: categorical values show frequency distributions, numeric values show min/avg/max.
 
-```yaml
+```edg
 print:
   - ref_same('regions').name
 ```
@@ -32,7 +32,7 @@ All [expr-lang](https://expr-lang.org/docs/language-definition) functions are av
 
 **Frequency distribution** - top 5 values sorted by count:
 
-```yaml
+```edg
 - expr: ref_same('regions').name
   agg: "join(map(sortBy(toPairs(freq), -#[1])[:5], #[0] + '=' + string(#[1])), ' ')"
 # us=340 eu=330 ap=330
@@ -40,7 +40,7 @@ All [expr-lang](https://expr-lang.org/docs/language-definition) functions are av
 
 **Range with average** - formatted numeric summary:
 
-```yaml
+```edg
 - expr: arg(3)
   agg: "'avg $' + string(int(avg)) + ' n=' + string(count)"
 # avg $250 n=1000
@@ -48,7 +48,7 @@ All [expr-lang](https://expr-lang.org/docs/language-definition) functions are av
 
 **Total count** - simple observation counter:
 
-```yaml
+```edg
 - expr: arg(0)
   agg: "string(count)"
 # 1000
@@ -56,7 +56,7 @@ All [expr-lang](https://expr-lang.org/docs/language-definition) functions are av
 
 **Sum** - running total:
 
-```yaml
+```edg
 - expr: arg(3)
   agg: "'total=$' + string(int(sum))"
 # total=$250317
@@ -64,7 +64,7 @@ All [expr-lang](https://expr-lang.org/docs/language-definition) functions are av
 
 **Min/max** - value bounds:
 
-```yaml
+```edg
 - expr: arg(3)
   agg: "string(int(min)) + ' - ' + string(int(max))"
 # 1 - 499
@@ -72,7 +72,7 @@ All [expr-lang](https://expr-lang.org/docs/language-definition) functions are av
 
 **Unique count** - number of distinct values:
 
-```yaml
+```edg
 - expr: ref_same('regions').name
   agg: "string(len(freq)) + ' unique'"
 # 3 unique
@@ -100,7 +100,7 @@ read_order    4832
 
 The `post_print` field works like `print` but evaluates **after** the query executes. Use `result()` to access the first row of a `type: query` SELECT result:
 
-```yaml
+```edg
 - name: read_order
   type: query
   args:
@@ -128,7 +128,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/print/crdb.yaml \
+--config examples/print/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 10s

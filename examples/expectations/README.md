@@ -4,7 +4,7 @@ An example of post-run assertions using the `expectations` section. Expectations
 
 This is useful for CI/CD pipelines where you want to gate deployments on performance characteristics like error rate, latency percentiles, or throughput.
 
-```yaml
+```edg
 expectations:
   - error_rate < 1
   - check_balance.p99 < 50
@@ -16,7 +16,7 @@ expectations:
 
 Expectations can reference any variable defined in the `globals` section. This avoids hardcoding values that already exist in your config:
 
-```yaml
+```edg
 globals:
   accounts: 10000
   max_error_pct: 5
@@ -33,7 +33,7 @@ Global names must not collide with built-in metrics (`error_rate`, `error_count`
 
 An expectation can also be an object with `query` and `expr` fields. The SQL query runs after the workload finishes and its first-row columns are available in the expression. Globals are available in these expressions too:
 
-```yaml
+```edg
 globals:
   accounts: 10000
 
@@ -70,7 +70,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/expectations/crdb.yaml \
+--config examples/expectations/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -87,7 +87,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/expectations/mysql.yaml \
+--config examples/expectations/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -104,7 +104,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg all \
 --driver oracle \
---config examples/expectations/oracle.yaml \
+--config examples/expectations/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -121,6 +121,6 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg all \
 --driver mssql \
---config examples/expectations/mssql.yaml \
+--config examples/expectations/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=expectations&encrypt=disable"
 ```

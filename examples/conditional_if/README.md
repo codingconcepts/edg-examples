@@ -4,7 +4,7 @@ Demonstrates `if/then/else` branching for binary conditions using customer marke
 
 **Standalone** (outside a transaction) - reads a random customer and logs a GDPR compliance check only for UK-market customers:
 
-```yaml
+```edg
 - if: "ref_same('read_customer').market == 'uk'"
   then:
     - name: log_gdpr_check
@@ -21,7 +21,7 @@ Demonstrates `if/then/else` branching for binary conditions using customer marke
 
 **Inside a transaction** (with let-in-branches) - places an order with market-specific tax and currency. The conditional sets locals for the varying parts; the query below references them via `local()`:
 
-```yaml
+```edg
 - if: "ref_same('read_buyer').market == 'uk'"
   then:
     - locals:
@@ -69,7 +69,7 @@ Run
 ```sh
 edg all \
 --driver pgx \
---config examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 -d 10s
 ```
@@ -81,17 +81,17 @@ Run
 ```sh
 edg up \
 --driver pgx \
---config examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 -d 10s
 ```
@@ -134,11 +134,11 @@ Teardown
 ```sh
 edg deseed \
 --driver pgx \
---config examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/conditional_if/crdb.yaml \
+--config examples/conditional_if/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

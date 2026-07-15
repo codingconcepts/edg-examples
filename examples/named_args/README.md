@@ -6,7 +6,7 @@ Demonstrates the named args syntax, where `args` is a map instead of a list. Nam
 
 Positional (existing):
 
-```yaml
+```edg
 args:
   - gen('email')
   - ref_same('regions').name
@@ -18,7 +18,7 @@ print:
 
 Named (equivalent):
 
-```yaml
+```edg
 args:
   email: gen('email')
   region: ref_same('regions').name
@@ -47,28 +47,28 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/named_args/crdb.yaml \
+--config examples/named_args/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/named_args/crdb.yaml \
+--config examples/named_args/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/named_args/crdb.yaml \
+--config examples/named_args/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 10s
 
 edg deseed \
 --driver pgx \
---config examples/named_args/crdb.yaml \
+--config examples/named_args/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/named_args/crdb.yaml \
+--config examples/named_args/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

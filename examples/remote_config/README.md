@@ -2,7 +2,7 @@
 
 Load a workload config from a URL instead of a local file.
 
-The `--config` flag (and `EDG_CONFIG` env var) accepts HTTP and HTTPS URLs. edg fetches the YAML and runs it the same as a local file.
+The `--config` flag (and `EDG_CONFIG` env var) accepts HTTP and HTTPS URLs. edg fetches the config and runs it the same as a local file.
 
 ## CockroachDB
 
@@ -21,7 +21,7 @@ python3 -m http.server 8000 -d _examples/tpcc
 # Terminal 2: run edg against it
 edg all \
 --driver pgx \
---config "http://localhost:8000/crdb.yaml" \
+--config "http://localhost:8000/crdb.edg" \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 10s

@@ -43,17 +43,17 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/vector/crdb.yaml \
+--config examples/vector/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/vector/crdb.yaml \
+--config examples/vector/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/vector/crdb.yaml \
+--config examples/vector/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 30s
@@ -88,12 +88,12 @@ LIMIT 5;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/vector/crdb.yaml \
+--config examples/vector/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/vector/crdb.yaml \
+--config examples/vector/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -110,7 +110,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/vector/mysql.yaml \
+--config examples/vector/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -127,7 +127,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg all \
 --driver oracle \
---config examples/vector/oracle.yaml \
+--config examples/vector/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -144,6 +144,6 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg all \
 --driver mssql \
---config examples/vector/mssql.yaml \
+--config examples/vector/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=vector&encrypt=disable"
 ```

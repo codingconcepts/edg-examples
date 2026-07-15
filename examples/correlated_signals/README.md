@@ -49,12 +49,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/correlated_signals/crdb.yaml \
+--config examples/correlated_signals/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/correlated_signals/crdb.yaml \
+--config examples/correlated_signals/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 5m
@@ -122,11 +122,11 @@ LIMIT 24;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/correlated_signals/crdb.yaml \
+--config examples/correlated_signals/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/correlated_signals/crdb.yaml \
+--config examples/correlated_signals/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

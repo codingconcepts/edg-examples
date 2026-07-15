@@ -6,7 +6,7 @@ Compare with the [bank](_examples/bank) example, which achieves the same result 
 
 Transaction support is available for all drivers including MongoDB (multi-document sessions) and Cassandra (logged batches).
 
-```yaml
+```edg
 run:
   - transaction: make_transfer
     queries:
@@ -25,7 +25,7 @@ run:
 
 Standalone queries and transactions can be mixed freely in the `run` section and selected via `run_weights`:
 
-```yaml
+```edg
 run_weights:
   check_balance: 50
   make_transfer: 50
@@ -45,7 +45,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/transaction/crdb.yaml \
+--config examples/transaction/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -62,7 +62,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/transaction/mysql.yaml \
+--config examples/transaction/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -79,7 +79,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg all \
 --driver oracle \
---config examples/transaction/oracle.yaml \
+--config examples/transaction/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -96,7 +96,7 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg all \
 --driver mssql \
---config examples/transaction/mssql.yaml \
+--config examples/transaction/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=transaction&encrypt=disable"
 ```
 
@@ -115,7 +115,7 @@ docker compose -f infra/compose_mongodb.yml up -d
 ```sh
 edg all \
 --driver mongodb \
---config examples/transaction/mongodb.yaml \
+--config examples/transaction/mongodb.edg \
 --url "mongodb://localhost:27017/edg?replicaSet=rs0"
 ```
 
@@ -134,6 +134,6 @@ docker compose -f infra/compose_cassandra.yml up -d
 ```sh
 edg all \
 --driver cassandra \
---config examples/transaction/cassandra.yaml \
+--config examples/transaction/cassandra.edg \
 --url "localhost:9042"
 ```

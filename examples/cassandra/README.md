@@ -21,12 +21,12 @@ done && echo "cassandra ready"
 ```sh
 edg up \
 --driver cassandra \
---config examples/cassandra/cassandra.yaml \
+--config examples/cassandra/cassandra.edg \
 --url "cassandra://localhost:9042"
 
 edg seed \
 --driver cassandra \
---config examples/cassandra/cassandra.yaml \
+--config examples/cassandra/cassandra.edg \
 --url "cassandra://localhost:9042"
 ```
 
@@ -41,11 +41,11 @@ docker exec cassandra cqlsh -e "SELECT * FROM edg.account LIMIT 5;"
 ```sh
 edg deseed \
 --driver cassandra \
---config examples/cassandra/cassandra.yaml \
+--config examples/cassandra/cassandra.edg \
 --url "cassandra://localhost:9042"
 
 edg down \
 --driver cassandra \
---config examples/cassandra/cassandra.yaml \
+--config examples/cassandra/cassandra.edg \
 --url "cassandra://localhost:9042"
 ```

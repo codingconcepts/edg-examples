@@ -21,7 +21,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/blob/crdb.yaml \
+--config examples/blob/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 30s
@@ -40,7 +40,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/blob/mysql.yaml \
+--config examples/blob/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 -w 10 \
 -d 30s
@@ -59,7 +59,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg run \
 --driver oracle \
---config examples/blob/oracle.yaml \
+--config examples/blob/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 -w 10 \
 -d 30s
@@ -78,7 +78,7 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg run \
 --driver mssql \
---config examples/blob/mssql.yaml \
+--config examples/blob/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=blob&encrypt=disable" \
 -w 10 \
 -d 30s

@@ -41,12 +41,12 @@ eval $(dotenvx get --format shell)
 ```sh
 edg up \
 --driver pgx \
---config examples/complete_array/crdb.yaml \
+--config examples/complete_array/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/complete_array/crdb.yaml \
+--config examples/complete_array/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -68,11 +68,11 @@ LIMIT 10;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/complete_array/crdb.yaml \
+--config examples/complete_array/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/complete_array/crdb.yaml \
+--config examples/complete_array/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

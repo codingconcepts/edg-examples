@@ -29,12 +29,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -94,11 +94,11 @@ ORDER BY 1;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/global_sequences/crdb.yaml \
+--config examples/global_sequences/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

@@ -1,6 +1,6 @@
 # CSV Reference Data
 
-Demonstrates loading CSV files as reference tables at startup using `--csv-file` and `--csv-directory`. CSV files are parsed into reference datasets that work with all `ref_*` functions (`ref_rand`, `ref_same`, `ref_diff`, etc.), just like inline `reference:` data in the YAML config.
+Demonstrates loading CSV files as reference tables at startup using `--csv-file` and `--csv-directory`. CSV files are parsed into reference datasets that work with all `ref_*` functions (`ref_rand`, `ref_same`, `ref_diff`, etc.), just like inline `reference:` data in the config.
 
 Each CSV file becomes a collection named after its filename (minus the extension). For example, `regions.csv` becomes the `regions` reference dataset.
 
@@ -25,14 +25,14 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --csv-file _examples/csv/data/regions.csv \
   --csv-file _examples/csv/data/translations.csv \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --csv-file _examples/csv/data/regions.csv \
   --csv-file _examples/csv/data/translations.csv \
   --url "postgres://root@localhost:26257?sslmode=disable"
@@ -50,12 +50,12 @@ cockroach sql --insecure \
 ```sh
 edg deseed \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -64,13 +64,13 @@ edg down \
 ```sh
 edg up \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --csv-directory _examples/csv/data \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --csv-directory _examples/csv/data \
   --url "postgres://root@localhost:26257?sslmode=disable"
 ```
@@ -87,12 +87,12 @@ cockroach sql --insecure \
 ```sh
 edg deseed \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
   --driver pgx \
-  --config examples/csv/config.yaml \
+  --config examples/csv/config.edg \
   --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -131,9 +131,9 @@ gb,United Kingdom,GBP
 de,Germany,EUR
 ```
 
-This is equivalent to the following YAML `reference:` block:
+This is equivalent to the following `reference:` block:
 
-```yaml
+```edg
 reference:
   regions:
     - {code: us, name: United States, currency: USD}
@@ -143,4 +143,4 @@ reference:
 
 ## Collision detection
 
-If a CSV file has the same stem name as an existing `reference:` dataset in the YAML config, edg will return an error. Rename the CSV file or remove the YAML reference to resolve.
+If a CSV file has the same stem name as an existing `reference:` dataset in the config, edg will return an error. Rename the CSV file or remove the reference to resolve.

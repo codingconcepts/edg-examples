@@ -6,7 +6,7 @@ Generates traffic patterns that provoke classic read/write anomalies under weak 
 
 **Lost update** - Two transactions read the same counter, each computes `value + 1`, and writes it back. Under READ COMMITTED both commits succeed but one increment is silently lost. Under SERIALIZABLE the conflict is detected and one transaction is aborted.
 
-```yaml
+```edg
 - transaction: lost_update
   queries:
     - name: read_counter
@@ -26,7 +26,7 @@ Generates traffic patterns that provoke classic read/write anomalies under weak 
 
 **Write skew** - Two doctors on the same shift each check that at least two doctors are on duty, then go off duty. Under READ COMMITTED both see the same count and both commit, leaving zero coverage. Under SERIALIZABLE one transaction is aborted to preserve the invariant.
 
-```yaml
+```edg
 - transaction: write_skew
   queries:
     - name: check_coverage
@@ -59,28 +59,28 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/anomalies/crdb.yaml \
+--config examples/anomalies/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 10s
 
 edg all \
 --driver pgx \
---config examples/anomalies/crdb.yaml \
+--config examples/anomalies/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 2 \
 -d 10s
 
 edg all \
 --driver pgx \
---config examples/anomalies/crdb.yaml \
+--config examples/anomalies/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 \
 -d 10s
 
 edg all \
 --driver pgx \
---config examples/anomalies/crdb.yaml \
+--config examples/anomalies/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 8 \
 -d 10s \

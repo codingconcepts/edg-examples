@@ -13,13 +13,13 @@ Generates locale-aware personal data with optional masking for non-production en
 ```bash
 # Generate to CSV.
 edg stage \
---config examples/locale/crdb.yaml \
+--config examples/locale/crdb.edg \
 --format csv \
 --output-dir _examples/locale/csv/
 
 # With deterministic output.
 edg stage \
---config examples/locale/crdb.yaml \
+--config examples/locale/crdb.edg \
 --format csv \
 --output-dir _examples/locale/csv/ \
 --rng-seed 42

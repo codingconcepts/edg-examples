@@ -16,35 +16,35 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/bank/crdb.yaml \
+--config examples/bank/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 # Or separately.
 edg up \
 --driver pgx \
---config examples/bank/crdb.yaml \
+--config examples/bank/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/bank/crdb.yaml \
+--config examples/bank/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/bank/crdb.yaml \
+--config examples/bank/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 10m
 
 edg deseed \
 --driver pgx \
---config examples/bank/crdb.yaml \
+--config examples/bank/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/bank/crdb.yaml \
+--config examples/bank/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -61,7 +61,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/bank/mysql.yaml \
+--config examples/bank/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -78,7 +78,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg all \
 --driver oracle \
---config examples/bank/oracle.yaml \
+--config examples/bank/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -95,34 +95,34 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg all \
 --driver mssql \
---config examples/bank/mssql.yaml \
+--config examples/bank/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=bank&encrypt=disable"
 
 # Or separately.
 edg up \
 --driver mssql \
---config examples/bank/mssql.yaml \
+--config examples/bank/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=bank&encrypt=disable"
 
 edg seed \
 --driver mssql \
---config examples/bank/mssql.yaml \
+--config examples/bank/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=bank&encrypt=disable"
 
 edg run \
 --driver mssql \
---config examples/bank/mssql.yaml \
+--config examples/bank/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=bank&encrypt=disable" \
 -w 100 \
 -d 1m
 
 edg deseed \
 --driver mssql \
---config examples/bank/mssql.yaml \
+--config examples/bank/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=bank&encrypt=disable"
 
 edg down \
 --driver mssql \
---config examples/bank/mssql.yaml \
+--config examples/bank/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=bank&encrypt=disable"
 ```

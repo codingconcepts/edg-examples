@@ -6,7 +6,7 @@ Demonstrates the `nullable(expr, probability)` function for injecting NULL value
 
 Wrap any expression with `nullable` and provide a probability between 0.0 and 1.0:
 
-```yaml
+```edg
 args:
   - nullable(gen('email'), 0.3)      # 30% NULL, 70% random email
   - nullable(gen('sentence:5'), 0.5) # 50% NULL, 50% random sentence
@@ -38,7 +38,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/nullable/crdb.yaml \
+--config examples/nullable/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -55,7 +55,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/nullable/mysql.yaml \
+--config examples/nullable/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -72,7 +72,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg all \
 --driver oracle \
---config examples/nullable/oracle.yaml \
+--config examples/nullable/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -89,6 +89,6 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg all \
 --driver mssql \
---config examples/nullable/mssql.yaml \
+--config examples/nullable/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=nullable&encrypt=disable"
 ```

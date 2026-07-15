@@ -26,13 +26,13 @@ With a valid region, events are inserted with the mapped AWS region:
 ```sh
 edg up \
 --driver pgx \
---config examples/failing/crdb.yaml \
+--config examples/failing/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 FLY_REGION=fra \
 edg run \
 --driver pgx \
---config examples/failing/crdb.yaml \
+--config examples/failing/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 5s
@@ -49,7 +49,7 @@ With an unrecognized region, `fail()` stops the worker:
 FLY_REGION=unknown \
 edg run \
 --driver pgx \
---config examples/failing/crdb.yaml \
+--config examples/failing/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 5s
@@ -60,11 +60,11 @@ edg run \
 ```sh
 edg deseed \
 --driver pgx \
---config examples/failing/crdb.yaml \
+--config examples/failing/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/failing/crdb.yaml \
+--config examples/failing/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

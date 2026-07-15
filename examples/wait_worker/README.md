@@ -4,7 +4,7 @@ An example of a delayed one-shot worker that applies a schema change mid-run.
 
 The workload queries customers by email against an unindexed column (full table scan). After 30 seconds, a `delay` worker fires once to create an index, and query latency drops immediately.
 
-```yaml
+```edg
 workers:
   - name: add_email_index
     delay: 30s

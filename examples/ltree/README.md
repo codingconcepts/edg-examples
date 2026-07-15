@@ -24,12 +24,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/ltree/crdb.yaml \
+--config examples/ltree/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/ltree/crdb.yaml \
+--config examples/ltree/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -63,11 +63,11 @@ SELECT nlevel(path) AS depth, count(*) FROM employees GROUP BY depth ORDER BY de
 ```sh
 edg deseed \
 --driver pgx \
---config examples/ltree/crdb.yaml \
+--config examples/ltree/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/ltree/crdb.yaml \
+--config examples/ltree/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

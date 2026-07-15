@@ -16,12 +16,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 # Check the data.
@@ -29,11 +29,11 @@ cockroach sql --insecure -e "SELECT COUNT(*) FROM c"
 
 edg deseed \
 --driver pgx \
---config examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/each_cartesian/crdb.yaml \
+--config examples/each_cartesian/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

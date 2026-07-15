@@ -44,7 +44,7 @@ edg capture \
 
 This produces two files:
 
-- `captured.yaml` - YAML workload config
+- `captured.edg` - workload config
 - `captured.edg` - edg-lang workload config
 
 The generated config includes:
@@ -64,7 +64,7 @@ edg capture \
   --top 20 \
   --duration 2m \
   --workers 10 \
-  -o examples/capture/crdb/captured.yaml \
+  -o examples/capture/crdb/captured.edg \
   --database movr \
   --schema public
 ```
@@ -73,7 +73,7 @@ Review and tune
 
 The captured config uses `uniform(1, 10000)` as a default for all query parameters. Replace these with expressions that match your actual data distributions:
 
-```yaml
+```edg
 args:
   - ref_rand('fetch_warehouses').w_id    # instead of uniform(1, 10000)
   - ref_rand('fetch_districts').d_id
@@ -118,7 +118,7 @@ edg capture \
 
 This produces two files:
 
-- `captured.yaml` - YAML workload config
+- `captured.edg` - workload config
 - `captured.edg` - edg-lang workload config
 
 The generated config includes:
@@ -138,7 +138,7 @@ edg capture \
   --top 20 \
   --duration 2m \
   --workers 10 \
-  -o examples/capture/crdb/captured.yaml \
+  -o examples/capture/crdb/captured.edg \
   --database movr \
   --schema public
 ```
@@ -147,7 +147,7 @@ Review and tune
 
 The captured config uses `uniform(1, 10000)` as a default for all query parameters. Replace these with expressions that match your actual data distributions:
 
-```yaml
+```edg
 args:
   - ref_rand('fetch_warehouses').w_id    # instead of uniform(1, 10000)
   - ref_rand('fetch_districts').d_id

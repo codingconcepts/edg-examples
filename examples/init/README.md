@@ -12,7 +12,7 @@ docker exec -it node1 cockroach init --insecure
 
 edg up \
 --driver pgx \
---config examples/normal/crdb.yaml \
+--config examples/normal/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -22,11 +22,11 @@ edg up \
 edg init \
 --driver pgx \
 --url "postgres://root@localhost:26257?sslmode=disable" \
---schema public > _examples/init/crdb.yaml
+--schema public > _examples/init/crdb.edg
 
 edg seed \
 --driver pgx \
---config examples/init/crdb.yaml \
+--config examples/init/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -43,12 +43,12 @@ UNION ALL SELECT 'rides', count(*) FROM rides;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/init/crdb.yaml \
+--config examples/init/crdb.edg \
 --url "postgres://root@localhost:26257/movr?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/init/crdb.yaml \
+--config examples/init/crdb.edg \
 --url "postgres://root@localhost:26257/movr?sslmode=disable"
 ```
 
@@ -61,7 +61,7 @@ docker compose -f infra/compose_mysql.yml up -d
 
 edg up \
 --driver mysql \
---config examples/normal/mysql.yaml \
+--config examples/normal/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -71,7 +71,7 @@ edg up \
 edg init \
 --driver mysql \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---database defaultdb > _examples/init/mysql.yaml
+--database defaultdb > _examples/init/mysql.edg
 ```
 
 ### Seed
@@ -79,7 +79,7 @@ edg init \
 ```sh
 edg seed \
 --driver mysql \
---config examples/init/mysql.yaml \
+--config examples/init/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -95,12 +95,12 @@ UNION ALL SELECT 'review', count(*) FROM review;
 ```sh
 edg deseed \
 --driver mysql \
---config examples/init/mysql.yaml \
+--config examples/init/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg down \
 --driver mysql \
---config examples/init/mysql.yaml \
+--config examples/init/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -113,7 +113,7 @@ docker compose -f infra/compose_mssql.yml up -d
 
 edg up \
 --driver mssql \
---config examples/normal/mssql.yaml \
+--config examples/normal/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 ```
 
@@ -123,7 +123,7 @@ edg up \
 edg init \
 --driver mssql \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable" \
---schema dbo > _examples/init/mssql.yaml
+--schema dbo > _examples/init/mssql.edg
 ```
 
 ### Seed
@@ -131,7 +131,7 @@ edg init \
 ```sh
 edg seed \
 --driver mssql \
---config examples/init/mssql.yaml \
+--config examples/init/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 ```
 
@@ -147,12 +147,12 @@ UNION ALL SELECT 'review', count(*) FROM review;
 ```sh
 edg deseed \
 --driver mssql \
---config examples/init/mssql.yaml \
+--config examples/init/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 
 edg down \
 --driver mssql \
---config examples/init/mssql.yaml \
+--config examples/init/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=master&encrypt=disable"
 ```
 
@@ -165,7 +165,7 @@ docker compose -f infra/compose_oracle.yml up -d
 
 edg up \
 --driver oracle \
---config examples/normal/oracle.yaml \
+--config examples/normal/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -175,7 +175,7 @@ edg up \
 edg init \
 --driver oracle \
 --url "oracle://system:password@localhost:1521/defaultdb" \
---schema SYSTEM > _examples/init/oracle.yaml
+--schema SYSTEM > _examples/init/oracle.edg
 ```
 
 ### Seed
@@ -183,7 +183,7 @@ edg init \
 ```sh
 edg seed \
 --driver oracle \
---config examples/init/oracle.yaml \
+--config examples/init/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -199,11 +199,11 @@ UNION ALL SELECT 'review', count(*) FROM review;
 ```sh
 edg deseed \
 --driver oracle \
---config examples/init/oracle.yaml \
+--config examples/init/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg down \
 --driver oracle \
---config examples/init/oracle.yaml \
+--config examples/init/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```

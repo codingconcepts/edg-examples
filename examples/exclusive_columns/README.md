@@ -6,7 +6,7 @@ Demonstrates how to populate a table where exactly one of two columns must be pr
 
 A coin flip is generated as an intermediate arg, then `cond()` and `arg()` are used to set one column to a value and the other to NULL:
 
-```yaml
+```edg
 args:
   - gen('name')
   - bool()                           # coin flip
@@ -41,7 +41,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/exclusive_columns/crdb.yaml \
+--config examples/exclusive_columns/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -58,7 +58,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/exclusive_columns/mysql.yaml \
+--config examples/exclusive_columns/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -75,7 +75,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg all \
 --driver oracle \
---config examples/exclusive_columns/oracle.yaml \
+--config examples/exclusive_columns/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -92,6 +92,6 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg all \
 --driver mssql \
---config examples/exclusive_columns/mssql.yaml \
+--config examples/exclusive_columns/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=exclusive_columns&encrypt=disable"
 ```

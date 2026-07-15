@@ -2,7 +2,7 @@
 
 Demonstrates the `__values__` token for batch INSERT, UPSERT, and UPDATE operations. Instead of the `unnest(string_to_array(...))` / `JSON_TABLE` / `OPENJSON` patterns, `__values__` generates a standard multi-row `VALUES` clause:
 
-```yaml
+```edg
 seed:
   - name: insert_products
     type: exec_batch
@@ -49,22 +49,22 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/multi_row_dml/crdb.yaml \
+--config examples/multi_row_dml/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/multi_row_dml/crdb.yaml \
+--config examples/multi_row_dml/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg deseed \
 --driver pgx \
---config examples/multi_row_dml/crdb.yaml \
+--config examples/multi_row_dml/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/multi_row_dml/crdb.yaml \
+--config examples/multi_row_dml/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -81,22 +81,22 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg up \
 --driver mysql \
---config examples/multi_row_dml/mysql.yaml \
+--config examples/multi_row_dml/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg seed \
 --driver mysql \
---config examples/multi_row_dml/mysql.yaml \
+--config examples/multi_row_dml/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg deseed \
 --driver mysql \
---config examples/multi_row_dml/mysql.yaml \
+--config examples/multi_row_dml/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg down \
 --driver mysql \
---config examples/multi_row_dml/mysql.yaml \
+--config examples/multi_row_dml/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -113,22 +113,22 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg up \
 --driver mssql \
---config examples/multi_row_dml/mssql.yaml \
+--config examples/multi_row_dml/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=multi_row_dml&encrypt=disable"
 
 edg seed \
 --driver mssql \
---config examples/multi_row_dml/mssql.yaml \
+--config examples/multi_row_dml/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=multi_row_dml&encrypt=disable"
 
 edg deseed \
 --driver mssql \
---config examples/multi_row_dml/mssql.yaml \
+--config examples/multi_row_dml/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=multi_row_dml&encrypt=disable"
 
 edg down \
 --driver mssql \
---config examples/multi_row_dml/mssql.yaml \
+--config examples/multi_row_dml/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=multi_row_dml&encrypt=disable"
 ```
 
@@ -147,21 +147,21 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg up \
 --driver oracle \
---config examples/multi_row_dml/oracle.yaml \
+--config examples/multi_row_dml/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg seed \
 --driver oracle \
---config examples/multi_row_dml/oracle.yaml \
+--config examples/multi_row_dml/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg deseed \
 --driver oracle \
---config examples/multi_row_dml/oracle.yaml \
+--config examples/multi_row_dml/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg down \
 --driver oracle \
---config examples/multi_row_dml/oracle.yaml \
+--config examples/multi_row_dml/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```

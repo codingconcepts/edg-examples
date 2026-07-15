@@ -48,18 +48,18 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/temporal_patterns/crdb.yaml \
+--config examples/temporal_patterns/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 # Or separately.
 edg up \
 --driver pgx \
---config examples/temporal_patterns/crdb.yaml \
+--config examples/temporal_patterns/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/temporal_patterns/crdb.yaml \
+--config examples/temporal_patterns/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 1m
@@ -261,11 +261,11 @@ Output
 ```sh
 edg deseed \
 --driver pgx \
---config examples/temporal_patterns/crdb.yaml \
+--config examples/temporal_patterns/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/temporal_patterns/crdb.yaml \
+--config examples/temporal_patterns/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

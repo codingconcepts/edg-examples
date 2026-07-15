@@ -4,7 +4,7 @@ An example of staged execution where each stage can override the workload mix. T
 
 When a stage defines its own `run_weights`, workers in that stage use those weights. When a stage omits `run_weights`, it falls back to the top-level `run_weights`. When neither exists, all run items execute sequentially.
 
-```yaml
+```edg
 stages:
   - name: ramp
     workers: 1
@@ -51,6 +51,6 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/stages_run_weights/crdb.yaml \
+--config examples/stages_run_weights/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

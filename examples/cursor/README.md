@@ -16,12 +16,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/cursor/crdb.yaml \
+--config examples/cursor/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/cursor/crdb.yaml \
+--config examples/cursor/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 # Verify: should show 10000 accounts (one per customer).
@@ -36,11 +36,11 @@ ORDER BY account_count"
 
 edg deseed \
 --driver pgx \
---config examples/cursor/crdb.yaml \
+--config examples/cursor/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/cursor/crdb.yaml \
+--config examples/cursor/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

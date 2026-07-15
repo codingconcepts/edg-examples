@@ -5,7 +5,7 @@ The `edg stage` command generates data to files instead of executing against a d
 ## Usage
 
 ```sh
-edg stage --config <config.yaml> [--format <format>] [--output-dir <dir>]
+edg stage --config <config.edg> [--format <format>] [--output-dir <dir>]
 ```
 
 ## Flags
@@ -14,7 +14,7 @@ edg stage --config <config.yaml> [--format <format>] [--output-dir <dir>]
 |---|---|---|
 | `-f, --format` | `sql` | Output format: `sql`, `json`, `csv`, `parquet`, or `stdout` |
 | `-o, --output-dir` | `.` | Directory for output files (created if it doesn't exist) |
-| `--config` | | Workload YAML config file (required) |
+| `--config` | | Workload config file (required) |
 | `--driver` | `pgx` | Controls SQL value formatting (quote style, hex literals) |
 | `--rng-seed` | | PRNG seed for deterministic, reproducible output |
 
@@ -25,7 +25,7 @@ edg stage --config <config.yaml> [--format <format>] [--output-dir <dir>]
 One file per config section. DDL statements (up/down) and DML statements (seed/deseed) are written as-is. Data-generating queries are expanded into individual `INSERT` statements with values inline.
 
 ```sh
-edg stage --config examples/output/config.yaml --format sql -o _examples/output/sql
+edg stage --config examples/output/config.edg --format sql -o _examples/output/sql
 ```
 
 **Files produced:**
@@ -85,7 +85,7 @@ DROP TABLE IF EXISTS customer;
 One file per config section, containing an object keyed by query name. Each key maps to an array of row objects. Only data-generating queries (those with args) are included; DDL/DML without args is skipped.
 
 ```sh
-edg stage --config examples/output/config.yaml --format json -o _examples/output/json
+edg stage --config examples/output/config.edg --format json -o _examples/output/json
 ```
 
 **Files produced:**
@@ -137,7 +137,7 @@ edg stage --config examples/output/config.yaml --format json -o _examples/output
 One file per data-generating query, named `{section}_{query}.csv`. Each file includes a header row followed by data rows. DDL/DML queries without args are skipped.
 
 ```sh
-edg stage --config examples/output/config.yaml --format csv -o _examples/output/csv
+edg stage --config examples/output/config.edg --format csv -o _examples/output/csv
 ```
 
 **Files produced:**
@@ -174,7 +174,7 @@ id,customer_id,amount,status
 One file per data-generating query, named `{section}_{query}.parquet`. All columns are stored as optional byte arrays (strings). DDL/DML queries without args are skipped.
 
 ```sh
-edg stage --config examples/output/config.yaml --format parquet -o _examples/output/parquet
+edg stage --config examples/output/config.edg --format parquet -o _examples/output/parquet
 ```
 
 **Files produced:**
@@ -195,17 +195,17 @@ duckdb -c "SELECT * FROM '_examples/output/parquet/seed_populate_customer.parque
 Streams SQL statements directly to standard output as they are generated, with no files written. Useful for piping into a database client or other tools.
 
 ```sh
-edg stage --config examples/output/config.yaml --format stdout
+edg stage --config examples/output/config.edg --format stdout
 ```
 
 Output is identical to the SQL format but printed to the console instead of written to files. DDL statements (up/down) and DML statements (seed/deseed) are written as-is; data-generating queries are expanded into individual `INSERT` statements.
 
 ```sh
 # Pipe directly into a database
-edg stage --config examples/output/config.yaml --format stdout | psql mydb
+edg stage --config examples/output/config.edg --format stdout | psql mydb
 
 # Preview the first few statements
-edg stage --config examples/output/config.yaml --format stdout | head -20
+edg stage --config examples/output/config.edg --format stdout | head -20
 ```
 
 > [!NOTE]
@@ -231,9 +231,9 @@ Queries using `exec_batch` are expanded into individual rows in the output. The 
 
 ## Example config
 
-The [config.yaml](config.yaml) in this directory demonstrates a typical setup:
+The [config.edg](config.edg) in this directory demonstrates a typical setup:
 
-```yaml
+```edg
 globals:
   customers: 10
 

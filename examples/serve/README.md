@@ -23,7 +23,7 @@ edg jobs serve
 response=$(edg jobs submit \
   --url "postgres://root@localhost:26257?sslmode=disable" \
   --driver pgx \
-  --config examples/serve/crdb.yaml \
+  --config examples/serve/crdb.edg \
   --duration 1h \
   --workers 1)
 
@@ -44,7 +44,7 @@ Or stream automatically by adding `--stream` to submit:
 edg jobs submit \
   --url "postgres://root@localhost:26257?sslmode=disable" \
   --driver pgx \
-  --config examples/serve/crdb.yaml \
+  --config examples/serve/crdb.edg \
   --duration 10s \
   --workers 4 \
   --stream \
@@ -81,7 +81,7 @@ When a token is set, all requests to job endpoints must include the `Edg-Jobs-To
 response=$(edg jobs submit \
   --url "postgres://root@localhost:26257?sslmode=disable" \
   --driver pgx \
-  --config examples/serve/crdb.yaml \
+  --config examples/serve/crdb.edg \
   --duration 1h \
   --workers 1 \
   --token my-secret-token)

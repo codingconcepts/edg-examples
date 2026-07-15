@@ -4,7 +4,7 @@ Demonstrates `match/when/default` branching for multi-way dispatch using custome
 
 **Standalone** (outside a transaction) - reads a random customer and logs a region-specific compliance check: GDPR for UK, CCPA for US, standard for everyone else:
 
-```yaml
+```edg
 - match: "ref_same('read_customer').market"
   when:
     - eq: "'uk'"
@@ -40,7 +40,7 @@ Demonstrates `match/when/default` branching for multi-way dispatch using custome
 
 **Inside a transaction** (with let-in-branches) - places an order with market-specific tax and currency. Each branch sets locals for the varying parts; the query below references them via `local()`:
 
-```yaml
+```edg
 - match: "ref_same('read_buyer').market"
   when:
     - eq: "'uk'"
@@ -98,7 +98,7 @@ Run
 ```sh
 edg all \
 --driver pgx \
---config examples/conditional_match/crdb.yaml \
+--config examples/conditional_match/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 -d 10s
 ```
@@ -110,17 +110,17 @@ Run
 ```sh
 edg up \
 --driver pgx \
---config examples/conditional_match/crdb.yaml \
+--config examples/conditional_match/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/conditional_match/crdb.yaml \
+--config examples/conditional_match/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/conditional_match/crdb.yaml \
+--config examples/conditional_match/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 -d 10s
 ```
@@ -173,11 +173,11 @@ Teardown
 ```sh
 edg deseed \
 --driver pgx \
---config examples/conditional_match/crdb.yaml \
+--config examples/conditional_match/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/conditional_match/crdb.yaml \
+--config examples/conditional_match/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

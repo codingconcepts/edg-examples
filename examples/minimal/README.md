@@ -16,7 +16,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/minimal/crdb.yaml \
+--config examples/minimal/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 10s

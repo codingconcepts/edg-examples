@@ -23,10 +23,10 @@ Seed both databases with the same data (deterministic via `--rng-seed`), then ve
 edg sync run \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---source-config examples/sync/mysql.yaml \
+--source-config examples/sync/mysql.edg \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config examples/sync/crdb.yaml \
+--target-config examples/sync/crdb.edg \
 --rng-seed 42
 ```
 
@@ -61,17 +61,17 @@ Create schema on both, seed source only:
 edg up \
 --driver mysql \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---config examples/sync/mysql.yaml
+--config examples/sync/mysql.edg
 
 edg up \
 --driver pgx \
 --url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---config examples/sync/crdb.yaml
+--config examples/sync/crdb.edg
 
 edg sync run \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---source-config examples/sync/mysql.yaml \
+--source-config examples/sync/mysql.edg \
 --rng-seed 42
 ```
 
@@ -103,10 +103,10 @@ edg sync verify \
 edg sync down \
 --source-driver mysql \
 --source-url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
---source-config examples/sync/mysql.yaml \
+--source-config examples/sync/mysql.edg \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config examples/sync/crdb.yaml
+--target-config examples/sync/crdb.edg
 
 docker compose -f infra/compose_crdb.yml down
 docker compose -f infra/compose_mysql.yml down
@@ -131,10 +131,10 @@ until mongosh --quiet --eval "rs.initiate()" &>/dev/null; do sleep 1; done
 edg sync run \
 --source-driver mongodb \
 --source-url "mongodb://localhost:27017/edg?directConnection=true" \
---source-config examples/sync/mongodb.yaml \
+--source-config examples/sync/mongodb.edg \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config examples/sync/crdb.yaml \
+--target-config examples/sync/crdb.edg \
 --rng-seed 42
 ```
 
@@ -156,10 +156,10 @@ edg sync verify \
 edg sync down \
 --source-driver mongodb \
 --source-url "mongodb://localhost:27017/edg?directConnection=true" \
---source-config examples/sync/mongodb.yaml \
+--source-config examples/sync/mongodb.edg \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config examples/sync/crdb.yaml
+--target-config examples/sync/crdb.edg
 
 docker compose -f infra/compose_crdb.yml down
 docker compose -f infra/compose_mongo.yml down
@@ -186,10 +186,10 @@ until cqlsh -e "DESCRIBE CLUSTER" &>/dev/null; do sleep 2; done
 edg sync run \
 --source-driver cassandra \
 --source-url "cassandra://127.0.0.1:9042" \
---source-config examples/sync/cassandra.yaml \
+--source-config examples/sync/cassandra.edg \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config examples/sync/crdb.yaml \
+--target-config examples/sync/crdb.edg \
 --rng-seed 42
 ```
 
@@ -209,10 +209,10 @@ edg sync verify \
 edg sync down \
 --source-driver cassandra \
 --source-url "cassandra://127.0.0.1:9042" \
---source-config examples/sync/cassandra.yaml \
+--source-config examples/sync/cassandra.edg \
 --target-driver pgx \
 --target-url "postgres://root:password@localhost:26257/defaultdb?sslmode=disable" \
---target-config examples/sync/crdb.yaml
+--target-config examples/sync/crdb.edg
 
 docker compose -f infra/compose_crdb.yml down
 docker compose -f infra/compose_cassandra.yml down

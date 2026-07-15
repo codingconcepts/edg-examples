@@ -16,29 +16,29 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/seats/crdb.yaml \
+--config examples/seats/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/seats/crdb.yaml \
+--config examples/seats/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/seats/crdb.yaml \
+--config examples/seats/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 1m
 
 edg deseed \
 --driver pgx \
---config examples/seats/crdb.yaml \
+--config examples/seats/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/seats/crdb.yaml \
+--config examples/seats/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -55,29 +55,29 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg up \
 --driver mysql \
---config examples/seats/mysql.yaml \
+--config examples/seats/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg seed \
 --driver mysql \
---config examples/seats/mysql.yaml \
+--config examples/seats/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg run \
 --driver mysql \
---config examples/seats/mysql.yaml \
+--config examples/seats/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 -w 10 \
 -d 1m
 
 edg deseed \
 --driver mysql \
---config examples/seats/mysql.yaml \
+--config examples/seats/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg down \
 --driver mysql \
---config examples/seats/mysql.yaml \
+--config examples/seats/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -94,29 +94,29 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg up \
 --driver oracle \
---config examples/seats/oracle.yaml \
+--config examples/seats/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg seed \
 --driver oracle \
---config examples/seats/oracle.yaml \
+--config examples/seats/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg run \
 --driver oracle \
---config examples/seats/oracle.yaml \
+--config examples/seats/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 -w 10 \
 -d 1m
 
 edg deseed \
 --driver oracle \
---config examples/seats/oracle.yaml \
+--config examples/seats/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg down \
 --driver oracle \
---config examples/seats/oracle.yaml \
+--config examples/seats/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -133,29 +133,29 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg up \
 --driver mssql \
---config examples/seats/mssql.yaml \
+--config examples/seats/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=seats&encrypt=disable"
 
 edg seed \
 --driver mssql \
---config examples/seats/mssql.yaml \
+--config examples/seats/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=seats&encrypt=disable"
 
 edg run \
 --driver mssql \
---config examples/seats/mssql.yaml \
+--config examples/seats/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=seats&encrypt=disable" \
 -w 10 \
 -d 1m
 
 edg deseed \
 --driver mssql \
---config examples/seats/mssql.yaml \
+--config examples/seats/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=seats&encrypt=disable"
 
 edg down \
 --driver mssql \
---config examples/seats/mssql.yaml \
+--config examples/seats/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=seats&encrypt=disable"
 ```
 
@@ -172,29 +172,29 @@ docker compose -f infra/compose_cassandra.yml up -d
 ```sh
 edg up \
 --driver cassandra \
---config examples/seats/cassandra.yaml \
+--config examples/seats/cassandra.edg \
 --url "localhost:9042"
 
 edg seed \
 --driver cassandra \
---config examples/seats/cassandra.yaml \
+--config examples/seats/cassandra.edg \
 --url "localhost:9042"
 
 edg run \
 --driver cassandra \
---config examples/seats/cassandra.yaml \
+--config examples/seats/cassandra.edg \
 --url "localhost:9042" \
 -w 10 \
 -d 1m
 
 edg deseed \
 --driver cassandra \
---config examples/seats/cassandra.yaml \
+--config examples/seats/cassandra.edg \
 --url "localhost:9042"
 
 edg down \
 --driver cassandra \
---config examples/seats/cassandra.yaml \
+--config examples/seats/cassandra.edg \
 --url "localhost:9042"
 ```
 
@@ -211,29 +211,29 @@ docker compose -f infra/compose_mongo.yml up -d
 ```sh
 edg up \
 --driver mongodb \
---config examples/seats/mongodb.yaml \
+--config examples/seats/mongodb.edg \
 --url "mongodb://localhost:27017/seats"
 
 edg seed \
 --driver mongodb \
---config examples/seats/mongodb.yaml \
+--config examples/seats/mongodb.edg \
 --url "mongodb://localhost:27017/seats"
 
 edg run \
 --driver mongodb \
---config examples/seats/mongodb.yaml \
+--config examples/seats/mongodb.edg \
 --url "mongodb://localhost:27017/seats" \
 -w 10 \
 -d 1m
 
 edg deseed \
 --driver mongodb \
---config examples/seats/mongodb.yaml \
+--config examples/seats/mongodb.edg \
 --url "mongodb://localhost:27017/seats"
 
 edg down \
 --driver mongodb \
---config examples/seats/mongodb.yaml \
+--config examples/seats/mongodb.edg \
 --url "mongodb://localhost:27017/seats"
 ```
 
@@ -251,19 +251,19 @@ docker compose -f infra/compose_spanner.yml up -d
 SPANNER_EMULATOR_HOST=localhost:9010 \
 edg up \
 --driver spanner \
---config examples/seats/spanner.yaml \
+--config examples/seats/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/seats"
 
 SPANNER_EMULATOR_HOST=localhost:9010 \
 edg seed \
 --driver spanner \
---config examples/seats/spanner.yaml \
+--config examples/seats/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/seats"
 
 SPANNER_EMULATOR_HOST=localhost:9010 \
 edg run \
 --driver spanner \
---config examples/seats/spanner.yaml \
+--config examples/seats/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/seats" \
 -w 10 \
 -d 1m
@@ -271,12 +271,12 @@ edg run \
 SPANNER_EMULATOR_HOST=localhost:9010 \
 edg deseed \
 --driver spanner \
---config examples/seats/spanner.yaml \
+--config examples/seats/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/seats"
 
 SPANNER_EMULATOR_HOST=localhost:9010 \
 edg down \
 --driver spanner \
---config examples/seats/spanner.yaml \
+--config examples/seats/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/seats"
 ```

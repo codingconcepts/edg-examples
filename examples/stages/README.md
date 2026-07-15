@@ -4,7 +4,7 @@ An example of staged execution, with stages of different duration, with differen
 
 When `stages` is defined in the config, the `-w` and `-d` CLI flags are ignored. Each stage runs sequentially with its own worker count and duration:
 
-```yaml
+```edg
 stages:
   - name: ramp
     workers: 1
@@ -30,7 +30,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/stages/crdb.yaml \
+--config examples/stages/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -47,7 +47,7 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg all \
 --driver mysql \
---config examples/stages/mysql.yaml \
+--config examples/stages/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -64,7 +64,7 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg all \
 --driver oracle \
---config examples/stages/oracle.yaml \
+--config examples/stages/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -81,6 +81,6 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg all \
 --driver mssql \
---config examples/stages/mssql.yaml \
+--config examples/stages/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=stages&encrypt=disable"
 ```

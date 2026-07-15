@@ -1,7 +1,0 @@
-- name: drop_account
-  type: exec
-  query: DROP TABLE IF EXISTS account
-
-- name: drop_customer
-  type: exec
-  query: DROP TABLE IF EXISTS customer

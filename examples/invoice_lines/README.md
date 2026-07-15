@@ -28,12 +28,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -69,12 +69,12 @@ WHERE total != subtotal + tax + shipping;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/invoice_lines/crdb.yaml \
+--config examples/invoice_lines/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -91,21 +91,21 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg up \
 --driver mysql \
---config examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg seed \
 --driver mysql \
---config examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg deseed \
 --driver mysql \
---config examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg down \
 --driver mysql \
---config examples/invoice_lines/mysql.yaml \
+--config examples/invoice_lines/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```

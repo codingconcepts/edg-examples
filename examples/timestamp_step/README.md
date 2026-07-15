@@ -11,7 +11,7 @@ Both modes set up state for `timestamp_step()`, which returns the next timestamp
 
 ### Interval mode
 
-```yaml
+```edg
 # Every 5 minutes for a year → 105,121 rows
 count: timestamp_steps('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z', '5m')
 args:
@@ -20,7 +20,7 @@ args:
 
 ### Count mode
 
-```yaml
+```edg
 # 10,000 evenly spaced timestamps across a year
 count: timestamp_steps('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z', 10000)
 args:
@@ -41,12 +41,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/timestamp_step/crdb.yaml \
+--config examples/timestamp_step/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/timestamp_step/crdb.yaml \
+--config examples/timestamp_step/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -91,11 +91,11 @@ All `gap` values should be identical.
 ```sh
 edg deseed \
 --driver pgx \
---config examples/timestamp_step/crdb.yaml \
+--config examples/timestamp_step/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/timestamp_step/crdb.yaml \
+--config examples/timestamp_step/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```

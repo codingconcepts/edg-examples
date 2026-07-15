@@ -16,22 +16,22 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/populate/crdb.yaml \
+--config examples/populate/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/populate/crdb.yaml \
+--config examples/populate/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg deseed \
 --driver pgx \
---config examples/populate/crdb.yaml \
+--config examples/populate/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/populate/crdb.yaml \
+--config examples/populate/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -48,22 +48,22 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg up \
 --driver mysql \
---config examples/populate/mysql.yaml \
+--config examples/populate/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg seed \
 --driver mysql \
---config examples/populate/mysql.yaml \
+--config examples/populate/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg deseed \
 --driver mysql \
---config examples/populate/mysql.yaml \
+--config examples/populate/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg down \
 --driver mysql \
---config examples/populate/mysql.yaml \
+--config examples/populate/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -80,22 +80,22 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg up \
 --driver oracle \
---config examples/populate/oracle.yaml \
+--config examples/populate/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg seed \
 --driver oracle \
---config examples/populate/oracle.yaml \
+--config examples/populate/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg deseed \
 --driver oracle \
---config examples/populate/oracle.yaml \
+--config examples/populate/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg down \
 --driver oracle \
---config examples/populate/oracle.yaml \
+--config examples/populate/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -112,21 +112,21 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg up \
 --driver mssql \
---config examples/populate/mssql.yaml \
+--config examples/populate/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=populate&encrypt=disable"
 
 edg seed \
 --driver mssql \
---config examples/populate/mssql.yaml \
+--config examples/populate/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=populate&encrypt=disable"
 
 edg deseed \
 --driver mssql \
---config examples/populate/mssql.yaml \
+--config examples/populate/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=populate&encrypt=disable"
 
 edg down \
 --driver mssql \
---config examples/populate/mssql.yaml \
+--config examples/populate/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=populate&encrypt=disable"
 ```

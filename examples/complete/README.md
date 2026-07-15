@@ -1,6 +1,6 @@
 # LLM Text Generation
 
-Demonstrates `complete` and `complete_array` for structured text generation via an LLM with tool calling. The LLM is forced to return structured data matching a tool schema defined in the YAML config, and individual fields are accessed via dot notation.
+Demonstrates `complete` and `complete_array` for structured text generation via an LLM with tool calling. The LLM is forced to return structured data matching a tool schema defined in the config, and individual fields are accessed via dot notation.
 
 ## Functions
 
@@ -23,9 +23,9 @@ Any OpenAI-compatible API works (Ollama, vLLM, Azure OpenAI, etc.) - set `--comp
 
 ## Tool Schema
 
-Tools are defined in the `complete` YAML section. Each tool has a name, system prompt, and JSON Schema properties:
+Tools are defined in the `complete` section. Each tool has a name, system prompt, and JSON Schema properties:
 
-```yaml
+```edg
 complete:
   tools:
     - name: review
@@ -49,7 +49,7 @@ complete:
 
 Use `locals` to call `complete()` once and access multiple fields:
 
-```yaml
+```edg
 locals:
   review: 'complete("review", prompt)'
 args:
@@ -73,7 +73,7 @@ For `exec_batch`/`query_batch` types, all `complete()` calls are collected as pl
 
 `complete_array` generates N items in a single API call. The tool schema is automatically wrapped in an array request. Use `ref_each()` to iterate through the results:
 
-```yaml
+```edg
 locals:
   reviews: 'complete_array("review", "Generate 5 product reviews", 5)'
 args:
@@ -99,17 +99,17 @@ source .env # Or similar...
 ```sh
 edg up \
 --driver pgx \
---config examples/complete/crdb.yaml \
+--config examples/complete/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/complete/crdb.yaml \
+--config examples/complete/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/complete/crdb.yaml \
+--config examples/complete/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 1 \
 -d 10s
@@ -133,12 +133,12 @@ LIMIT 10;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/complete/crdb.yaml \
+--config examples/complete/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/complete/crdb.yaml \
+--config examples/complete/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -147,12 +147,12 @@ edg down \
 ```sh
 edg up \
   --driver pgx \
-  --config examples/complete/crdb.yaml \
+  --config examples/complete/crdb.edg \
   --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
   --driver pgx \
-  --config examples/complete/crdb.yaml \
+  --config examples/complete/crdb.edg \
   --url "postgres://root@localhost:26257?sslmode=disable" \
   --complete-api-key ollama \
   --complete-url http://localhost:11434/v1/chat/completions \

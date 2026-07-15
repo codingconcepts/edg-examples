@@ -21,12 +21,12 @@ done && echo "mongo ready"
 ```sh
 edg up \
 --driver mongodb \
---config examples/mongodb/mongodb.yaml \
+--config examples/mongodb/mongodb.edg \
 --url "mongodb://localhost:27017/edg"
 
 edg seed \
 --driver mongodb \
---config examples/mongodb/mongodb.yaml \
+--config examples/mongodb/mongodb.edg \
 --url "mongodb://localhost:27017/edg"
 ```
 
@@ -41,11 +41,11 @@ docker exec mongo mongosh edg --quiet --eval "db.account.find().limit(5).toArray
 ```sh
 edg deseed \
 --driver mongodb \
---config examples/mongodb/mongodb.yaml \
+--config examples/mongodb/mongodb.edg \
 --url "mongodb://localhost:27017/edg"
 
 edg down \
 --driver mongodb \
---config examples/mongodb/mongodb.yaml \
+--config examples/mongodb/mongodb.edg \
 --url "mongodb://localhost:27017/edg"
 ```

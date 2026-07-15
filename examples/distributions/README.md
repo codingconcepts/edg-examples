@@ -48,12 +48,12 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 10s
@@ -497,12 +497,12 @@ Most rows end up in `delivered` because it has the highest stay probability (0.9
 ```sh
 edg deseed \
 --driver pgx \
---config examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/distributions/crdb.yaml \
+--config examples/distributions/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -519,24 +519,24 @@ docker compose -f infra/compose_mysql.yml up -d
 ```sh
 edg up \
 --driver mysql \
---config examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg run \
 --driver mysql \
---config examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true" \
 -w 10 \
 -d 30s
 
 edg deseed \
 --driver mysql \
---config examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 
 edg down \
 --driver mysql \
---config examples/distributions/mysql.yaml \
+--config examples/distributions/mysql.edg \
 --url "root:password@tcp(localhost:3306)/defaultdb?parseTime=true"
 ```
 
@@ -553,24 +553,24 @@ docker compose -f infra/compose_oracle.yml up -d
 ```sh
 edg up \
 --driver oracle \
---config examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg run \
 --driver oracle \
---config examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb" \
 -w 10 \
 -d 30s
 
 edg deseed \
 --driver oracle \
---config examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 
 edg down \
 --driver oracle \
---config examples/distributions/oracle.yaml \
+--config examples/distributions/oracle.edg \
 --url "oracle://system:password@localhost:1521/defaultdb"
 ```
 
@@ -587,23 +587,23 @@ docker compose -f infra/compose_mssql.yml up -d
 ```sh
 edg up \
 --driver mssql \
---config examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable"
 
 edg run \
 --driver mssql \
---config examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable" \
 -w 10 \
 -d 30s
 
 edg deseed \
 --driver mssql \
---config examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable"
 
 edg down \
 --driver mssql \
---config examples/distributions/mssql.yaml \
+--config examples/distributions/mssql.edg \
 --url "sqlserver://sa:P4ssw0rd@localhost:1433?database=distributions&encrypt=disable"
 ```

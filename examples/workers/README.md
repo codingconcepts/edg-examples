@@ -6,7 +6,7 @@ The `workers` section defines queries that execute on a fixed schedule, independ
 
 This example models a job queue where `run` workers claim and process jobs, while background `workers` handle lease expiry:
 
-```yaml
+```edg
 workers:
   - name: reap_expired
     rate: 1/5s
@@ -45,7 +45,7 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg all \
 --driver pgx \
---config examples/workers/crdb.yaml \
+--config examples/workers/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 30s

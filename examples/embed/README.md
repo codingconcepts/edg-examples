@@ -50,17 +50,17 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/embed/crdb.yaml \
+--config examples/embed/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/embed/crdb.yaml \
+--config examples/embed/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/embed/crdb.yaml \
+--config examples/embed/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 4 \
 -d 30s
@@ -92,12 +92,12 @@ LIMIT 5;
 ```sh
 edg deseed \
 --driver pgx \
---config examples/embed/crdb.yaml \
+--config examples/embed/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/embed/crdb.yaml \
+--config examples/embed/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
 
@@ -106,7 +106,7 @@ edg down \
 ```sh
 edg seed \
 --driver pgx \
---config examples/embed/crdb.yaml \
+--config examples/embed/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 --embed-api-key ollama \
 --embed-url http://localhost:11434/v1/embeddings \
@@ -115,4 +115,4 @@ edg seed \
 ```
 
 > [!NOTE]
-> When changing `--embed-dimensions`, update the `VECTOR(1536)` column type in the YAML to match.
+> When changing `--embed-dimensions`, update the `VECTOR(1536)` column type in the config to match.

@@ -16,17 +16,17 @@ docker exec -it node1 cockroach init --insecure
 ```sh
 edg up \
 --driver pgx \
---config examples/geo_spatial/crdb.yaml \
+--config examples/geo_spatial/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg seed \
 --driver pgx \
---config examples/geo_spatial/crdb.yaml \
+--config examples/geo_spatial/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg run \
 --driver pgx \
---config examples/geo_spatial/crdb.yaml \
+--config examples/geo_spatial/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
 -w 10 \
 -d 30s
@@ -47,11 +47,11 @@ cockroach sql --insecure \
 ```sh
 edg deseed \
 --driver pgx \
---config examples/geo_spatial/crdb.yaml \
+--config examples/geo_spatial/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 
 edg down \
 --driver pgx \
---config examples/geo_spatial/crdb.yaml \
+--config examples/geo_spatial/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable"
 ```
