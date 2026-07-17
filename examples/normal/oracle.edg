@@ -69,14 +69,14 @@ init {
 run {
   add_review(type: exec) `INSERT INTO review (product_id, rating)
     VALUES (:1, :2)` (
-      ref_rand('fetch_products').id,
-      norm(4, 1, 1, 5)
+      ref('fetch_products').id,
+      norm.int(4, 1, 1, 5)
   )
 
   add_batch_reviews(type: exec) `INSERT INTO review (product_id, rating)
     SELECT TO_NUMBER(column_value), $2
     FROM XMLTABLE(('"' || REPLACE('$1', CHR(31), '","') || '"'))` (
-      norm_n(50, 15, 1, 100, 3, 8),
-      norm(4, 1, 1, 5)
+      norm.n(50, 15, 1, 100, 3, 8),
+      norm.int(4, 1, 1, 5)
   )
 }

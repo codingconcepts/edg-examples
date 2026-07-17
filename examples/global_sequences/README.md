@@ -2,18 +2,18 @@
 
 Demonstrates globally unique auto-incrementing sequences shared across all workers, and the five distribution functions for referencing existing sequence values.
 
-The `seq` section defines named sequences with a start value and step. `seq_global("name")` returns globally unique values using atomic counters. The distribution functions (`seq_rand`, `seq_zipf`, `seq_norm`, `seq_exp`, `seq_lognorm`) compute valid values algebraically from start/step/counter without storing values in memory.
+The `seq` section defines named sequences with a start value and step. `seq_global("name")` returns globally unique values using atomic counters. The distribution functions (`uniform.seq`, `zipf.seq`, `norm.seq`, `exp.seq`, `seq_lognorm`) compute valid values algebraically from start/step/counter without storing values in memory.
 
 ## Functions
 
 | Function | Description |
 |---|---|
 | `seq_global("name")` | Next globally unique value |
-| `seq_rand("name")` | Uniform random pick |
-| `seq_zipf("name", s, v)` | Zipfian (hot early values) |
-| `seq_norm("name", mean, stddev)` | Normal distribution |
-| `seq_exp("name", rate)` | Exponential distribution |
-| `seq_lognorm("name", mu, sigma)` | Log-normal distribution |
+| `uniform.seq("name")` | Uniform random pick |
+| `zipf.seq("name", s, v)` | Zipfian (hot early values) |
+| `norm.seq("name", mean, stddev)` | Normal distribution |
+| `exp.seq("name", rate)` | Exponential distribution |
+| `lognorm.seq("name", mu, sigma)` | Log-normal distribution |
 
 ## CockroachDB
 

@@ -1,6 +1,6 @@
 # Pipeline
 
-A minimal example demonstrating chained run queries where each step's results feed the next. Three tables (`a`, `b`, `c`) with foreign key relationships show how `ref_rand` and `ref_same` pass data between sequential run queries.
+A minimal example demonstrating chained run queries where each step's results feed the next. Three tables (`a`, `b`, `c`) with foreign key relationships show how `ref` and `ref_same` pass data between sequential run queries.
 
 ## CockroachDB
 

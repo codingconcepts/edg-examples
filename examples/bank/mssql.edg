@@ -56,12 +56,12 @@ weights {
 }
 
 run {
-  check_balance(type: query) `SELECT balance FROM account WHERE id = @p1` (ref_rand('fetch_accounts').id)
+  check_balance(type: query) `SELECT balance FROM account WHERE id = @p1` (ref('fetch_accounts').id)
 
   credit_account(type: exec) `UPDATE account SET balance = balance + @p1
     WHERE id = @p2` (
       gen('number:1,1000'),
-      ref_rand('fetch_accounts').id
+      ref('fetch_accounts').id
   )
 
   make_transfer(type: exec) `UPDATE account

@@ -28,7 +28,7 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('VP'),
-      manager_id: ref_rand('ceo').id
+      manager_id: ref('ceo').id
   )
 
   directors(type: exec_batch, count: total_directors) `INSERT INTO employees (id, name, title, manager_id)
@@ -36,7 +36,7 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('Director'),
-      manager_id: ref_rand('vps').id
+      manager_id: ref('vps').id
   )
 
   managers(type: exec_batch, count: total_managers) `INSERT INTO employees (id, name, title, manager_id)
@@ -44,7 +44,7 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('Manager'),
-      manager_id: ref_rand('directors').id
+      manager_id: ref('directors').id
   )
 
   ics(type: exec_batch, count: total_ics) `INSERT INTO employees (id, name, title, manager_id)
@@ -52,7 +52,7 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('IC'),
-      manager_id: ref_rand('managers').id
+      manager_id: ref('managers').id
   )
 }
 

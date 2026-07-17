@@ -3,7 +3,7 @@ let orders = 1000
 object order {
   email      = gen('email')
   product    = gen('productname')
-  quantity   = int(uniform(1, 100))
+  quantity   = int(uniform.int(1, 100))
   ordered_at = timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z')
 }
 

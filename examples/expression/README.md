@@ -1,6 +1,6 @@
 # Expressions
 
-Demonstrates the built-in [expr-lang](https://expr-lang.org/docs/language-definition) features available in any query argument or user-defined expression. These complement edg's custom functions (gen, ref_rand, distributions, etc.) and can be freely combined with them.
+Demonstrates the built-in [expr-lang](https://expr-lang.org/docs/language-definition) features available in any query argument or user-defined expression. These complement edg's custom functions (gen, ref, distributions, etc.) and can be freely combined with them.
 
 ## Features
 

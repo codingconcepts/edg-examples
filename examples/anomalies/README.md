@@ -11,7 +11,7 @@ Generates traffic patterns that provoke classic read/write anomalies under weak 
   queries:
     - name: read_counter
       type: query
-      args: [ref_rand('fetch_counters').id]
+      args: [ref('fetch_counters').id]
       query: SELECT id, value FROM counter WHERE id = $1::UUID
 
     - name: write_counter

@@ -44,14 +44,14 @@ init {
 run {
   add_review(type: exec) `INSERT INTO review (product_id, rating)
     VALUES ($1::INT, $2::INT)` (
-      ref_rand('fetch_products').id,
-      norm(4, 1, 1, 5)
+      ref('fetch_products').id,
+      norm.int(4, 1, 1, 5)
   )
 
   add_batch_reviews(type: exec) `INSERT INTO review (product_id, rating)
     SELECT id::INT, $2::INT
     FROM unnest(string_to_array($1, ',')) AS id` (
-      norm_n(50, 15, 1, 100, 3, 8),
-      norm(4, 1, 1, 5)
+      norm.n(50, 15, 1, 100, 3, 8),
+      norm.int(4, 1, 1, 5)
   )
 }

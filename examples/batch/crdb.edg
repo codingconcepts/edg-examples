@@ -22,8 +22,8 @@ seed {
 
   insert_reviews(type: exec_batch, count: reviews, size: 10) `INSERT INTO review (product_id, rating, body)
     __values__` (
-      ref_rand('insert_products').id,
-      norm(4, 1, 1, 5),
+      ref('insert_products').id,
+      norm.int(4, 1, 1, 5),
       gen('loremipsumsentence:5')
   )
 }

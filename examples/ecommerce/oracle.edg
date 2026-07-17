@@ -240,7 +240,7 @@ run {
     FROM product p
     WHERE p.category_id = :1
     ORDER BY p.price ASC
-    FETCH FIRST 20 ROWS ONLY` (ref_rand('fetch_categories').id)
+    FETCH FIRST 20 ROWS ONLY` (ref('fetch_categories').id)
 
   view_product(type: query) `SELECT p.id, p.name, p.price, p.stock_qty,
       COALESCE(r.avg_rating, 0) AS avg_rating,
@@ -254,7 +254,7 @@ run {
       WHERE product_id = :1
       GROUP BY product_id
     ) r ON r.product_id = p.id
-    WHERE p.id = :1` (ref_rand('fetch_products').id)
+    WHERE p.id = :1` (ref('fetch_products').id)
 
   add_to_cart(type: exec) `MERGE INTO cart_item ci
     USING (SELECT :1 AS cust_id, :2 AS prod_id, :3 AS qty FROM DUAL) src
@@ -265,8 +265,8 @@ run {
     WHEN NOT MATCHED THEN
       INSERT (customer_id, product_id, quantity)
       VALUES (src.cust_id, src.prod_id, src.qty)` (
-      ref_rand('fetch_customers').id,
-      ref_rand('fetch_products').id,
+      ref('fetch_customers').id,
+      ref('fetch_products').id,
       gen('number:1,3')
   )
 
@@ -278,16 +278,16 @@ run {
     WHEN NOT MATCHED THEN
       INSERT (product_id, customer_id, rating, body)
       VALUES (src.prod_id, src.cust_id, src.rating, src.body)` (
-      ref_rand('fetch_products').id,
-      ref_rand('fetch_customers').id,
+      ref('fetch_products').id,
+      ref('fetch_customers').id,
       star_rating(gen('number:1,100')),
       gen('sentence:8')
   )
 
   remove_from_cart(type: exec) `DELETE FROM cart_item
     WHERE customer_id = :1 AND product_id = :2` (
-      ref_rand('fetch_customers').id,
-      ref_rand('fetch_products').id
+      ref('fetch_customers').id,
+      ref('fetch_products').id
   )
 
   search_products(type: query) `SELECT p.id, p.name, p.price, p.stock_qty,

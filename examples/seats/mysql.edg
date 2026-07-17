@@ -221,13 +221,13 @@ run {
     WHERE f_depart_ap_id = ?
       AND f_depart_time > NOW()
     ORDER BY f_depart_time
-    LIMIT 10` (ref_rand('fetch_airports').ap_id)
+    LIMIT 10` (ref('fetch_airports').ap_id)
 
-  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = ?` (ref_rand('fetch_flights').f_id)
+  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = ?` (ref('fetch_flights').f_id)
 
   transaction new_reservation {
-    let c_id = ref_rand('fetch_customers').c_id
-    let f_id = ref_rand('fetch_flights').f_id
+    let c_id = ref('fetch_customers').c_id
+    let f_id = ref('fetch_flights').f_id
     let price = gen('number:50,1000')
     let seat = gen('number:1,150')
     decr_seats(type: exec) `UPDATE flight SET f_seats_left = f_seats_left - 1
@@ -252,18 +252,18 @@ run {
     WHERE c_id = ?` (
       gen('number:0,1000'),
       gen('number:0,1000'),
-      ref_rand('fetch_customers').c_id
+      ref('fetch_customers').c_id
   )
 
   update_reservation(type: exec) `UPDATE reservation SET r_iattr00 = ?
     WHERE r_id = ?` (
       gen('number:0,100'),
-      ref_rand('fetch_reservations').r_id
+      ref('fetch_reservations').r_id
   )
 
   transaction delete_reservation {
-    let f_id = ref_rand('fetch_reservations').r_f_id
-    let r_id = ref_rand('fetch_reservations').r_id
+    let f_id = ref('fetch_reservations').r_f_id
+    let r_id = ref('fetch_reservations').r_id
     del_reservation(type: exec) `DELETE FROM reservation WHERE r_id = ?` (local('r_id'))
     incr_seats(type: exec) `UPDATE flight SET f_seats_left = f_seats_left + 1
       WHERE f_id = ?` (local('f_id'))

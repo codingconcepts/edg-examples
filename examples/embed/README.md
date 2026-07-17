@@ -1,6 +1,6 @@
 # Real Embeddings
 
-Demonstrates `embed` for generating real vector embeddings via an external API (OpenAI-compatible). Unlike `vector`/`vector_zipf`/`vector_norm` which produce synthetic clustered vectors, `embed` calls a live embedding model so that similarity search reflects actual semantic relationships.
+Demonstrates `embed` for generating real vector embeddings via an external API (OpenAI-compatible). Unlike `vector`/`zipf.vector`/`norm.vector` which produce synthetic clustered vectors, `embed` calls a live embedding model so that similarity search reflects actual semantic relationships.
 
 ## Function
 

@@ -272,11 +272,11 @@ run {
     JOIN user_profile u ON u.id = p.author_id
     WHERE f.follower_id = HEXTORAW(:1)
     ORDER BY p.created_at DESC
-    FETCH FIRST 20 ROWS ONLY` (ref_rand('fetch_users').id)
+    FETCH FIRST 20 ROWS ONLY` (ref('fetch_users').id)
 
   create_post(type: exec) `INSERT INTO post (author_id, body)
     VALUES (HEXTORAW(:1), :2)` (
-      ref_rand('fetch_users').id,
+      ref('fetch_users').id,
       gen('sentence:10')
   )
 
@@ -285,14 +285,14 @@ run {
     ON (pl.post_id = src.post_id AND pl.user_id = src.user_id)
     WHEN NOT MATCHED THEN
       INSERT (post_id, user_id) VALUES (src.post_id, src.user_id)` (
-      ref_rand('fetch_posts').id,
-      ref_rand('fetch_users').id
+      ref('fetch_posts').id,
+      ref('fetch_users').id
   )
 
   add_comment(type: exec) `INSERT INTO comment_ (post_id, author_id, body)
     VALUES (HEXTORAW(:2), HEXTORAW(:1), :4 || ': ' || :3)` (
       ref_same('fetch_users').id,
-      ref_rand('fetch_posts').id,
+      ref('fetch_posts').id,
       gen('sentence:8'),
       ref_same('fetch_users').display_name
   )

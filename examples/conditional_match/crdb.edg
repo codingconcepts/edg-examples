@@ -60,13 +60,13 @@ seed {
   populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email, market)
     __values__` (
       gen('email'),
-      set_rand(['uk', 'us', 'eu'],[34, 33, 33])
+      set(['uk', 'us', 'eu'],[34, 33, 33])
   )
 
   populate_product(type: exec_batch, count: products, size: batch_size) `INSERT INTO product (name, price)
     __values__` (
       gen('productname'),
-      uniform_f(5.00, 500.00, 2)
+      uniform.float(5.00, 500.00, 2)
   )
 }
 
@@ -97,13 +97,13 @@ init {
 }
 
 run {
-  read_customer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref_rand('fetch_customers').id)
+  read_customer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref('fetch_customers').id)
 
   
 
   transaction place_order {
-    read_buyer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref_rand('fetch_customers').id)
-    read_product(type: query) `SELECT id, price FROM product WHERE id = $1::UUID` (ref_rand('fetch_products').id)
+    read_buyer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref('fetch_customers').id)
+    read_product(type: query) `SELECT id, price FROM product WHERE id = $1::UUID` (ref('fetch_products').id)
     match ref_same('read_buyer').market {
       when 'uk' {
         let tax_rate = 0.20

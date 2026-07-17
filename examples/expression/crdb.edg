@@ -1,9 +1,9 @@
-let prices    = '[9.99 19.99 4.99 29.99 14.99]'
-let tags      = '[electronics books clothing food toys]'
-let names     = '[Alice Bob Charlie Diana Eve]'
+let prices    = [9.99, 19.99, 4.99, 29.99, 14.99]
+let tags      = ['electronics', 'books', 'clothing', 'food', 'toys']
+let names     = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve']
 let threshold = 10
-let matrix    = '[[1 2] [3 4] [5 6]]'
-let products  = '[map[category:tools name:Widget price:29.99] map[category:electronics name:Gadget price:9.99] map[category:tools name:Gizmo price:19.99] map[category:toys name:Doohickey price:4.99] map[category:electronics name:Thingamajig price:49.99]]'
+let matrix    = [[1, 2],[3, 4],[5, 6]]
+let products  = [{ category : 'tools', name : 'Widget', price : 29.99 }, { category : 'electronics', name : 'Gadget', price : 9.99 }, { category : 'tools', name : 'Gizmo', price : 19.99 }, { category : 'toys', name : 'Doohickey', price : 4.99 }, { category : 'electronics', name : 'Thingamajig', price : 49.99 }]
 
 expr grade = if args[0] >= 90 { 'A' } else if args[0] >= 70 { 'B' } else { 'F' }
 
@@ -163,10 +163,10 @@ run {
     ('bitshl(1, 8)', $6::STRING),
     ('bitshr(256, 4)', $7::STRING),
     ('bitushr(256, 4)', $8::STRING)` (
-      string(bitand(0 xFF, 0 x0F)),
-      string(bitor(0 xF0, 0 x0F)),
-      string(bitxor(0 xFF, 0 x0F)),
-      string(bitnand(0 xFF, 0 x0F)),
+      string(bitand(0xFF, 0x0F)),
+      string(bitor(0xF0, 0x0F)),
+      string(bitxor(0xFF, 0x0F)),
+      string(bitnand(0xFF, 0x0F)),
       string(bitnot(0)),
       string(bitshl(1, 8)),
       string(bitshr(256, 4)),

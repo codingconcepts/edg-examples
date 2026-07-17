@@ -298,7 +298,7 @@ weights {
 }
 
 run {
-  get_subscriber_data(type: query) `SELECT * FROM subscriber WHERE s_id = :1` (ref_rand('fetch_subscribers').s_id)
+  get_subscriber_data(type: query) `SELECT * FROM subscriber WHERE s_id = :1` (ref('fetch_subscribers').s_id)
 
   get_new_destination(type: query) `SELECT cf.numberx
     FROM special_facility sf
@@ -307,7 +307,7 @@ run {
     WHERE sf.s_id = :1 AND sf.sf_type = :2
       AND sf.is_active = 1
       AND cf.start_time <= :3 AND cf.end_time > :4` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4'),
       gen('number:0,23'),
       gen('number:1,24')
@@ -316,19 +316,19 @@ run {
   get_access_data(type: query) `SELECT data1, data2, data3, data4
     FROM access_info
     WHERE s_id = :1 AND ai_type = :2` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4')
   )
 
   update_subscriber_data(type: exec) `UPDATE subscriber SET bit_1 = :2
     WHERE s_id = :1` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:0,1')
   )
 
   update_location(type: exec) `UPDATE subscriber SET vlr_location = :2
     WHERE sub_nbr = :1` (
-      ref_rand('fetch_subscribers').sub_nbr,
+      ref('fetch_subscribers').sub_nbr,
       gen('number:0,65535')
   )
 
@@ -338,7 +338,7 @@ run {
     FROM special_facility
     WHERE s_id = :1 AND sf_type = :2
       AND ROWNUM = 1` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4'),
       gen('number:0,23'),
       gen('number:1,24'),
@@ -348,7 +348,7 @@ run {
   delete_call_forwarding(type: exec) `DELETE FROM call_forwarding
     WHERE s_id = :1 AND sf_type = :2
       AND start_time = :3` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4'),
       gen('number:0,23')
   )

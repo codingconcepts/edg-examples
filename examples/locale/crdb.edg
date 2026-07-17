@@ -29,8 +29,8 @@ seed {
       phone: gen_locale('phone', 'ja_JP'),
       city: gen_locale('city', 'ja_JP'),
       address: gen_locale('address', 'ja_JP'),
-      masked_name: mask(arg('full_name')),
-      masked_email: mask(arg('email'))
+      masked_name: mask('key', arg('full_name')),
+      masked_email: mask('key', arg('email'))
   )
 
   de_users(type: exec_batch, count: de_users) `INSERT INTO users (id, region, first_name, last_name, full_name, email, phone, city, address, masked_name, masked_email)
@@ -44,8 +44,8 @@ seed {
       phone: gen_locale('phone', 'de_DE'),
       city: gen_locale('city', 'de_DE'),
       address: gen_locale('address', 'de_DE'),
-      masked_name: mask(arg('full_name')),
-      masked_email: mask(arg('email'))
+      masked_name: mask('key', arg('full_name')),
+      masked_email: mask('key', arg('email'))
   )
 }
 

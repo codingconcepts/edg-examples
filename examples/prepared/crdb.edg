@@ -111,7 +111,7 @@ run {
     JOIN product p ON p.id = oi.product_id
     WHERE c.id = $1
     ORDER BY po.created_at DESC, line_total DESC
-    LIMIT 20` (ref_rand('fetch_customers').id)
+    LIMIT 20` (ref('fetch_customers').id)
 
   category_revenue(type: query, prepared: true) `SELECT p.category,
            COUNT(DISTINCT c.id) AS unique_customers,
@@ -127,8 +127,8 @@ run {
     GROUP BY p.category
     HAVING SUM(oi.quantity * oi.unit_price) > $2
     ORDER BY total_revenue DESC` (
-      set_rand(['pending', 'shipped', 'delivered'],[]),
-      uniform_f(100, 500, 2)
+      set(['pending', 'shipped', 'delivered'],[]),
+      uniform.float(100, 500, 2)
   )
 
   order_details_no_prepare(type: query) `SELECT c.name AS customer_name,
@@ -145,7 +145,7 @@ run {
     JOIN product p ON p.id = oi.product_id
     WHERE c.id = $1
     ORDER BY po.created_at DESC, line_total DESC
-    LIMIT 20` (ref_rand('fetch_customers').id)
+    LIMIT 20` (ref('fetch_customers').id)
 
   category_revenue_no_prepare(type: query) `SELECT p.category,
            COUNT(DISTINCT c.id) AS unique_customers,
@@ -161,7 +161,7 @@ run {
     GROUP BY p.category
     HAVING SUM(oi.quantity * oi.unit_price) > $2
     ORDER BY total_revenue DESC` (
-      set_rand(['pending', 'shipped', 'delivered'],[]),
-      uniform_f(100, 500, 2)
+      set(['pending', 'shipped', 'delivered'],[]),
+      uniform.float(100, 500, 2)
   )
 }

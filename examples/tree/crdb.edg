@@ -31,7 +31,7 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       role: const('VP'),
-      manager_id: ref_rand('org_level_0').id
+      manager_id: uniform.ref('org_level_0').id
   )
 
   org_level_2(type: exec_batch, count: 15) `INSERT INTO employees (id, name, role, manager_id)
@@ -39,7 +39,7 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       role: const('Director'),
-      manager_id: ref_rand('org_level_1').id
+      manager_id: uniform.ref('org_level_1').id
   )
 
   org_level_3(type: exec_batch, count: 50) `INSERT INTO employees (id, name, role, manager_id)
@@ -47,15 +47,15 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       role: const('Manager'),
-      manager_id: ref_rand('org_level_2').id
+      manager_id: uniform.ref('org_level_2').id
   )
 
   org_level_4(type: exec_batch, count: 200) `INSERT INTO employees (id, name, role, manager_id)
     __values__` (
       id: seq_global('emp_id'),
       name: gen('name'),
-      role: set_rand(['Engineer', 'IC'],[]),
-      manager_id: ref_rand('org_level_3').id
+      role: uniform.set(['Engineer', 'IC'],[]),
+      manager_id: uniform.ref('org_level_3').id
   )
 
   deps_level_0(type: exec_batch, count: 3) `INSERT INTO dependencies (id, name, dependency_id)
@@ -69,14 +69,14 @@ seed {
     __values__` (
       id: seq_global('dep_id'),
       name: template('pkg-%d', iter()),
-      dependency_id: ref_rand(set_rand(['deps_level_0'],[])).id
+      dependency_id: uniform.ref('deps_level_0').id
   )
 
   deps_level_2(type: exec_batch, count: 20) `INSERT INTO dependencies (id, name, dependency_id)
     __values__` (
       id: seq_global('dep_id'),
       name: template('pkg-%d', iter()),
-      dependency_id: ref_rand(set_rand(['deps_level_0', 'deps_level_1'],[])).id
+      dependency_id: uniform.ref('deps_level_1').id
   )
 }
 

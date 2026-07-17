@@ -213,7 +213,7 @@ run {
       ref_same('fetch_projects').id,
       ref_perm('fetch_tenants').id,
       gen('sentence:5'),
-      ref_rand('fetch_users').id,
+      ref('fetch_users').id,
       ref_same('fetch_projects').id,
       ref_perm('fetch_tenants').id
   )
@@ -226,11 +226,11 @@ run {
         ELSE status
       END,
       updated_at = NOW()
-    WHERE id = ? AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+    WHERE id = ? AND deleted_at IS NULL` (ref('fetch_tasks').id)
 
   add_comment(type: exec) `INSERT INTO task_comment (task_id, tenant_id, author_id, body)
     VALUES (?, ?, ?, ?)` (
-      ref_rand('fetch_tasks').id,
+      ref('fetch_tasks').id,
       ref_same('fetch_users').tenant_id,
       ref_same('fetch_users').id,
       gen('sentence:6')
@@ -238,7 +238,7 @@ run {
 
   soft_delete(type: exec) `UPDATE task
     SET deleted_at = NOW(), updated_at = NOW()
-    WHERE id = ? AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+    WHERE id = ? AND deleted_at IS NULL` (ref('fetch_tasks').id)
 
   tenant_dashboard(type: query) `SELECT
       p.name AS project_name,

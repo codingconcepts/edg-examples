@@ -28,7 +28,7 @@ seed {
 
   populate_account(type: exec_batch, count: customers, size: 50) `INSERT INTO edg.account (id, customer_id, balance) VALUES ($1, $2, $3)` (
       gen('uuid'),
-      ref_rand('fetch_customers').id,
+      ref('fetch_customers').id,
       initial_balance
   )
 }
@@ -44,11 +44,11 @@ weights {
 }
 
 run {
-  check_balance(type: query) `SELECT balance FROM edg.account WHERE id = $1` (ref_rand('fetch_accounts').id)
+  check_balance(type: query) `SELECT balance FROM edg.account WHERE id = $1` (ref('fetch_accounts').id)
 
   transaction credit_account {
     let amount = gen('number:1,1000')
-    read_account(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (ref_rand('fetch_accounts').id)
+    read_account(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (ref('fetch_accounts').id)
     update_account(type: exec) `UPDATE edg.account SET balance = $2 WHERE id = $1` (
         ref_same('read_account').id,
         ref_same('read_account').balance + local('amount')

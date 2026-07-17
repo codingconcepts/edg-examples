@@ -71,12 +71,12 @@ edg capture \
 
 Review and tune
 
-The captured config uses `uniform(1, 10000)` as a default for all query parameters. Replace these with expressions that match your actual data distributions:
+The captured config uses `uniform.int(1, 10000)` as a default for all query parameters. Replace these with expressions that match your actual data distributions:
 
 ```edg
 args:
-  - ref_rand('fetch_warehouses').w_id    # instead of uniform(1, 10000)
-  - ref_rand('fetch_districts').d_id
+  - ref('fetch_warehouses').w_id    # instead of uniform.int(1, 10000)
+  - ref('fetch_districts').d_id
 ```
 
 Teardown
@@ -145,12 +145,12 @@ edg capture \
 
 Review and tune
 
-The captured config uses `uniform(1, 10000)` as a default for all query parameters. Replace these with expressions that match your actual data distributions:
+The captured config uses `uniform.int(1, 10000)` as a default for all query parameters. Replace these with expressions that match your actual data distributions:
 
 ```edg
 args:
-  - ref_rand('fetch_warehouses').w_id    # instead of uniform(1, 10000)
-  - ref_rand('fetch_districts').d_id
+  - ref('fetch_warehouses').w_id    # instead of uniform.int(1, 10000)
+  - ref('fetch_districts').d_id
 ```
 
 Teardown

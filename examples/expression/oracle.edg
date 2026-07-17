@@ -1,9 +1,9 @@
-let prices    = '[9.99 19.99 4.99 29.99 14.99]'
-let tags      = '[electronics books clothing food toys]'
-let names     = '[Alice Bob Charlie Diana Eve]'
+let prices    = [9.99, 19.99, 4.99, 29.99, 14.99]
+let tags      = ['electronics', 'books', 'clothing', 'food', 'toys']
+let names     = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve']
 let threshold = 10
-let matrix    = '[[1 2] [3 4] [5 6]]'
-let products  = '[map[category:tools name:Widget price:29.99] map[category:electronics name:Gadget price:9.99] map[category:tools name:Gizmo price:19.99] map[category:toys name:Doohickey price:4.99] map[category:electronics name:Thingamajig price:49.99]]'
+let matrix    = [[1, 2], [3, 4], [5, 6]]
+let products  = [{ category : 'tools', name : 'Widget', price : 29.99 }, { category : 'electronics', name : 'Gadget', price : 9.99 }, { category : 'tools', name : 'Gizmo', price : 19.99 }, { category : 'toys', name : 'Doohickey', price : 4.99 }, { category : 'electronics', name : 'Thingamajig', price : 49.99 }]
 
 expr grade = if args[0] >= 90 { 'A' } else if args[0] >= 70 { 'B' } else { 'F' }
 
@@ -174,10 +174,10 @@ run {
     SELECT 'bitshl(1, 8)', TO_CHAR(:6) FROM DUAL UNION ALL
     SELECT 'bitshr(256, 4)', TO_CHAR(:7) FROM DUAL UNION ALL
     SELECT 'bitushr(256, 4)', TO_CHAR(:8) FROM DUAL` (
-      bitand(0 xFF, 0 x0F),
-      bitor(0 xF0, 0 x0F),
-      bitxor(0 xFF, 0 x0F),
-      bitnand(0 xFF, 0 x0F),
+      bitand(0xFF, 0x0F),
+      bitor(0xF0, 0x0F),
+      bitxor(0xFF, 0x0F),
+      bitnand(0xFF, 0x0F),
       bitnot(0),
       bitshl(1, 8),
       bitshr(256, 4),

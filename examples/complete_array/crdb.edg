@@ -41,9 +41,9 @@ seed {
   populate_review(type: exec_batch, count: products, size: products) `INSERT INTO review (product_name, review_text, sentiment, rating)
     __values__` (
       ref_each(product_catalog).name,
-      ref_each(local('reviews')).review_text,
-      ref_each(local('reviews')).sentiment,
-      ref_each(local('reviews')).rating
+      local('review').review_text,
+      local('review').sentiment,
+      local('review').rating
   )
 }
 

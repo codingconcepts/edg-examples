@@ -43,7 +43,7 @@ init {
 }
 
 run {
-  get_greeting `SELECT * FROM greetings WHERE id = $1::UUID` (ref_rand('fetch_greetings').id)
+  get_greeting `SELECT * FROM greetings WHERE id = $1::UUID` (ref('fetch_greetings').id)
 
   high_rollers `SELECT * FROM greetings WHERE roll >= $1 LIMIT 10` (dice(20))
 }

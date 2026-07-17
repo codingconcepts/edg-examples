@@ -23,7 +23,7 @@ seed {
   # multi-row INSERT via __values__.
   populate_account `INSERT INTO account (balance, customer_id)
     VALUES ($1, $2)` (
-    uniform_f(10.0, 10000.0, 2),
+    uniform.float(10.0, 10000.0, 2),
     ref_cursor('SELECT id FROM customer ORDER BY id', batch_size, 'id')
   )
 }

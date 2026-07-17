@@ -63,7 +63,7 @@ down {
 run {
   insert_review(type: exec) `INSERT INTO review (product_name, review_text, sentiment, rating)
     VALUES ($1, $2, $3, $4)` (
-      ref_rand('product_catalog').name,
+      ref('product_catalog').name,
       local('review').review_text,
       local('review').sentiment,
       local('review').rating

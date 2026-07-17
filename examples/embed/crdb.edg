@@ -53,5 +53,5 @@ run {
   find_similar(type: query) `SELECT id, name, embedding <=> $1::VECTOR AS distance
     FROM product
     ORDER BY embedding <=> $1::VECTOR
-    LIMIT 10` (embed(ref_rand('product_catalog').name))
+    LIMIT 10` (embed(ref('product_catalog').name))
 }

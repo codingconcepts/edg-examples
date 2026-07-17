@@ -1,6 +1,6 @@
 # CSV Reference Data
 
-Demonstrates loading CSV files as reference tables at startup using `--csv-file` and `--csv-directory`. CSV files are parsed into reference datasets that work with all `ref_*` functions (`ref_rand`, `ref_same`, `ref_diff`, etc.), just like inline `reference:` data in the config.
+Demonstrates loading CSV files as reference tables at startup using `--csv-file` and `--csv-directory`. CSV files are parsed into reference datasets that work with all `ref_*` functions (`ref`, `ref_same`, `ref_diff`, etc.), just like inline `reference:` data in the config.
 
 Each CSV file becomes a collection named after its filename (minus the extension). For example, `regions.csv` becomes the `regions` reference dataset.
 
@@ -107,10 +107,10 @@ Explore CSV reference data interactively without a database:
 edg repl \
   --csv-directory _examples/csv/data
 
->> ref_rand('regions')
+>> ref('regions')
 map[code:gb currency:GBP name:United Kingdom]
 
->> ref_rand('translations').greeting
+>> ref('translations').greeting
 Bonjour
 
 >> ref_same('regions').code

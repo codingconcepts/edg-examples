@@ -171,15 +171,15 @@ run {
     )
     ORDER BY distance_km ASC
     LIMIT 20` (
-      ref_rand('fetch_profiles').lon,
-      ref_rand('fetch_profiles').lat
+      ref('fetch_profiles').lon,
+      ref('fetch_profiles').lat
   )
 
   discover_in_zone(type: query) `SELECT p.id, p.display_name, p.age, p.gender
     FROM profile p
     JOIN zone z ON ST_Covers(z.boundary, p.location)
     WHERE z.id = $1::UUID
-    LIMIT 20` (ref_rand('fetch_zones').id)
+    LIMIT 20` (ref('fetch_zones').id)
 
   swipe_right(type: exec) `INSERT INTO swipe (swiper_id, swiped_id, direction)
     VALUES ($1::UUID, $2::UUID, 'right')
@@ -222,5 +222,5 @@ run {
     JOIN profile p ON p.id = m.sender_id
     WHERE m.match_id = $1::UUID
     ORDER BY m.created_at DESC
-    LIMIT 50` (ref_rand('fetch_matches').id)
+    LIMIT 50` (ref('fetch_matches').id)
 }

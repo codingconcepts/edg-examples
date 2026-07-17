@@ -71,9 +71,9 @@ run {
 
   find_b(type: query) `SELECT TOP 1 id AS b_id, value
     FROM b
-    WHERE a_id = @p1` (ref_rand('find_a').a_id)
+    WHERE a_id = @p1` (ref('find_a').a_id)
 
   update_c(type: exec) `UPDATE TOP (1) c SET status = 'processed'
     WHERE b_id = @p1
-      AND status = 'new'` (ref_rand('find_b').b_id)
+      AND status = 'new'` (ref('find_b').b_id)
 }

@@ -94,7 +94,7 @@ seed {
       regex('[a-zA-Z]{15,40}'),
       gen('number:0,24'),
       regex('[a-zA-Z]{15,15}'),
-      uniform_f(-1000.00, 9000.00, 2),
+      uniform.float(-1000.00, 9000.00, 2),
       regex('[a-zA-Z]{10,30}')
   )
 
@@ -102,7 +102,7 @@ seed {
       iter(),
       gen('number:1,10000'),
       regex('[a-zA-Z]{6,24}'),
-      uniform_f(1.00, 100.00, 2),
+      uniform.float(1.00, 100.00, 2),
       regex('[a-zA-Z]{26,50}')
   )
 
@@ -114,13 +114,13 @@ seed {
       regex('[a-zA-Z]{10,20}'),
       regex('[a-zA-Z]{2,2}'),
       regex('[a-zA-Z]{9,9}'),
-      uniform_f(0.0000, 0.2000, 4)
+      uniform.float(0.0000, 0.2000, 4)
   )
 
   fetch_warehouses `{"find": "warehouse", "filter": {}, "projection": {"w_id": 1}}`
 
   populate_district(type: exec_batch, count: districts, size: batch_size) `{"insert": "district", "documents": [{"d_w_id": $1, "d_id": $2, "d_name": "$3", "d_street_1": "$4", "d_street_2": "$5", "d_city": "$6", "d_state": "$7", "d_zip": "$8", "d_tax": $9, "d_ytd": 30000, "d_next_o_id": 3001}]}` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       iter(),
       regex('[a-zA-Z]{6,10}'),
       regex('[a-zA-Z]{10,20}'),
@@ -128,11 +128,11 @@ seed {
       regex('[a-zA-Z]{10,20}'),
       regex('[a-zA-Z]{2,2}'),
       regex('[a-zA-Z]{9,9}'),
-      uniform_f(0.0000, 0.2000, 4)
+      uniform.float(0.0000, 0.2000, 4)
   )
 
   populate_customer(type: exec_batch, count: customers, size: batch_size) `{"insert": "customer", "documents": [{"c_w_id": $1, "c_d_id": $2, "c_id": $3, "c_first": "$4", "c_middle": "OE", "c_last": "$5", "c_street_1": "$6", "c_street_2": "$7", "c_city": "$8", "c_state": "$9", "c_zip": "$10", "c_phone": "$11", "c_since": {"$date": "2024-01-01T00:00:00Z"}, "c_credit": "GC", "c_credit_lim": 50000, "c_discount": $12, "c_balance": -10, "c_ytd_payment": 10, "c_payment_cnt": 1, "c_delivery_cnt": 0, "c_data": "$13"}]}` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       iter(),
       regex('[a-zA-Z]{6,16}'),
@@ -143,7 +143,7 @@ seed {
       regex('[a-zA-Z]{2,2}'),
       regex('[a-zA-Z]{9,9}'),
       regex('[a-zA-Z]{16,16}'),
-      uniform_f(0.0000, 0.5000, 4),
+      uniform.float(0.0000, 0.5000, 4),
       regex('[a-zA-Z]{300,500}')
   )
 
@@ -151,12 +151,12 @@ seed {
       objectid(),
       iter(),
       gen('number:1,10'),
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       regex('[a-zA-Z]{12,24}')
   )
 
   populate_oorder(type: exec_batch, count: orders, size: batch_size) `{"insert": "oorder", "documents": [{"o_w_id": $1, "o_d_id": $2, "o_id": $3, "o_c_id": $4, "o_entry_d": {"$date": "2024-01-01T00:00:00Z"}, "o_carrier_id": 1, "o_ol_cnt": $5, "o_all_local": 1}]}` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       iter(),
       gen('number:1,3000'),
@@ -164,23 +164,23 @@ seed {
   )
 
   populate_new_order(type: exec_batch, count: districts, size: batch_size) `{"insert": "new_order", "documents": [{"no_w_id": $1, "no_d_id": $2, "no_o_id": $3}]}` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       iter()
   )
 
   populate_order_line(type: exec_batch, count: orders, size: batch_size) `{"insert": "order_line", "documents": [{"ol_w_id": $1, "ol_d_id": $2, "ol_o_id": $3, "ol_number": $4, "ol_i_id": $5, "ol_supply_w_id": $1, "ol_delivery_d": {"$date": "2024-01-01T00:00:00Z"}, "ol_quantity": 5, "ol_amount": $6, "ol_dist_info": "$7"}]}` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       gen('number:1,3000'),
       gen('number:1,15'),
       gen('number:1,100000'),
-      uniform_f(0.00, 9999.99, 2),
+      uniform.float(0.00, 9999.99, 2),
       regex('[a-zA-Z]{24,24}')
   )
 
   populate_stock(type: exec_batch, count: stock, size: batch_size) `{"insert": "stock", "documents": [{"s_w_id": $1, "s_i_id": $2, "s_quantity": $3, "s_dist_01": "$4", "s_dist_02": "$5", "s_dist_03": "$6", "s_dist_04": "$7", "s_dist_05": "$8", "s_dist_06": "$9", "s_dist_07": "$10", "s_dist_08": "$11", "s_dist_09": "$12", "s_dist_10": "$13", "s_ytd": 0, "s_order_cnt": 0, "s_remote_cnt": 0, "s_data": "$14"}]}` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       iter(),
       gen('number:10,100'),
       regex('[a-zA-Z]{24,24}'),

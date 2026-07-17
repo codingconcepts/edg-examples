@@ -181,8 +181,8 @@ run {
       SELECT 1 FROM project WHERE id = $2::UUID AND tenant_id = $1::UUID
     )` (
       ref_perm('fetch_tenants').id,
-      ref_rand('fetch_projects').id,
-      ref_rand('fetch_users').id,
+      ref('fetch_projects').id,
+      ref('fetch_users').id,
       gen('sentence:5')
   )
 
@@ -194,7 +194,7 @@ run {
         ELSE status
       END,
       updated_at = now()
-    WHERE id = $1::UUID AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+    WHERE id = $1::UUID AND deleted_at IS NULL` (ref('fetch_tasks').id)
 
   add_comment(type: exec) `WITH
       new_comment AS (
@@ -207,13 +207,13 @@ run {
     WHERE tenant_id = (SELECT tenant_id FROM new_comment)` (
       ref_same('fetch_users').id,
       ref_same('fetch_users').tenant_id,
-      ref_rand('fetch_tasks').id,
+      ref('fetch_tasks').id,
       gen('sentence:6')
   )
 
   soft_delete(type: exec) `UPDATE task
     SET deleted_at = now(), updated_at = now()
-    WHERE id = $1::UUID AND deleted_at IS NULL` (ref_rand('fetch_tasks').id)
+    WHERE id = $1::UUID AND deleted_at IS NULL` (ref('fetch_tasks').id)
 
   tenant_dashboard(type: query) `SELECT
       p.name AS project_name,

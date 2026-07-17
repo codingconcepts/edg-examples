@@ -21,8 +21,8 @@ seed {
     __values__` (
       gen('email'),
       ref_same('regions').name,
-      set_rand(ref_same('regions').cities,[]),
-      uniform(1, 500)
+      set(ref_same('regions').cities,[]),
+      uniform.int(1, 500)
   )
 }
 
@@ -39,17 +39,17 @@ run {
     type: exec,
     print: ref_same('regions').name,
     print: arg(3),
-    print: { expr : set_rand(ref_same('regions').cities,[]), agg : "join(map(sortBy(toPairs(freq), -#[1])[:5], #[0] + '=' + string(#[1])), ' ')" },
+    print: { expr : set(ref_same('regions').cities,[]), agg : "join(map(sortBy(toPairs(freq), -#[1])[:5], #[0] + '=' + string(#[1])), ' ')" },
     print: { expr : arg(3), agg : 'avg $' + string(int(avg)) + ' n=' + string(count) },
     print: { expr : arg(3), agg : 'total=$' + string(int(sum)) },
     print: { expr : arg(3), agg : string(int(min)) + ' - ' + string(int(max)) },
-    print: { expr : set_rand(ref_same('regions').cities,[]), agg : string(len(freq)) + ' unique' }
+    print: { expr : set(ref_same('regions').cities,[]), agg : string(len(freq)) + ' unique' }
   ) `INSERT INTO print_order (email, region, city, amount)
     VALUES ($1, $2, $3, $4::DECIMAL)` (
       gen('email'),
       ref_same('regions').name,
-      set_rand(ref_same('regions').cities,[]),
-      uniform(1, 500)
+      set(ref_same('regions').cities,[]),
+      uniform.int(1, 500)
   )
 
   read_order(

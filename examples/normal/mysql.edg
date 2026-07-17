@@ -50,8 +50,8 @@ init {
 run {
   add_review(type: exec) `INSERT INTO review (product_id, rating)
     VALUES (?, ?)` (
-      ref_rand('fetch_products').id,
-      norm(4, 1, 1, 5)
+      ref('fetch_products').id,
+      norm.int(4, 1, 1, 5)
   )
 
   add_batch_reviews(type: exec) `INSERT INTO review (product_id, rating)
@@ -60,7 +60,7 @@ run {
       CONCAT('["', REPLACE(?, ',', '","'), '"]'),
       '$[*]' COLUMNS(val VARCHAR(20) PATH '$')
     ) j` (
-      norm(4, 1, 1, 5),
-      norm_n(50, 15, 1, 100, 3, 8)
+      norm.int(4, 1, 1, 5),
+      norm.n(50, 15, 1, 100, 3, 8)
   )
 }

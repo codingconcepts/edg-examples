@@ -133,7 +133,7 @@ weights {
 run {
   ingest_reading(type: exec) `INSERT INTO reading (sensor_id, value)
     VALUES (?, ? / 100.0)` (
-      ref_rand('fetch_sensors').id,
+      ref('fetch_sensors').id,
       gen('number:1,10000')
   )
 
@@ -145,8 +145,8 @@ run {
       AND r.value > ?
     ORDER BY r.recorded_at DESC
     LIMIT 20` (
-      ref_rand('fetch_sensors').id,
-      ref_rand('fetch_sensors').max_threshold
+      ref('fetch_sensors').id,
+      ref('fetch_sensors').max_threshold
   )
 
   hourly_rollup(type: query) `SELECT
@@ -160,7 +160,7 @@ run {
     WHERE sensor_id = ?
       AND recorded_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
     GROUP BY sensor_id, DATE_FORMAT(recorded_at, '%Y-%m-%d %H:00:00')
-    ORDER BY hour DESC` (ref_rand('fetch_sensors').id)
+    ORDER BY hour DESC` (ref('fetch_sensors').id)
 
   device_history(type: query) `SELECT r.value, r.recorded_at, s.metric_name, s.unit
     FROM reading r
@@ -168,7 +168,7 @@ run {
     WHERE s.device_id = ?
     ORDER BY r.recorded_at DESC
     LIMIT ? OFFSET ?` (
-      ref_rand('fetch_devices').id,
+      ref('fetch_devices').id,
       page_size,
       int(gen('number:0,19')) * page_size
   )
@@ -176,7 +176,7 @@ run {
   update_threshold(type: exec) `UPDATE sensor SET max_threshold = ?
     WHERE id = ?` (
       gen('number:50,300'),
-      ref_rand('fetch_sensors').id
+      ref('fetch_sensors').id
   )
 
   detect_anomaly(type: query) `SELECT sensor_id, value, recorded_at,
@@ -186,5 +186,5 @@ run {
     WHERE sensor_id = ?
       AND recorded_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
     ORDER BY recorded_at DESC
-    LIMIT 50` (ref_rand('fetch_sensors').id)
+    LIMIT 50` (ref('fetch_sensors').id)
 }

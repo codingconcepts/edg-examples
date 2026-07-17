@@ -31,8 +31,8 @@ up {
 seed {
   seed_jobs(type: exec_batch, count: jobs, size: batch_size) `INSERT INTO job (kind, payload)
     __values__` (
-      set_rand(['email', 'report', 'sync', 'cleanup', 'notify'],[30, 20, 25, 10, 15]),
-      json_obj('priority', set_rand(['low', 'medium', 'high'],[50, 35, 15]), 'retryable', true)
+      set(['email', 'report', 'sync', 'cleanup', 'notify'],[30, 20, 25, 10, 15]),
+      json_obj('priority', set(['low', 'medium', 'high'],[50, 35, 15]), 'retryable', true)
   )
 }
 
@@ -76,14 +76,14 @@ run {
     log_complete(type: exec, wait: 500ms) `INSERT INTO job_log (job_id, event, detail)
       VALUES ($1::UUID, 'completed', $2::JSONB)` (
         ref_same('claim_job').id,
-        json_obj('duration_ms', uniform(50, 2000))
+        json_obj('duration_ms', uniform.int(50, 2000))
     )
     complete_job(type: exec) `UPDATE job
       SET status = 'completed',
           completed_at = now()
       WHERE id = $1::UUID` (
         ref_same('claim_job').id,
-        json_obj('processed_by', 'edg', 'items', uniform(1, 100))
+        json_obj('processed_by', 'edg', 'items', uniform.int(1, 100))
     )
   }
 }

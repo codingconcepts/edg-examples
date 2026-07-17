@@ -218,7 +218,7 @@ seed {
       regex('[a-zA-Z]{15,40}'),
       gen('number:0,24'),
       regex('[a-zA-Z]{15,15}'),
-      uniform_f(-1000.00, 9000.00, 2),
+      uniform.float(-1000.00, 9000.00, 2),
       regex('[a-zA-Z]{10,30}')
   )
 
@@ -227,7 +227,7 @@ seed {
       iter(),
       gen('number:1,10000'),
       regex('[a-zA-Z]{6,24}'),
-      uniform_f(1.00, 100.00, 2),
+      uniform.float(1.00, 100.00, 2),
       regex('[a-zA-Z]{26,50}')
   )
 
@@ -241,7 +241,7 @@ seed {
       regex('[a-zA-Z]{10,20}'),
       regex('[a-zA-Z]{2,2}'),
       regex('[a-zA-Z]{9,9}'),
-      uniform_f(0.0000, 0.2000, 4)
+      uniform.float(0.0000, 0.2000, 4)
   )
 
   fetch_warehouses `SELECT w_id FROM edg.warehouse`
@@ -249,7 +249,7 @@ seed {
   populate_district(type: exec_batch, count: districts, size: 50) `INSERT INTO edg.district (d_w_id, d_id, d_name, d_street_1,
       d_street_2, d_city, d_state, d_zip, d_tax, d_ytd, d_next_o_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 30000, 3001)` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       iter(),
       regex('[a-zA-Z]{6,10}'),
       regex('[a-zA-Z]{10,20}'),
@@ -257,7 +257,7 @@ seed {
       regex('[a-zA-Z]{10,20}'),
       regex('[a-zA-Z]{2,2}'),
       regex('[a-zA-Z]{9,9}'),
-      uniform_f(0.0000, 0.2000, 4)
+      uniform.float(0.0000, 0.2000, 4)
   )
 
   populate_customer(type: exec_batch, count: customers, size: 50) `INSERT INTO edg.customer (c_w_id, c_d_id, c_id, c_first, c_middle,
@@ -266,7 +266,7 @@ seed {
       c_ytd_payment, c_payment_cnt, c_delivery_cnt, c_data)
     VALUES ($1, $2, $3, $4, 'OE', $5, $6, $7, $8, $9, $10, $11,
       toTimestamp(now()), 'GC', 50000, $12, -10, 10, 1, 0, $13)` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       iter(),
       regex('[a-zA-Z]{6,16}'),
@@ -277,7 +277,7 @@ seed {
       regex('[a-zA-Z]{2,2}'),
       regex('[a-zA-Z]{9,9}'),
       regex('[a-zA-Z]{16,16}'),
-      uniform_f(0.0000, 0.5000, 4),
+      uniform.float(0.0000, 0.5000, 4),
       regex('[a-zA-Z]{300,500}')
   )
 
@@ -287,14 +287,14 @@ seed {
       gen('uuid'),
       iter(),
       gen('number:1,10'),
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       regex('[a-zA-Z]{12,24}')
   )
 
   populate_oorder(type: exec_batch, count: orders, size: 50) `INSERT INTO edg.oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
       o_carrier_id, o_ol_cnt, o_all_local)
     VALUES ($1, $2, $3, $4, toTimestamp(now()), 1, $5, 1)` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       iter(),
       gen('number:1,3000'),
@@ -303,7 +303,7 @@ seed {
 
   populate_new_order(type: exec_batch, count: districts, size: 50) `INSERT INTO edg.new_order (no_w_id, no_d_id, no_o_id)
     VALUES ($1, $2, $3)` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       iter()
   )
@@ -312,12 +312,12 @@ seed {
       ol_i_id, ol_supply_w_id, ol_delivery_d, ol_quantity, ol_amount,
       ol_dist_info)
     VALUES ($1, $2, $3, $4, $5, $1, toTimestamp(now()), 5, $6, $7)` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       gen('number:1,10'),
       gen('number:1,3000'),
       gen('number:1,15'),
       gen('number:1,100000'),
-      uniform_f(0.00, 9999.99, 2),
+      uniform.float(0.00, 9999.99, 2),
       regex('[a-zA-Z]{24,24}')
   )
 
@@ -327,7 +327,7 @@ seed {
       s_ytd, s_order_cnt, s_remote_cnt, s_data)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
       0, 0, 0, $14)` (
-      ref_rand('fetch_warehouses').w_id,
+      ref('fetch_warehouses').w_id,
       iter(),
       gen('number:10,100'),
       regex('[a-zA-Z]{24,24}'),

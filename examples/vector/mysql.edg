@@ -17,8 +17,8 @@ seed {
     __values__` (
       gen('sentence:3'),
       vector(32, 5, 0.1),
-      vector_zipf(32, 5, 0.1, 2.0, 1.0),
-      vector_norm(32, 5, 0.1, 2.0, 0.8)
+      zipf.vector(32, 5, 0.1, 2.0, 1.0),
+      norm.vector(32, 5, 0.1, 2.0, 0.8)
   )
 }
 
@@ -35,7 +35,7 @@ run {
     VALUES (?, ?, ?, ?)` (
       gen('sentence:3'),
       vector(32, 5, 0.1),
-      vector_zipf(32, 5, 0.1, 2.0, 1.0),
-      vector_norm(32, 5, 0.1, 2.0, 0.8)
+      zipf.vector(32, 5, 0.1, 2.0, 1.0),
+      norm.vector(32, 5, 0.1, 2.0, 0.8)
   )
 }

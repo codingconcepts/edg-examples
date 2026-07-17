@@ -106,7 +106,7 @@ seed {
       c_sattr00, c_sattr01, c_iattr00, c_iattr01)
     VALUES ($1, $2, 0, $3, $4, $5, $6)` (
       iter(),
-      ref_rand('fetch_airports_seed').ap_id,
+      ref('fetch_airports_seed').ap_id,
       regex('[a-z]{16}'),
       regex('[a-z]{16}'),
       gen('number:0,999'),
@@ -118,8 +118,8 @@ seed {
     VALUES ($1, $2, $3, $4, $5, $6, 150, 150, $7)` (
       iter(),
       gen('number:1,20'),
-      ref_rand('fetch_airports_seed').ap_id,
-      ref_rand('fetch_airports_seed').ap_id,
+      ref('fetch_airports_seed').ap_id,
+      ref('fetch_airports_seed').ap_id,
       timestamp('2020-01-01T00:00:00Z', '2025-01-01T00:00:00Z'),
       timestamp('2020-01-01T00:00:00Z', '2025-01-01T00:00:00Z'),
       gen('number:100,999')
@@ -129,7 +129,7 @@ seed {
       f_seats_total, f_seats_left, f_base_price)
     VALUES ($1, $2, 150, 150, $3)` (
       iter(),
-      ref_rand('fetch_airports_seed').ap_id,
+      ref('fetch_airports_seed').ap_id,
       gen('number:100,999')
   )
 
@@ -141,8 +141,8 @@ seed {
       r_price, r_iattr00, r_iattr01)
     VALUES ($1, $2, $3, $4, $5, $6, $7)` (
       gen('uuid'),
-      ref_rand('fetch_customers_seed').c_id,
-      ref_rand('fetch_flights_seed').f_id,
+      ref('fetch_customers_seed').c_id,
+      ref('fetch_flights_seed').f_id,
       gen('number:1,150'),
       gen('number:50,1000'),
       gen('number:0,99'),
@@ -208,38 +208,38 @@ run {
       f_depart_time, f_arrive_time, f_seats_left, f_base_price
     FROM edg.flight
     WHERE f_depart_ap_id = $1
-    LIMIT 10` (ref_rand('fetch_airports').ap_id)
+    LIMIT 10` (ref('fetch_airports').ap_id)
 
   find_open_seats(type: query) `SELECT f_seats_left FROM edg.flight_by_id
-    WHERE f_id = $1` (ref_rand('fetch_flights').f_id)
+    WHERE f_id = $1` (ref('fetch_flights').f_id)
 
   new_reservation(type: exec) `INSERT INTO edg.reservation (r_id, r_c_id, r_f_id, r_seat,
       r_price, r_iattr00, r_iattr01)
     VALUES ($1, $2, $3, $4, $5, 0, 0)` (
       gen('uuid'),
-      ref_rand('fetch_customers').c_id,
-      ref_rand('fetch_flights').f_id,
+      ref('fetch_customers').c_id,
+      ref('fetch_flights').f_id,
       gen('number:1,150'),
       gen('number:50,1000')
   )
 
   update_customer(type: exec) `UPDATE edg.customer SET c_iattr00 = $2, c_iattr01 = $3
     WHERE c_id = $1` (
-      ref_rand('fetch_customers').c_id,
+      ref('fetch_customers').c_id,
       gen('number:0,1000'),
       gen('number:0,1000')
   )
 
   update_reservation(type: exec) `UPDATE edg.reservation SET r_iattr00 = $3
     WHERE r_f_id = $2 AND r_id = $1` (
-      ref_rand('fetch_reservations').r_id,
-      ref_rand('fetch_reservations').r_f_id,
+      ref('fetch_reservations').r_id,
+      ref('fetch_reservations').r_f_id,
       gen('number:0,100')
   )
 
   delete_reservation(type: exec) `DELETE FROM edg.reservation
     WHERE r_f_id = $2 AND r_id = $1` (
-      ref_rand('fetch_reservations').r_id,
-      ref_rand('fetch_reservations').r_f_id
+      ref('fetch_reservations').r_id,
+      ref('fetch_reservations').r_f_id
   )
 }

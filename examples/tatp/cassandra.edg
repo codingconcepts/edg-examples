@@ -136,7 +136,7 @@ seed {
 
   populate_access_info(type: exec_batch, count: subscribers, size: 50) `INSERT INTO edg.access_info (s_id, ai_type, data1, data2, data3, data4)
     VALUES ($1, $2, $3, $4, $5, $6)` (
-      ref_rand('fetch_subscriber_ids').s_id,
+      ref('fetch_subscriber_ids').s_id,
       gen('number:1,4'),
       gen('number:0,255'),
       gen('number:0,255'),
@@ -147,7 +147,7 @@ seed {
   populate_special_facility(type: exec_batch, count: subscribers, size: 50) `INSERT INTO edg.special_facility (s_id, sf_type, is_active,
       error_cntrl, data_a, data_b)
     VALUES ($1, $2, $3, $4, $5, $6)` (
-      ref_rand('fetch_subscriber_ids').s_id,
+      ref('fetch_subscriber_ids').s_id,
       gen('number:1,4'),
       gen('number:0,1'),
       gen('number:0,255'),
@@ -160,8 +160,8 @@ seed {
   populate_call_forwarding(type: exec_batch, count: subscribers, size: 50) `INSERT INTO edg.call_forwarding (s_id, sf_type, start_time,
       end_time, numberx)
     VALUES ($1, $2, $3, $4, $5)` (
-      ref_rand('fetch_special_facilities').s_id,
-      ref_rand('fetch_special_facilities').sf_type,
+      ref('fetch_special_facilities').s_id,
+      ref('fetch_special_facilities').sf_type,
       gen('number:0,23'),
       gen('number:1,24'),
       regex('[0-9]{15}')
@@ -205,13 +205,13 @@ weights {
 }
 
 run {
-  get_subscriber_data(type: query) `SELECT * FROM edg.subscriber WHERE s_id = $1` (ref_rand('fetch_subscribers').s_id)
+  get_subscriber_data(type: query) `SELECT * FROM edg.subscriber WHERE s_id = $1` (ref('fetch_subscribers').s_id)
 
   get_new_destination(type: query) `SELECT numberx FROM edg.call_forwarding
     WHERE s_id = $1 AND sf_type = $2
       AND start_time <= $3
     ALLOW FILTERING` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4'),
       gen('number:0,23'),
       gen('number:1,24')
@@ -220,26 +220,26 @@ run {
   get_access_data(type: query) `SELECT data1, data2, data3, data4
     FROM edg.access_info
     WHERE s_id = $1 AND ai_type = $2` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4')
   )
 
   update_subscriber_data(type: exec) `UPDATE edg.subscriber SET bit_1 = $2
     WHERE s_id = $1` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:0,1')
   )
 
   update_location(type: exec) `UPDATE edg.subscriber SET vlr_location = $2
     WHERE s_id = $1` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:0,65535')
   )
 
   insert_call_forwarding(type: exec) `INSERT INTO edg.call_forwarding (s_id, sf_type, start_time,
       end_time, numberx)
     VALUES ($1, $2, $3, $4, $5)` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4'),
       gen('number:0,23'),
       gen('number:1,24'),
@@ -248,7 +248,7 @@ run {
 
   delete_call_forwarding(type: exec) `DELETE FROM edg.call_forwarding
     WHERE s_id = $1 AND sf_type = $2 AND start_time = $3` (
-      ref_rand('fetch_subscribers').s_id,
+      ref('fetch_subscribers').s_id,
       gen('number:1,4'),
       gen('number:0,23')
   )

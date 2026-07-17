@@ -18,7 +18,7 @@ seed {
 
   populate_account(type: exec_batch, count: customers, size: batch_size) `{"insert": "account", "documents": [{"_id": {"$oid": "$1"}, "customer_id": {"$oid": "$2"}, "balance": $3}]}` (
       objectid(),
-      ref_rand('fetch_customers')._id,
+      ref('fetch_customers')._id,
       initial_balance
   )
 }
@@ -34,10 +34,10 @@ weights {
 }
 
 run {
-  check_balance(type: query) `{"find": "account", "filter": {"_id": {"$oid": "$1"}}}` (ref_rand('fetch_accounts')._id)
+  check_balance(type: query) `{"find": "account", "filter": {"_id": {"$oid": "$1"}}}` (ref('fetch_accounts')._id)
 
   credit_account(type: exec) `{"update": "account", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$inc": {"balance": $2}}}]}` (
-      ref_rand('fetch_accounts')._id,
+      ref('fetch_accounts')._id,
       gen('number:1,1000')
   )
 

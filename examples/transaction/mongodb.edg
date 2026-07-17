@@ -17,7 +17,7 @@ seed {
 
   populate_account(type: exec_batch, count: customers) `{"insert": "account", "documents": [{"_id": "$1", "customer_id": "$2", "balance": $3}]}` (
       gen('uuid'),
-      ref_rand('fetch_customers')._id,
+      ref('fetch_customers')._id,
       initial_balance
   )
 }
@@ -44,7 +44,7 @@ weights {
 }
 
 run {
-  check_balance(type: query) `{"find": "account", "filter": {"_id": "$1"}}` (ref_rand('fetch_accounts')._id)
+  check_balance(type: query) `{"find": "account", "filter": {"_id": "$1"}}` (ref('fetch_accounts')._id)
 
   transaction make_transfer {
     let amount = gen('number:1,100')

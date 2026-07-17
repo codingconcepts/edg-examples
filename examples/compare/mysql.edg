@@ -33,9 +33,9 @@ seed {
   seed_orders(type: exec_batch, count: order_count, size: batch_size) `INSERT INTO orders (id, user_id, amount, status)
     __values__` (
       seq(1, 1),
-      ref_rand('fetch_users').id,
-      uniform_f(10.00, 500.00, 2),
-      set_rand(['pending', 'shipped', 'delivered', 'cancelled'], [40, 35, 20, 5])
+      ref('fetch_users').id,
+      uniform.float(10.00, 500.00, 2),
+      set(['pending', 'shipped', 'delivered', 'cancelled'], [40, 35, 20, 5])
   )
 }
 
@@ -64,20 +64,20 @@ weights {
 run {
   lookup_user(type: query) `SELECT id, email, name
     FROM users
-    WHERE id = ?` (uniform(1, user_count))
+    WHERE id = ?` (uniform.int(1, user_count))
 
   list_orders(type: query) `SELECT id, amount, status
     FROM orders
     WHERE user_id = ?
     ORDER BY id
-    LIMIT 10` (uniform(1, user_count))
+    LIMIT 10` (uniform.int(1, user_count))
 
   insert_order(type: exec) `INSERT INTO orders (id, user_id, amount, status)
     VALUES (?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE status = VALUES(status)` (
       gen('number:100000,999999'),
-      uniform(1, user_count),
-      uniform_f(10.00, 500.00, 2),
-      set_rand(['pending', 'shipped', 'delivered', 'cancelled'], [40, 35, 20, 5])
+      uniform.int(1, user_count),
+      uniform.float(10.00, 500.00, 2),
+      set(['pending', 'shipped', 'delivered', 'cancelled'], [40, 35, 20, 5])
   )
 }

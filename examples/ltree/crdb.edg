@@ -27,28 +27,28 @@ seed {
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('VP'),
-      path: ltree(ref_rand('ceo').path, arg('name'))
+      path: ltree(ref('ceo').path, arg('name'))
   )
 
   directors(type: exec_batch, count: total_directors) `INSERT INTO employees (id, name, title, path) __values__` (
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('Director'),
-      path: ltree(ref_rand('vps').path, arg('name'))
+      path: ltree(ref('vps').path, arg('name'))
   )
 
   managers(type: exec_batch, count: total_managers) `INSERT INTO employees (id, name, title, path) __values__` (
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('Manager'),
-      path: ltree(ref_rand('directors').path, arg('name'))
+      path: ltree(ref('directors').path, arg('name'))
   )
 
   ics(type: exec_batch, count: total_ics) `INSERT INTO employees (id, name, title, path) __values__` (
       id: seq_global('emp_id'),
       name: gen('name'),
       title: const('IC'),
-      path: ltree(ref_rand('managers').path, arg('name'))
+      path: ltree(ref('managers').path, arg('name'))
   )
 }
 

@@ -187,23 +187,23 @@ run {
     JOIN user_profile u ON u.id = p.author_id
     WHERE f.follower_id = ?
     ORDER BY p.created_at DESC
-    LIMIT 20` (ref_rand('fetch_users').id)
+    LIMIT 20` (ref('fetch_users').id)
 
   create_post(type: exec) `INSERT INTO post (author_id, body)
     VALUES (?, ?)` (
-      ref_rand('fetch_users').id,
+      ref('fetch_users').id,
       gen('sentence:10')
   )
 
   like_post(type: exec) `INSERT IGNORE INTO post_like (post_id, user_id)
     VALUES (?, ?)` (
-      ref_rand('fetch_posts').id,
-      ref_rand('fetch_users').id
+      ref('fetch_posts').id,
+      ref('fetch_users').id
   )
 
   add_comment(type: exec) `INSERT INTO comment (post_id, author_id, body)
     VALUES (?, ?, CONCAT(?, ': ', ?))` (
-      ref_rand('fetch_posts').id,
+      ref('fetch_posts').id,
       ref_same('fetch_users').id,
       ref_same('fetch_users').display_name,
       gen('sentence:8')

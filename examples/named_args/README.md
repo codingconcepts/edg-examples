@@ -10,8 +10,8 @@ Positional (existing):
 args:
   - gen('email')
   - ref_same('regions').name
-  - set_rand(ref_same('regions').cities, [])
-  - uniform(1, 500)
+  - set(ref_same('regions').cities, [])
+  - uniform.int(1, 500)
 print:
   - arg(3)
 ```
@@ -22,8 +22,8 @@ Named (equivalent):
 args:
   email: gen('email')
   region: ref_same('regions').name
-  city: set_rand(ref_same('regions').cities, [])
-  amount: uniform(1, 500)
+  city: set(ref_same('regions').cities, [])
+  amount: uniform.int(1, 500)
 print:
   - arg('amount')
 ```

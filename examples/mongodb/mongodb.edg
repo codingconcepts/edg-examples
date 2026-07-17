@@ -17,7 +17,7 @@ seed {
 
   insert_account(type: exec_batch, count: customers) `{"insert": "account", "documents": [{"_id": $1, "customer_id": $2, "balance": $3}]}` (
       gen('uuid'),
-      ref_rand('fetch_customers')._id,
+      ref('fetch_customers')._id,
       initial_balance
   )
 }

@@ -32,8 +32,8 @@ seed {
     ) AS t(t, u, z, n)` (
       gen('sentence:3'),
       vector(32, 5, 0.1),
-      vector_zipf(32, 5, 0.1, 2.0, 1.0),
-      vector_norm(32, 5, 0.1, 2.0, 0.8)
+      zipf.vector(32, 5, 0.1, 2.0, 1.0),
+      norm.vector(32, 5, 0.1, 2.0, 0.8)
   )
 }
 
@@ -54,8 +54,8 @@ run {
     VALUES ($1, $2::VECTOR, $3::VECTOR, $4::VECTOR)` (
       gen('sentence:3'),
       vector(32, 5, 0.1),
-      vector_zipf(32, 5, 0.1, 2.0, 1.0),
-      vector_norm(32, 5, 0.1, 2.0, 0.8)
+      zipf.vector(32, 5, 0.1, 2.0, 1.0),
+      norm.vector(32, 5, 0.1, 2.0, 0.8)
   )
 
   find_similar_uniform(type: query) `SELECT id, title, embedding_uniform <=> $1::VECTOR AS distance
@@ -66,10 +66,10 @@ run {
   find_similar_zipf(type: query) `SELECT id, title, embedding_zipf <=> $1::VECTOR AS distance
     FROM article
     ORDER BY embedding_zipf <=> $1::VECTOR
-    LIMIT 10` (vector_zipf(32, 5, 0.1, 2.0, 1.0))
+    LIMIT 10` (zipf.vector(32, 5, 0.1, 2.0, 1.0))
 
   find_similar_norm(type: query) `SELECT id, title, embedding_norm <=> $1::VECTOR AS distance
     FROM article
     ORDER BY embedding_norm <=> $1::VECTOR
-    LIMIT 10` (vector_norm(32, 5, 0.1, 2.0, 0.8))
+    LIMIT 10` (norm.vector(32, 5, 0.1, 2.0, 0.8))
 }

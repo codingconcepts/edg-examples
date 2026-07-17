@@ -158,7 +158,7 @@ run {
     JOIN user_profile u ON u.id = p.author_id
     WHERE f.follower_id = $1::UUID
     ORDER BY p.created_at DESC
-    LIMIT 20` (ref_rand('fetch_users').id)
+    LIMIT 20` (ref('fetch_users').id)
 
   create_post(type: exec) `WITH
       new_post AS (
@@ -171,7 +171,7 @@ run {
     FROM new_post p
     CROSS JOIN unnest(string_to_array($3, ',')) AS t
     ON CONFLICT DO NOTHING` (
-      ref_rand('fetch_users').id,
+      ref('fetch_users').id,
       gen('sentence:10'),
       ref_n('fetch_tags', 'id', 1, 5)
   )
@@ -186,14 +186,14 @@ run {
     UPDATE post SET like_count = like_count + 1
     FROM new_like
     WHERE post.id = new_like.post_id` (
-      ref_rand('fetch_posts').id,
-      ref_rand('fetch_users').id
+      ref('fetch_posts').id,
+      ref('fetch_users').id
   )
 
   add_comment(type: exec) `INSERT INTO comment (post_id, author_id, body)
     VALUES ($2::UUID, $1::UUID, $4 || ': ' || $3::STRING)` (
       ref_same('fetch_users').id,
-      ref_rand('fetch_posts').id,
+      ref('fetch_posts').id,
       gen('sentence:8'),
       ref_same('fetch_users').display_name
   )

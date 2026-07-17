@@ -1,14 +1,14 @@
 # Vector Embeddings
 
-Demonstrates `vector`, `vector_zipf`, and `vector_norm` for generating pgvector-compatible embeddings with realistic clustering for similarity search.
+Demonstrates `vector`, `zipf.vector`, and `norm.vector` for generating pgvector-compatible embeddings with realistic clustering for similarity search.
 
 ## Functions
 
 | Function | Signature | Description |
 |---|---|---|
 | `vector` | `vector(dims, clusters, spread)` | Clustered unit-length vector literal with **uniform** centroid selection. |
-| `vector_zipf` | `vector_zipf(dims, clusters, spread, s, v)` | **Zipfian** centroid selection - cluster 0 is the "hottest", realistic power-law skew. |
-| `vector_norm` | `vector_norm(dims, clusters, spread, mean, stddev)` | **Normal** centroid selection - bell curve centered on a cluster index. |
+| `zipf.vector` | `zipf.vector(dims, clusters, spread, s, v)` | **Zipfian** centroid selection - cluster 0 is the "hottest", realistic power-law skew. |
+| `norm.vector` | `norm.vector(dims, clusters, spread, mean, stddev)` | **Normal** centroid selection - bell curve centered on a cluster index. |
 
 ## Schema
 
@@ -17,8 +17,8 @@ The example creates an `article` table with three embedding columns, one per dis
 | Column | Expression | Distribution |
 |---|---|---|
 | `embedding_uniform` | `vector(32, 5, 0.1)` | Equal-sized clusters |
-| `embedding_zipf` | `vector_zipf(32, 5, 0.1, 2.0, 1.0)` | Cluster 0 dominates (power-law) |
-| `embedding_norm` | `vector_norm(32, 5, 0.1, 2.0, 0.8)` | Cluster 2 most common (bell curve) |
+| `embedding_zipf` | `zipf.vector(32, 5, 0.1, 2.0, 1.0)` | Cluster 0 dominates (power-law) |
+| `embedding_norm` | `norm.vector(32, 5, 0.1, 2.0, 0.8)` | Cluster 2 most common (bell curve) |
 
 ## How clustering works
 
@@ -26,8 +26,8 @@ The first call lazily generates `clusters` random unit-vector centroids. Each su
 
 - **Low spread** (0.05-0.1): tight, well-separated clusters - ideal for testing index recall
 - **High spread** (0.3-0.5): overlapping clusters - more realistic for production-like data
-- **Zipfian** (`vector_zipf`): most vectors land in a few "hot" clusters, simulating real-world category skew
-- **Normal** (`vector_norm`): a central cluster is most popular, with gradual falloff
+- **Zipfian** (`zipf.vector`): most vectors land in a few "hot" clusters, simulating real-world category skew
+- **Normal** (`norm.vector`): a central cluster is most popular, with gradual falloff
 
 ## CockroachDB
 

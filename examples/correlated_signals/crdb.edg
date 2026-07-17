@@ -44,7 +44,7 @@ run {
      )` (
       global_iter(),
       floor(signal_at('traffic', int(global_iter())) + signal_at('promo_boost', int(global_iter()))),
-      set_rand(['home','product','cart','checkout'], [40,30,20,10])
+      set(['home','product','cart','checkout'], [40,30,20,10])
     )
 
   insert_orders(type: exec)
@@ -55,8 +55,8 @@ run {
        $3::DECIMAL
      )` (
       global_iter(),
-      floor(abs(signal_at('traffic', int(global_iter()) - 3) * 0.7 + norm(0, 300, -500, 500) * 0.3)),
-      uniform_f(10, 500, 2)
+      floor(abs(signal_at('traffic', int(global_iter()) - 3) * 0.7 + norm.int(0, 300, -500, 500) * 0.3)),
+      uniform.float(10, 500, 2)
     )
 
   insert_tickets(type: exec)
@@ -67,8 +67,8 @@ run {
        $3
      )` (
       global_iter(),
-      floor(abs(signal_at('traffic', int(global_iter()) - 24) * 0.3 + norm(0, 300, -500, 500) * 0.7)),
-      set_rand(['billing','shipping','refund','other'], [30,35,20,15])
+      floor(abs(signal_at('traffic', int(global_iter()) - 24) * 0.3 + norm.int(0, 300, -500, 500) * 0.7)),
+      set(['billing','shipping','refund','other'], [30,35,20,15])
     )
 
   insert_errors(type: exec)
@@ -79,8 +79,8 @@ run {
        $3
      )` (
       global_iter(),
-      floor(abs(signal_at('promo_boost', int(global_iter()) - 6) * 0.5 + norm(0, 10, -25, 25) * 0.5)),
-      set_rand(['timeout','500','oom','connection_reset'], [35,30,20,15])
+      floor(abs(signal_at('promo_boost', int(global_iter()) - 6) * 0.5 + norm.int(0, 10, -25, 25) * 0.5)),
+      set(['timeout','500','oom','connection_reset'], [35,30,20,15])
     )
 }
 

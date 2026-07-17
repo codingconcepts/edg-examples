@@ -1,6 +1,6 @@
 # Reference Data
 
-Demonstrates the `reference` config section, which loads static datasets into memory without a database query. Reference data is available to all `ref_*` functions (`ref_rand`, `ref_same`, `ref_diff`, etc.) just like `init` query results.
+Demonstrates the `reference` config section, which loads static datasets into memory without a database query. Reference data is available to all `ref_*` functions (`ref`, `ref_same`, `ref_diff`, etc.) just like `init` query results.
 
 This example defines a **regions** reference dataset with names and cities, then uses `ref_same` to seed customers with a consistent region and city from the same row.
 

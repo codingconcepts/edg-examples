@@ -20,7 +20,7 @@ seed {
     __values__` (
       gen('email'),
       ref_same('regions').name,
-      set_rand(ref_same('regions').cities,[])
+      set(ref_same('regions').cities,[])
   )
 }
 

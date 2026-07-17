@@ -10,7 +10,7 @@ seed:
     size: 10
     args:
       - gen('productname')
-      - uniform_f(1.00, 100.00, 2)
+      - uniform.float(1.00, 100.00, 2)
     query: |-
       INSERT INTO product (name, price)
       __values__

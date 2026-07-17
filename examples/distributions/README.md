@@ -8,15 +8,15 @@ Demonstrates all thirteen distribution functions by writing values into a single
 
 | Function | Signature | Description |
 |---|---|---|
-| `uniform` | `uniform(min, max)` | Flat distribution, every value equally likely |
+| `uniform` | `uniform.int(min, max)` | Flat distribution, every value equally likely |
 | `zipf` | `zipf(s, v, max)` | Power-law skew, low values dominate |
-| `norm_f` | `norm_f(mean, stddev, min, max, precision)` | Bell curve centered on mean |
-| `exp_f` | `exp_f(rate, min, max, precision)` | Exponential decay from min |
-| `lognorm_f` | `lognorm_f(mu, sigma, min, max, precision)` | Right-skewed with a long tail |
+| `norm.float` | `norm.float(mean, stddev, min, max, precision)` | Bell curve centered on mean |
+| `exp.float` | `exp.float(rate, min, max, precision)` | Exponential decay from min |
+| `lognorm.float` | `lognorm.float(mu, sigma, min, max, precision)` | Right-skewed with a long tail |
 | `pareto` | `pareto(alpha, max)` | Continuous power-law, lower values dominate |
-| `beta_f` | `beta_f(alpha, beta, min, max, precision)` | Flexible shape in a bounded range |
-| `gamma_f` | `gamma_f(shape, rate, min, max, precision)` | Right-skewed, models wait times |
-| `weibull_f` | `weibull_f(shape, scale, min, max, precision)` | Reliability / time-to-failure |
+| `beta.float` | `beta.float(alpha, beta, min, max, precision)` | Flexible shape in a bounded range |
+| `gamma.float` | `gamma.float(shape, rate, min, max, precision)` | Right-skewed, models wait times |
+| `weibull.float` | `weibull.float(shape, scale, min, max, precision)` | Reliability / time-to-failure |
 | `poisson` | `poisson(lambda)` | Event count in a fixed interval |
 | `rwalk_f` | `rwalk_f(group, start, drift, volatility, precision)` | Stateful random walk / Brownian motion |
 | `binomial` | `binomial(n, p)` | Count of successes in n trials |
@@ -28,11 +28,11 @@ Pick from a predefined set of values using a distribution to control which items
 
 | Function | Signature | Description |
 |---|---|---|
-| `set_rand` | `set_rand(values, weights)` | Uniform or weighted random selection from a set |
-| `set_norm` | `set_norm(values, mean, stddev)` | Normal distribution over indices; `mean` index picked most often |
-| `set_exp` | `set_exp(values, rate)` | Exponential distribution over indices; lower indices picked most often |
-| `set_lognorm` | `set_lognorm(values, mu, sigma)` | Log-normal distribution over indices; right-skewed selection |
-| `set_zipf` | `set_zipf(values, s, v)` | Zipfian distribution over indices; strong power-law skew toward first items |
+| `set` | `set(values, weights)` | Uniform or weighted random selection from a set |
+| `norm.set` | `norm.set(values, mean, stddev)` | Normal distribution over indices; `mean` index picked most often |
+| `exp.set` | `exp.set(values, rate)` | Exponential distribution over indices; lower indices picked most often |
+| `lognorm.set` | `lognorm.set(values, mu, sigma)` | Log-normal distribution over indices; right-skewed selection |
+| `zipf.set` | `zipf.set(values, s, v)` | Zipfian distribution over indices; strong power-law skew toward first items |
 
 ## CockroachDB
 

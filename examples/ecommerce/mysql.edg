@@ -164,7 +164,7 @@ run {
     FROM product p
     WHERE p.category_id = ?
     ORDER BY p.price ASC
-    LIMIT 20` (ref_rand('fetch_categories').id)
+    LIMIT 20` (ref('fetch_categories').id)
 
   view_product(type: query) `SELECT p.id, p.name, p.price, p.stock_qty,
       COALESCE(r.avg_rating, 0) AS avg_rating,
@@ -188,8 +188,8 @@ run {
     ON DUPLICATE KEY UPDATE
       quantity = cart_item.quantity + VALUES(quantity),
       added_at = NOW()` (
-      ref_rand('fetch_customers').id,
-      ref_rand('fetch_products').id,
+      ref('fetch_customers').id,
+      ref('fetch_products').id,
       gen('number:1,3')
   )
 
@@ -197,16 +197,16 @@ run {
 
   write_review(type: exec) `INSERT IGNORE INTO review (product_id, customer_id, rating, body)
     VALUES (?, ?, ?, ?)` (
-      ref_rand('fetch_products').id,
-      ref_rand('fetch_customers').id,
+      ref('fetch_products').id,
+      ref('fetch_customers').id,
       star_rating(gen('number:1,100')),
       gen('sentence:8')
   )
 
   remove_from_cart(type: exec) `DELETE FROM cart_item
     WHERE customer_id = ? AND product_id = ?` (
-      ref_rand('fetch_customers').id,
-      ref_rand('fetch_products').id
+      ref('fetch_customers').id,
+      ref('fetch_products').id
   )
 
   search_products(type: query) `SELECT p.id, p.name, p.price, p.stock_qty,

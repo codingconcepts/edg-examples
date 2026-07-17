@@ -20,7 +20,7 @@ seed {
       gen('email'),
       ref_same('regions').code,
       ref_same('regions').currency,
-      ref_rand('translations').greeting
+      ref('translations').greeting
   )
 }
 

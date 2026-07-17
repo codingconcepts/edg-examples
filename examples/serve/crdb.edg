@@ -27,10 +27,10 @@ init {
 }
 
 run {
-  get_user `SELECT * FROM users WHERE id = $1::UUID` (ref_rand('fetch_users').id)
+  get_user `SELECT * FROM users WHERE id = $1::UUID` (ref('fetch_users').id)
 
   update_email `UPDATE users SET email = $2 WHERE id = $1::UUID` (
-      ref_rand('fetch_users').id,
+      ref('fetch_users').id,
       gen('email')
   )
 }

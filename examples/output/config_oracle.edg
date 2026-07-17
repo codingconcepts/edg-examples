@@ -39,9 +39,9 @@ seed {
   populate_order(type: exec_batch, count: customers * 3) `INSERT ALL
     __values__(purchase_order(id, customer_id, amount, status))` (
       seq_global('order_id'),
-      seq_rand('customer_id'),
-      uniform_f(9.99, 499.99, 2),
-      set_rand(['pending', 'shipped', 'delivered'],[])
+      uniform.seq('customer_id'),
+      uniform.float(9.99, 499.99, 2),
+      set(['pending', 'shipped', 'delivered'],[])
   )
 }
 

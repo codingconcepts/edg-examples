@@ -22,14 +22,14 @@ up {
 
 seed {
   populate_product(type: exec, count: rows) `INSERT INTO product (id, name, price) VALUES ($1, $2, $3)` (
-      uniform(1, 1000),
+      uniform.int(1, 1000),
       gen('sentence:3'),
-      uniform(1.0, 100.0)
+      uniform.int(1.0, 100.0)
   )
 
   populate_review(type: exec, count: rows) `INSERT INTO review (product_id, rating) VALUES ($1, $2)` (
-      uniform(1, 1000),
-      uniform(1, 1000)
+      uniform.int(1, 1000),
+      uniform.int(1, 1000)
   )
 }
 

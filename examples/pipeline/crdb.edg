@@ -70,10 +70,10 @@ run {
   find_b(type: query) `SELECT id AS b_id, value
     FROM b
     WHERE a_id = $1::UUID
-    LIMIT 1` (ref_rand('find_a').a_id)
+    LIMIT 1` (ref('find_a').a_id)
 
   update_c(type: exec) `UPDATE c SET status = 'processed'
     WHERE b_id = $1::UUID
       AND status = 'new'
-    LIMIT 1` (ref_rand('find_b').b_id)
+    LIMIT 1` (ref('find_b').b_id)
 }

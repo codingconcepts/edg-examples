@@ -43,7 +43,7 @@ edg all \
 | [Batch](examples/batch/) | `query_batch` and `exec_batch` for batch inserts and updates |
 | [Blob](examples/blob/) | Binary data with `blob()` and `bytes()` |
 | [CSV](examples/csv/) | CSV files as reference data sources |
-| [Distributions](examples/distributions/) | Uniform, zipf, norm_f, exp_f, and lognorm_f |
+| [Distributions](examples/distributions/) | Uniform, zipf, norm.float, exp.float, and lognorm.float |
 | [Expressions](examples/expression/) | expr-lang built-in features (array, map, string, bitwise) |
 | [Global Sequences](examples/global_sequences/) | Auto-incrementing sequences shared across all workers |
 | [Locale](examples/locale/) | Locale-aware PII generation with deterministic masking |

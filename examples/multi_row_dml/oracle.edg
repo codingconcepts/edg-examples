@@ -29,14 +29,14 @@ up {
 seed {
   insert_products(type: exec_batch, count: products, size: 10) `INSERT ALL __values__(product(name, price))` (
       gen('productname'),
-      uniform_f(1.00, 100.00, 2)
+      uniform.float(1.00, 100.00, 2)
   )
 
   fetch_products(type: query) `SELECT id, name FROM product`
 
   insert_reviews(type: exec_batch, count: reviews, size: 10) `INSERT ALL __values__(review(product_id, rating, body))` (
-      ref_rand('fetch_products').id,
-      norm(4, 1, 1, 5),
+      ref('fetch_products').id,
+      norm.int(4, 1, 1, 5),
       gen('loremipsumsentence:5')
   )
 }

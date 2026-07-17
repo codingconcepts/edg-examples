@@ -22,7 +22,7 @@ init {
 }
 
 run {
-  lookup_by_email(type: query) `SELECT id FROM customer WHERE email = $1` (ref_rand('fetch_emails').email)
+  lookup_by_email(type: query) `SELECT id FROM customer WHERE email = $1` (ref('fetch_emails').email)
 }
 
 workers {

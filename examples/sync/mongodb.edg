@@ -18,9 +18,9 @@ seed {
 
   seed_orders(type: exec_batch, count: order_count) `{"insert": "orders", "documents": [{"id": $1, "user_id": $2, "amount": $3, "status": $4}]}` (
       seq(1, 1),
-      ref_rand('fetch_users').id,
-      uniform_f(10.0, 500.0, 2),
-      set_rand(['pending', 'shipped', 'delivered', 'cancelled'],[40, 35, 20, 5])
+      ref('fetch_users').id,
+      uniform.float(10.0, 500.0, 2),
+      set(['pending', 'shipped', 'delivered', 'cancelled'],[40, 35, 20, 5])
   )
 }
 

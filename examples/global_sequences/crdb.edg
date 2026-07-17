@@ -29,11 +29,11 @@ seed {
 
   seed_samples(type: exec_batch, count: samples, size: batch_size) `INSERT INTO samples (uniform_val, zipf_val, norm_val, exp_val, lognorm_val)
     __values__` (
-      seq_rand('order_id'),
-      seq_zipf('order_id', 1.1, 1.0),
-      seq_norm('order_id', 500, 150),
-      seq_exp('order_id', 0.01),
-      seq_lognorm('order_id', 5.5, 0.5)
+      uniform.seq('order_id'),
+      zipf.seq('order_id', 1.1, 1.0),
+      norm.seq('order_id', 500, 150),
+      exp.seq('order_id', 0.01),
+      lognorm.seq('order_id', 5.5, 0.5)
   )
 }
 

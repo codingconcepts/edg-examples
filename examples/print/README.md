@@ -2,7 +2,7 @@
 
 Demonstrates the `print` field on queries, which evaluates expressions each iteration and displays aggregated values in the progress and summary output.
 
-Print entries can be a simple string (auto-aggregated) or a map with `expr` and `agg` fields for custom aggregation. Print expressions have access to the same context as query args: `ref_same`, `ref_rand`, `arg()`, `global()`, `local()`, and all built-in functions.
+Print entries can be a simple string (auto-aggregated) or a map with `expr` and `agg` fields for custom aggregation. Print expressions have access to the same context as query args: `ref_same`, `ref`, `arg()`, `global()`, `local()`, and all built-in functions.
 
 ## Simple form (auto-aggregate)
 

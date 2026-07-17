@@ -56,7 +56,7 @@ seed {
   fetch_subscriber_ids `{"find": "subscriber", "filter": {}, "projection": {"_id": 1}}`
 
   populate_access_info(type: exec_batch, count: subscribers, size: batch_size) `{"insert": "access_info", "documents": [{"s_id": $1, "ai_type": $2, "data1": $3, "data2": $4, "data3": "$5", "data4": "$6"}]}` (
-      ref_rand('fetch_subscriber_ids')._id,
+      ref('fetch_subscriber_ids')._id,
       gen('number:1,4'),
       gen('number:0,255'),
       gen('number:0,255'),
@@ -65,7 +65,7 @@ seed {
   )
 
   populate_special_facility(type: exec_batch, count: subscribers, size: batch_size) `{"insert": "special_facility", "documents": [{"s_id": $1, "sf_type": $2, "is_active": $3, "error_cntrl": $4, "data_a": $5, "data_b": "$6"}]}` (
-      ref_rand('fetch_subscriber_ids')._id,
+      ref('fetch_subscriber_ids')._id,
       gen('number:1,4'),
       gen('number:0,1'),
       gen('number:0,255'),
@@ -76,8 +76,8 @@ seed {
   fetch_special_facilities `{"find": "special_facility", "filter": {}, "projection": {"s_id": 1, "sf_type": 1}}`
 
   populate_call_forwarding(type: exec_batch, count: subscribers, size: batch_size) `{"insert": "call_forwarding", "documents": [{"s_id": $1, "sf_type": $2, "start_time": $3, "end_time": $4, "numberx": "$5"}]}` (
-      ref_rand('fetch_special_facilities').s_id,
-      ref_rand('fetch_special_facilities').sf_type,
+      ref('fetch_special_facilities').s_id,
+      ref('fetch_special_facilities').sf_type,
       gen('number:0,23'),
       gen('number:1,24'),
       regex('[0-9]{15}')
@@ -119,32 +119,32 @@ weights {
 }
 
 run {
-  get_subscriber_data(type: query) `{"find": "subscriber", "filter": {"_id": $1}, "limit": 1}` (ref_rand('fetch_subscribers')._id)
+  get_subscriber_data(type: query) `{"find": "subscriber", "filter": {"_id": $1}, "limit": 1}` (ref('fetch_subscribers')._id)
 
   get_new_destination(type: query) `{"find": "call_forwarding", "filter": {"s_id": $1, "sf_type": $2, "start_time": {"$lte": $3}, "end_time": {"$gt": $4}}}` (
-      ref_rand('fetch_subscribers')._id,
+      ref('fetch_subscribers')._id,
       gen('number:1,4'),
       gen('number:0,23'),
       gen('number:1,24')
   )
 
   get_access_data(type: query) `{"find": "access_info", "filter": {"s_id": $1, "ai_type": $2}, "projection": {"data1": 1, "data2": 1, "data3": 1, "data4": 1}}` (
-      ref_rand('fetch_subscribers')._id,
+      ref('fetch_subscribers')._id,
       gen('number:1,4')
   )
 
   update_subscriber_data(type: exec) `{"update": "subscriber", "updates": [{"q": {"_id": $1}, "u": {"$set": {"bit_1": $2}}}]}` (
-      ref_rand('fetch_subscribers')._id,
+      ref('fetch_subscribers')._id,
       gen('number:0,1')
   )
 
   update_location(type: exec) `{"update": "subscriber", "updates": [{"q": {"sub_nbr": "$1"}, "u": {"$set": {"vlr_location": $2}}}]}` (
-      ref_rand('fetch_subscribers').sub_nbr,
+      ref('fetch_subscribers').sub_nbr,
       gen('number:0,65535')
   )
 
   insert_call_forwarding(type: exec) `{"insert": "call_forwarding", "documents": [{"s_id": $1, "sf_type": $2, "start_time": $3, "end_time": $4, "numberx": "$5"}]}` (
-      ref_rand('fetch_subscribers')._id,
+      ref('fetch_subscribers')._id,
       gen('number:1,4'),
       gen('number:0,23'),
       gen('number:1,24'),
@@ -152,7 +152,7 @@ run {
   )
 
   delete_call_forwarding(type: exec) `{"delete": "call_forwarding", "deletes": [{"q": {"s_id": $1, "sf_type": $2, "start_time": $3}, "limit": 1}]}` (
-      ref_rand('fetch_subscribers')._id,
+      ref('fetch_subscribers')._id,
       gen('number:1,4'),
       gen('number:0,23')
   )

@@ -27,7 +27,7 @@ stages {
 }
 
 run {
-  read_user `SELECT * FROM users WHERE id = $1` (ref_rand('fetch_users').id)
+  read_user `SELECT * FROM users WHERE id = $1` (ref('fetch_users').id)
 
   insert_user `INSERT INTO users (email, name) VALUES ($1, $2)` (gen('email'), gen('name'))
 }

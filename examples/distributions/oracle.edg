@@ -58,40 +58,40 @@ weights {
 
 run {
   insert_uniform(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('uniform', :1)` (uniform(0, 100))
+    VALUES ('uniform', :1)` (uniform.int(0, 100))
 
   insert_zipfian(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('zipfian', :1)` (zipf(1.1, 1.0, 99))
+    VALUES ('zipfian', :1)` (zipf.int(1.1, 1.0, 99))
 
   insert_normal(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('normal', :1)` (norm_f(50, 15, 0, 100, 2))
+    VALUES ('normal', :1)` (norm.float(50, 15, 0, 100, 2))
 
   insert_exponential(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('exponential', :1)` (exp_f(0.5, 0, 100, 2))
+    VALUES ('exponential', :1)` (exp.float(0.5, 0, 100, 2))
 
   insert_lognormal(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('lognormal', :1)` (lognorm_f(2.0, 0.5, 0, 100, 2))
+    VALUES ('lognormal', :1)` (lognorm.float(2.0, 0.5, 0, 100, 2))
 
   insert_pareto(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('pareto', :1)` (pareto(2.0, 99))
+    VALUES ('pareto', :1)` (pareto.int(2.0, 99))
 
   insert_beta(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('beta', :1)` (beta_f(2, 5, 0, 100, 2))
+    VALUES ('beta', :1)` (beta.float(2, 5, 0, 100, 2))
 
   insert_gamma(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('gamma', :1)` (gamma_f(2, 0.5, 0, 100, 2))
+    VALUES ('gamma', :1)` (gamma.float(2, 0.5, 0, 100, 2))
 
   insert_weibull(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('weibull', :1)` (weibull_f(1.5, 50, 0, 100, 2))
+    VALUES ('weibull', :1)` (weibull.float(1.5, 50, 0, 100, 2))
 
   insert_poisson(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('poisson', :1)` (poisson(5.0))
+    VALUES ('poisson', :1)` (poisson.int(5.0))
 
   insert_binomial(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('binomial', :1)` (binomial(20, 0.3))
+    VALUES ('binomial', :1)` (binomial.int(20, 0.3))
 
   insert_empirical(type: exec) `INSERT INTO distributions (dist_type, value)
-    VALUES ('empirical', :1)` (empirical([5, 10, 10, 20, 30, 30, 30, 50, 80, 95]))
+    VALUES ('empirical', :1)` (empirical.int([5, 10, 10, 20, 30, 30, 30, 50, 80, 95]))
 
   insert_rwalk(type: exec) `INSERT INTO distributions (dist_type, value)
     VALUES ('rwalk', :1)` (rwalk_f('walk', 50, 0.0, 0.5, 2))

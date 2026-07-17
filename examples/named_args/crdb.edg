@@ -21,8 +21,8 @@ seed {
     __values__` (
       email: gen('email'),
       region: ref_same('regions').name,
-      city: set_rand(ref_same('regions').cities,[]),
-      amount: uniform(1, 500)
+      city: set(ref_same('regions').cities,[]),
+      amount: uniform.int(1, 500)
   )
 }
 
@@ -39,8 +39,8 @@ run {
     VALUES ($1, $2, $3, $4::DECIMAL)` (
       email: gen('email'),
       region: ref_same('regions').name,
-      city: set_rand(ref_same('regions').cities,[]),
-      amount: uniform(1, 500)
+      city: set(ref_same('regions').cities,[]),
+      amount: uniform.int(1, 500)
   )
 
   read_order `SELECT id, amount FROM named_args_order WHERE region = $1 LIMIT 1` (region: ref_same('regions').name)

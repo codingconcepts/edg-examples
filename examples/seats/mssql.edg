@@ -224,9 +224,9 @@ run {
     FROM flight
     WHERE f_depart_ap_id = @p1
       AND f_depart_time > GETDATE()
-    ORDER BY f_depart_time` (ref_rand('fetch_airports').ap_id)
+    ORDER BY f_depart_time` (ref('fetch_airports').ap_id)
 
-  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = @p1` (ref_rand('fetch_flights').f_id)
+  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = @p1` (ref('fetch_flights').f_id)
 
   new_reservation(type: exec) `DECLARE @rows INT;
     UPDATE flight SET f_seats_left = f_seats_left - 1
@@ -243,22 +243,22 @@ run {
         (SELECT f_base_price FROM flight WHERE f_id = @p2) + CAST(@p4 AS DECIMAL(12,2))
       WHERE c_id = @p1;
     END` (
-      ref_rand('fetch_customers').c_id,
-      ref_rand('fetch_flights').f_id,
+      ref('fetch_customers').c_id,
+      ref('fetch_flights').f_id,
       gen('number:1,150'),
       gen('number:50,1000')
   )
 
   update_customer(type: exec) `UPDATE customer SET c_iattr00 = @p2, c_iattr01 = @p3
     WHERE c_id = @p1` (
-      ref_rand('fetch_customers').c_id,
+      ref('fetch_customers').c_id,
       gen('number:0,1000'),
       gen('number:0,1000')
   )
 
   update_reservation(type: exec) `UPDATE reservation SET r_iattr00 = @p2
     WHERE r_id = @p1` (
-      ref_rand('fetch_reservations').r_id,
+      ref('fetch_reservations').r_id,
       gen('number:0,100')
   )
 
@@ -268,7 +268,7 @@ run {
     IF @deleted > 0
       UPDATE flight SET f_seats_left = f_seats_left + 1
       WHERE f_id = @p2` (
-      ref_rand('fetch_reservations').r_id,
-      ref_rand('fetch_reservations').r_f_id
+      ref('fetch_reservations').r_id,
+      ref('fetch_reservations').r_f_id
   )
 }

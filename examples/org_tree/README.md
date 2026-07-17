@@ -1,6 +1,6 @@
 # Org Tree
 
-Hierarchical org chart using seed capture for self-referential generation. Each level references the previous level's captured dataset via `ref_rand()`, producing a realistic tree structure:
+Hierarchical org chart using seed capture for self-referential generation. Each level references the previous level's captured dataset via `ref()`, producing a realistic tree structure:
 
 - 1 CEO
 - 5 VPs (report to CEO)
@@ -8,7 +8,7 @@ Hierarchical org chart using seed capture for self-referential generation. Each 
 - 50 Managers (report to Directors)
 - 200 ICs (report to Managers)
 
-Seed queries with named args automatically store their generated rows as datasets. Later seed queries reference them with `ref_rand('query_name')` to build parent-child relationships without needing a database round-trip.
+Seed queries with named args automatically store their generated rows as datasets. Later seed queries reference them with `ref('query_name')` to build parent-child relationships without needing a database round-trip.
 
 ## CockroachDB
 

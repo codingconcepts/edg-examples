@@ -58,12 +58,12 @@ weights {
 }
 
 run {
-  read(type: query) `SELECT * FROM usertable WHERE ycsb_key = ?` (template('user%010d', zipf(zipf_s, 1, records - 1)))
+  read(type: query) `SELECT * FROM usertable WHERE ycsb_key = ?` (template('user%010d', zipf.int(zipf_s, 1, records - 1)))
 
   update(type: exec) `UPDATE usertable SET field0 = ?
     WHERE ycsb_key = ?` (
       regex('[a-zA-Z0-9]{100}'),
-      template('user%010d', zipf(zipf_s, 1, records - 1))
+      template('user%010d', zipf.int(zipf_s, 1, records - 1))
   )
 
   insert(type: exec) `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
@@ -86,13 +86,13 @@ run {
     WHERE ycsb_key >= ?
     ORDER BY ycsb_key
     LIMIT ?` (
-      template('user%010d', zipf(zipf_s, 1, records - 1)),
+      template('user%010d', zipf.int(zipf_s, 1, records - 1)),
       gen('number:1,100')
   )
 
   read_modify_write(type: exec) `UPDATE usertable SET field0 = ?
     WHERE ycsb_key = ?` (
       regex('[a-zA-Z0-9]{100}'),
-      template('user%010d', zipf(zipf_s, 1, records - 1))
+      template('user%010d', zipf.int(zipf_s, 1, records - 1))
   )
 }
