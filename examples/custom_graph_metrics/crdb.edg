@@ -1,0 +1,52 @@
+let customers = 500
+
+ref regions [
+  {name: 'us'}
+  {name: 'eu'}
+  {name: 'ap'}
+]
+
+up {
+  create_account(type: exec) `CREATE TABLE IF NOT EXISTS cgm_account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      region STRING NOT NULL,
+      balance DECIMAL(12,2) NOT NULL
+    )`
+}
+
+seed {
+  populate_account(type: exec_batch, count: customers, size: 50) `INSERT INTO cgm_account (region, balance)
+    __values__` (
+    ref_same('regions').name,
+    uniform.float(100, 10000, 2)
+  )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE cgm_account`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS cgm_account`
+}
+
+run {
+  update_balance(type: exec) `UPDATE cgm_account
+    SET balance = balance + $1
+    WHERE region = $2
+    LIMIT 1` (
+    uniform.float(-50, 50, 2),
+    ref_same('regions').name
+  )
+
+  read_stats(
+    post_print: { key: 'total_balance', value: result().total_balance },
+    post_print: { key: 'avg_balance',   value: result().avg_balance },
+    post_print: { key: 'account_count', value: result().account_count }
+  ) `SELECT
+      sum(balance)::FLOAT   AS total_balance,
+      avg(balance)::FLOAT   AS avg_balance,
+      count(*)              AS account_count
+    FROM cgm_account
+    WHERE region = $1` (ref_same('regions').name)
+}

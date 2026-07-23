@@ -1,0 +1,33 @@
+let users      = 100
+let admins     = 10
+let batch_size = 50
+
+up {
+  create_users `CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL UNIQUE
+    )`
+
+  create_admins `CREATE TABLE IF NOT EXISTS admins (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL UNIQUE
+    )`
+}
+
+seed {
+  populate_users(type: exec_batch, count: users, size: batch_size) `INSERT INTO users (email)
+    __values__` (uniq_across('emails', "gen('email')"))
+
+  populate_admins(type: exec_batch, count: admins, size: batch_size) `INSERT INTO admins (email)
+    __values__` (uniq_across('emails', "gen('email')"))
+}
+
+deseed {
+  truncate_users(type: exec) `TRUNCATE TABLE users CASCADE`
+  truncate_admins(type: exec) `TRUNCATE TABLE admins CASCADE`
+}
+
+down {
+  drop_admins(type: exec) `DROP TABLE IF EXISTS admins`
+  drop_users(type: exec) `DROP TABLE IF EXISTS users`
+}
