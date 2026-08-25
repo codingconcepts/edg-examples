@@ -10,6 +10,8 @@ up {
           embedding_uniform VARCHAR2(4000) NOT NULL,
           embedding_zipf VARCHAR2(4000) NOT NULL,
           embedding_norm VARCHAR2(4000) NOT NULL,
+          embedding_exp VARCHAR2(4000) NOT NULL,
+          embedding_lognorm VARCHAR2(4000) NOT NULL,
           created_at TIMESTAMP DEFAULT SYSTIMESTAMP,
           PRIMARY KEY (id)
         )
@@ -22,11 +24,13 @@ up {
 seed {
   clear_article(type: exec) `TRUNCATE TABLE article`
 
-  populate_article(type: exec_batch, count: articles, size: 100) `INSERT ALL __values__(article(title, embedding_uniform, embedding_zipf, embedding_norm))` (
+  populate_article(type: exec_batch, count: articles, size: 100) `INSERT ALL __values__(article(title, embedding_uniform, embedding_zipf, embedding_norm, embedding_exp, embedding_lognorm))` (
       gen('sentence:3'),
       vector(32, 5, 0.1),
       zipf.vector(32, 5, 0.1, 2.0, 1.0),
-      norm.vector(32, 5, 0.1, 2.0, 0.8)
+      norm.vector(32, 5, 0.1, 2.0, 0.8),
+      exp.vector(32, 5, 0.1, 0.5),
+      lognorm.vector(32, 5, 0.1, 1.0, 0.5)
   )
 }
 
@@ -43,11 +47,13 @@ down {
 }
 
 run {
-  insert_article(type: exec) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm)
-    VALUES ($1, $2, $3, $4)` (
+  insert_article(type: exec) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm, embedding_exp, embedding_lognorm)
+    VALUES ($1, $2, $3, $4, $5, $6)` (
       gen('sentence:3'),
       vector(32, 5, 0.1),
       zipf.vector(32, 5, 0.1, 2.0, 1.0),
-      norm.vector(32, 5, 0.1, 2.0, 0.8)
+      norm.vector(32, 5, 0.1, 2.0, 0.8),
+      exp.vector(32, 5, 0.1, 0.5),
+      lognorm.vector(32, 5, 0.1, 1.0, 0.5)
   )
 }

@@ -43,13 +43,16 @@ edg all \
 | [Batch](examples/batch/) | `query_batch` and `exec_batch` for batch inserts and updates |
 | [Blob](examples/blob/) | Binary data with `blob()` and `bytes()` |
 | [CSV](examples/csv/) | CSV files as reference data sources |
-| [Distributions](examples/distributions/) | Uniform, zipf, norm.float, exp.float, and lognorm.float |
+| [Distributions](examples/distributions/) | Uniform, zipf, norm.float, exp.float, lognorm.float, and unique `.n` picks |
 | [Expressions](examples/expression/) | expr-lang built-in features (array, map, string, bitwise) |
 | [Global Sequences](examples/global_sequences/) | Auto-incrementing sequences shared across all workers |
+| [Identifiers](examples/identifiers/) | Sortable `ulid()` keys and deterministic `hash()` digests |
 | [Locale](examples/locale/) | Locale-aware PII generation with deterministic masking |
 | [Normal](examples/normal/) | Product reviews with normal distribution ratings |
 | [Nullable](examples/nullable/) | `nullable(expr, probability)` for injecting NULLs |
 | [Reference Data](examples/reference_data/) | Static reference datasets without database queries |
+| [Seasonal](examples/seasonal/) | Weighted timestamp distributions with `season()` and `season_weight()` |
+| [Seasonal Cookbook](examples/seasonal_cookbook/) | Fourteen season shapes, from a single term to multi-level interactions |
 | [Sequences](examples/sequences/) | Per-worker auto-incrementing sequences |
 | [Timestamp Step](examples/timestamp_step/) | Interval-aligned timestamp generation |
 
@@ -102,6 +105,7 @@ edg all \
 | [Prepared](examples/prepared/) | Prepared statements for reduced parse overhead |
 | [Print](examples/print/) | Live aggregated stats with `print` expressions |
 | [Stages](examples/stages/) | Staged execution with varying worker counts and durations |
+| [Stats](examples/stats/) | Periodic observability queries with bar, line, and per-value charts |
 | [Stages Run Weights](examples/stages_run_weights/) | Per-stage `run_weights` overrides |
 | [Temporal Patterns](examples/temporal_patterns/) | Data drift over time with `global_iter()` |
 | [Transaction](examples/transaction/) | Multi-statement transactions (SQL, MongoDB, Cassandra) |
@@ -115,13 +119,15 @@ edg all \
 | [MongoDB](examples/mongodb/) | MongoDB with BSON/JSON command syntax |
 | [Observability](examples/observability/) | Prometheus metrics and Grafana dashboard |
 | [Output](examples/output/) | `stage` output formats (SQL, JSON, CSV, Parquet, stdout) |
+| [Redis](examples/redis/) | Redis commands, hashes, and cursored SCAN reads |
 | [Serve](examples/serve/) | Job server with HTTP API |
+| [SQLite](examples/sqlite/) | Embedded SQLite, including single-writer concurrency settings |
 | [Sync](examples/sync/) | Dual-write consistency testing across databases |
 
 ## Complete Examples
 
 | Example | Description |
 |---|---|
-| [Aggregation](examples/aggregation/) | Aggregation functions (sum, avg, min, max, count, distinct) |
-| [Geo Spatial](examples/geo_spatial/) | Location-based discovery with `ST_DWithin` and GiST index |
+| [Aggregation](examples/aggregation/) | Aggregation functions (sum, avg, min, max, median, percentile, stddev, variance, count, distinct) |
+| [Geo Spatial](examples/geo_spatial/) | Location-based discovery with `ST_DWithin`, GiST index, and `geo_distance` |
 | [Init](examples/init/) | Generate starter config from an existing schema |

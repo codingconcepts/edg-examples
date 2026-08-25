@@ -4,7 +4,7 @@ let batch_size      = 10000
 
 stages {
   ramp(workers: 1, duration: 10s, weights: { check_balance : 90, credit_account : 5, make_transfer : 5 })
-  steady(workers: 10, duration: 30s)
+  steady(workers: 10, duration: 30s, qps: ramp(10, 100, 10s))
 }
 
 up {

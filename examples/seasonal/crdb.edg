@@ -1,0 +1,73 @@
+let batch_size = 1000
+
+up {
+  create_orders `CREATE TABLE IF NOT EXISTS orders (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      created_at TIMESTAMPTZ NOT NULL,
+      item_count INT NOT NULL,
+      intensity DECIMAL(10, 4) NOT NULL
+    )`
+
+  create_tickets `CREATE TABLE IF NOT EXISTS tickets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      opened_at TIMESTAMPTZ NOT NULL,
+      category STRING NOT NULL
+    )`
+}
+
+# Two years of retail traffic: a slow spring, a Q4 ramp, Black Friday
+# spikes, an evening peak each day, a bias towards the recent year, and a
+# post-Christmas lull.
+season retail(from: '2023-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket: '1h') {
+  months   = [0.8, 0.7, 0.9, 0.9, 1, 0.9, 0.9, 1, 1, 1.2, 1.8, 2.5]
+  weekdays = [1.1, 1, 1, 1, 1, 1.2, 1.3]
+  hours    = [0.2, 0.1, 0.1, 0.1, 0.1, 0.2, 0.4, 0.7, 1, 1.2, 1.3, 1.3, 1.2, 1.2, 1.3, 1.3, 1.4, 1.6, 1.8, 1.7, 1.4, 1, 0.6, 0.3]
+  recency  = { half_life: '8760h' }
+
+  spikes   = [
+    { at: '2023-11-24T00:00:00Z', width: '96h', mag: 12 },
+    { at: '2024-11-29T00:00:00Z', width: '96h', mag: 12 }
+  ]
+
+  weight   = month == 12 && day > 25 ? 0.3 : 1
+}
+
+# Support tickets follow the working week instead of the shopping year.
+# business_hours is blind to the day of week, so it multiplies with
+# weekdays rather than fighting it. off is the out-of-hours multiplier,
+# so 0.05 makes 03:00 20x less likely than a business hour.
+season support(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
+  business_hours = { from: 8, to: 18, off: 0.05 }
+  weekdays       = [0.2, 1, 1, 1, 1, 1, 0.3]
+}
+
+seed {
+  # season_weight(...) is 1.0 on an average bucket, so busy hours produce
+  # bigger baskets than quiet ones. Peak weight here is around 20, so damp
+  # it with sqrt to keep baskets plausible, and store the raw weight in
+  # intensity to make the correlation easy to check.
+  populate_orders(type: exec_batch, count: 20000, size: batch_size)
+    `INSERT INTO orders (created_at, item_count, intensity) __values__` (
+      created_at: season('retail'),
+      item_count: int(1 + norm.float(2, 1, 0, 7, 0) * sqrt(season_weight('retail', arg('created_at')))),
+      intensity: season_weight('retail', arg('created_at'))
+    )
+
+  populate_tickets(type: exec_batch, count: 5000, size: batch_size)
+    `INSERT INTO tickets (opened_at, category) __values__` (
+      opened_at: season('support'),
+      category: set(['billing', 'shipping', 'refund', 'other'],[30, 35, 20, 15])
+    )
+}
+
+deseed {
+  truncate_tickets `TRUNCATE TABLE tickets`
+
+  truncate_orders `TRUNCATE TABLE orders`
+}
+
+down {
+  drop_tickets `DROP TABLE IF EXISTS tickets`
+
+  drop_orders `DROP TABLE IF EXISTS orders`
+}

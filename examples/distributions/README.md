@@ -14,6 +14,7 @@ Demonstrates all thirteen distribution functions by writing values into a single
 | `exp.float` | `exp.float(rate, min, max, precision)` | Exponential decay from min |
 | `lognorm.float` | `lognorm.float(mu, sigma, min, max, precision)` | Right-skewed with a long tail |
 | `pareto` | `pareto(alpha, max)` | Continuous power-law, lower values dominate |
+| `pareto.float` | `pareto.float(alpha, min, max, precision)` | Continuous power-law as a float, bounded and rounded |
 | `beta.float` | `beta.float(alpha, beta, min, max, precision)` | Flexible shape in a bounded range |
 | `gamma.float` | `gamma.float(shape, rate, min, max, precision)` | Right-skewed, models wait times |
 | `weibull.float` | `weibull.float(shape, scale, min, max, precision)` | Reliability / time-to-failure |
@@ -33,6 +34,35 @@ Pick from a predefined set of values using a distribution to control which items
 | `exp.set` | `exp.set(values, rate)` | Exponential distribution over indices; lower indices picked most often |
 | `lognorm.set` | `lognorm.set(values, mu, sigma)` | Log-normal distribution over indices; right-skewed selection |
 | `zipf.set` | `zipf.set(values, s, v)` | Zipfian distribution over indices; strong power-law skew toward first items |
+
+### Unique picks
+
+Every distribution also has an `.n` domain, which draws N *distinct* values and returns them as a comma-separated string. The last two arguments are always `minN` and `maxN`; a count is chosen uniformly in `[minN, maxN]` and that many distinct values are drawn from the distribution. The canonical use is picking the item IDs for a multi-line order, where the same item must not appear twice.
+
+| Function | Signature |
+|---|---|
+| `uniform.n` | `uniform.n(min, max, minN, maxN)` |
+| `beta.n` | `beta.n(alpha, beta, min, max, minN, maxN)` |
+| `binomial.n` | `binomial.n(n, p, minN, maxN)` |
+| `empirical.n` | `empirical.n(samples, minN, maxN)` |
+| `exp.n` | `exp.n(rate, min, max, minN, maxN)` |
+| `gamma.n` | `gamma.n(shape, rate, min, max, minN, maxN)` |
+| `lognorm.n` | `lognorm.n(mu, sigma, min, max, minN, maxN)` |
+| `norm.n` | `norm.n(mean, stddev, min, max, minN, maxN)` |
+| `pareto.n` | `pareto.n(alpha, max, minN, maxN)` |
+| `poisson.n` | `poisson.n(lambda, minN, maxN)` |
+| `weibull.n` | `weibull.n(shape, scale, min, max, minN, maxN)` |
+| `zipf.n` | `zipf.n(s, v, max, minN, maxN)` |
+
+The example uses `uniform.n` and `zipf.n`, splitting the string back into rows so each unique pick lands in its own row:
+
+```edg
+insert_uniform_n(type: exec) `INSERT INTO distributions (dist_type, value)
+  SELECT 'uniform_n', v::FLOAT8
+  FROM unnest(string_to_array($1, ',')) AS v` (uniform.n(0, 100, 3, 5))
+```
+
+Widening the range relative to `maxN` matters. A distribution that concentrates its mass on a handful of values (for example `poisson.n(1, 5, 10)`) may not be able to produce enough distinct draws, and the run will fail rather than return duplicates.
 
 ## CockroachDB
 

@@ -61,6 +61,15 @@ up {
   create_idx_message_match `CREATE INDEX IF NOT EXISTS idx_message_match
     ON message (match_id, created_at DESC)
     STORING (sender_id, body)`
+
+  create_encounter `CREATE TABLE IF NOT EXISTS encounter (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      viewer_id UUID NOT NULL REFERENCES profile(id),
+      viewed_id UUID NOT NULL REFERENCES profile(id),
+      distance_km FLOAT8 NOT NULL,
+      bearing_deg FLOAT8 NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
 }
 
 seed {
@@ -117,6 +126,8 @@ deseed {
 
   truncate_swipe(type: exec) `TRUNCATE TABLE swipe`
 
+  truncate_encounter(type: exec) `TRUNCATE TABLE encounter`
+
   truncate_zone(type: exec) `TRUNCATE TABLE zone`
 
   truncate_profile(type: exec) `TRUNCATE TABLE profile CASCADE`
@@ -128,6 +139,8 @@ down {
   drop_match(type: exec) `DROP TABLE IF EXISTS match`
 
   drop_swipe(type: exec) `DROP TABLE IF EXISTS swipe`
+
+  drop_encounter(type: exec) `DROP TABLE IF EXISTS encounter`
 
   drop_zone(type: exec) `DROP TABLE IF EXISTS zone`
 
@@ -150,6 +163,7 @@ weights {
   check_match       = 10
   discover_in_zone  = 10
   discover_nearby   = 25
+  log_encounter     = 10
   read_conversation = 5
   send_message      = 15
   swipe_left        = 20
@@ -180,6 +194,24 @@ run {
     JOIN zone z ON ST_Covers(z.boundary, p.location)
     WHERE z.id = $1::UUID
     LIMIT 20` (ref('fetch_zones').id)
+
+  log_encounter(type: exec) `INSERT INTO encounter (viewer_id, viewed_id, distance_km, bearing_deg)
+    VALUES ($1::UUID, $2::UUID, $3::FLOAT8, $4::FLOAT8)` (
+      ref_perm('fetch_profiles').id,
+      ref_same('fetch_profiles').id,
+      geo_distance(
+        ref_perm('fetch_profiles').lat,
+        ref_perm('fetch_profiles').lon,
+        ref_same('fetch_profiles').lat,
+        ref_same('fetch_profiles').lon
+      ),
+      geo_bearing(
+        ref_perm('fetch_profiles').lat,
+        ref_perm('fetch_profiles').lon,
+        ref_same('fetch_profiles').lat,
+        ref_same('fetch_profiles').lon
+      )
+  )
 
   swipe_right(type: exec) `INSERT INTO swipe (swiper_id, swiped_id, direction)
     VALUES ($1::UUID, $2::UUID, 'right')

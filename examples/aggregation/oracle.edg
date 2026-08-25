@@ -1,5 +1,6 @@
-let products   = 500
-let batch_size = 100
+let products    = 500
+let batch_size  = 100
+let list_prices = [4.99, 9.99, 14.99, 19.99, 24.99, 49.99, 99.99, 149.99, 199.99, 499.99]
 
 up {
   create_product(type: exec) `BEGIN
@@ -25,7 +26,13 @@ up {
           avg_price NUMBER(10,2) NOT NULL,
           min_price NUMBER(10,2) NOT NULL,
           max_price NUMBER(10,2) NOT NULL,
+          median_price NUMBER(10,2) NOT NULL,
+          p95_price NUMBER(10,2) NOT NULL,
+          stddev_price NUMBER(10,2) NOT NULL,
+          variance_price NUMBER(14,2) NOT NULL,
           distinct_categories NUMBER NOT NULL,
+          list_median NUMBER(10,2) NOT NULL,
+          list_p95 NUMBER(10,2) NOT NULL,
           created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
           PRIMARY KEY (id)
         )
@@ -73,13 +80,23 @@ run {
     ORDER BY DBMS_RANDOM.VALUE
     FETCH FIRST :1 ROWS ONLY` (gen('number:1,10'))
 
-  record_snapshot(type: exec) `INSERT INTO agg_snapshot (total_products, total_value, avg_price, min_price, max_price, distinct_categories)
-    VALUES (:1, :2, :3, :4, :5, :6)` (
+  record_snapshot(type: exec) `INSERT INTO agg_snapshot (total_products, total_value, avg_price, min_price, max_price,
+      median_price, p95_price, stddev_price, variance_price, distinct_categories,
+      list_median, list_p95)
+    VALUES (:1, :2, :3, :4, :5,
+      :6, :7, :8, :9, :10,
+      :11, :12)` (
       count('fetch_products'),
       sum('fetch_products', 'price'),
       avg('fetch_products', 'price'),
       min('fetch_products', 'price'),
       max('fetch_products', 'price'),
-      distinct('fetch_products', 'category')
+      median('fetch_products', 'price'),
+      percentile('fetch_products', 'price', 95),
+      stddev('fetch_products', 'price'),
+      variance('fetch_products', 'price'),
+      distinct('fetch_products', 'category'),
+      median(list_prices),
+      percentile(list_prices, 95)
   )
 }

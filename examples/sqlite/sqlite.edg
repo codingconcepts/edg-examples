@@ -1,0 +1,67 @@
+let customers       = 100
+let accounts        = 200
+let initial_balance = 10000
+
+up {
+  create_customer(type: exec) `CREATE TABLE IF NOT EXISTS customer (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL
+    )`
+
+  create_account(type: exec) `CREATE TABLE IF NOT EXISTS account (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES customer(id),
+      balance REAL NOT NULL
+    )`
+
+  # SQLite has no inline index syntax in CREATE TABLE.
+  create_account_customer_idx(type: exec)
+    `CREATE INDEX IF NOT EXISTS idx_account_customer ON account (customer_id)`
+}
+
+seed {
+  insert_customer(type: exec_batch, count: customers, size: 100)
+    `INSERT INTO customer (id, email) __values__` (
+      gen('uuid'),
+      gen('email')
+  )
+
+  fetch_customers `SELECT id FROM customer`
+
+  insert_account(type: exec_batch, count: accounts, size: 100)
+    `INSERT INTO account (id, customer_id, balance) __values__` (
+      gen('uuid'),
+      ref('fetch_customers').id,
+      initial_balance
+  )
+}
+
+init {
+  load_accounts `SELECT id, customer_id FROM account`
+}
+
+run {
+  # No UUID() or RAND() in SQLite: lower(hex(randomblob(16))) and
+  # abs(random()) % N are the equivalents.
+  read_account(type: query) `SELECT a.id, a.balance, c.email
+    FROM account a
+    JOIN customer c ON c.id = a.customer_id
+    WHERE a.id = ?` (ref('load_accounts').id)
+
+  deposit(type: exec) `UPDATE account
+    SET balance = balance + abs(random()) % 100
+    WHERE id = ?` (ref('load_accounts').id)
+}
+
+deseed {
+  # No TRUNCATE in SQLite.
+  clean_account(type: exec) `DELETE FROM account`
+
+  clean_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}

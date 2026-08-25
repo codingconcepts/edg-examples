@@ -1,6 +1,6 @@
 # Vector Embeddings
 
-Demonstrates `vector`, `zipf.vector`, and `norm.vector` for generating pgvector-compatible embeddings with realistic clustering for similarity search.
+Demonstrates `vector`, `zipf.vector`, `norm.vector`, `exp.vector`, and `lognorm.vector` for generating pgvector-compatible embeddings with realistic clustering for similarity search.
 
 ## Functions
 
@@ -9,25 +9,31 @@ Demonstrates `vector`, `zipf.vector`, and `norm.vector` for generating pgvector-
 | `vector` | `vector(dims, clusters, spread)` | Clustered unit-length vector literal with **uniform** centroid selection. |
 | `zipf.vector` | `zipf.vector(dims, clusters, spread, s, v)` | **Zipfian** centroid selection - cluster 0 is the "hottest", realistic power-law skew. |
 | `norm.vector` | `norm.vector(dims, clusters, spread, mean, stddev)` | **Normal** centroid selection - bell curve centered on a cluster index. |
+| `exp.vector` | `exp.vector(dims, clusters, spread, rate)` | **Exponential** centroid selection - decay from cluster 0, `rate` controls how sharply. |
+| `lognorm.vector` | `lognorm.vector(dims, clusters, spread, mu, sigma)` | **Log-normal** centroid selection - right-skewed with a long tail across cluster indices. |
 
 ## Schema
 
-The example creates an `article` table with three embedding columns, one per distribution, so you can compare their clustering behaviour side by side:
+The example creates an `article` table with five embedding columns, one per distribution, so you can compare their clustering behaviour side by side:
 
 | Column | Expression | Distribution |
 |---|---|---|
 | `embedding_uniform` | `vector(32, 5, 0.1)` | Equal-sized clusters |
 | `embedding_zipf` | `zipf.vector(32, 5, 0.1, 2.0, 1.0)` | Cluster 0 dominates (power-law) |
 | `embedding_norm` | `norm.vector(32, 5, 0.1, 2.0, 0.8)` | Cluster 2 most common (bell curve) |
+| `embedding_exp` | `exp.vector(32, 5, 0.1, 0.5)` | Cluster 0 most common, smooth decay |
+| `embedding_lognorm` | `lognorm.vector(32, 5, 0.1, 1.0, 0.5)` | Low clusters common, long tail |
 
 ## How clustering works
 
-The first call lazily generates `clusters` random unit-vector centroids. Each subsequent call picks a centroid (uniform, Zipfian, or normal), adds Gaussian noise (sigma = `spread`), then normalizes to unit length. This produces groups of nearby vectors so that kNN search returns meaningful neighbours.
+The first call lazily generates `clusters` random unit-vector centroids. Each subsequent call picks a centroid using the named distribution, adds Gaussian noise (sigma = `spread`), then normalizes to unit length. This produces groups of nearby vectors so that kNN search returns meaningful neighbours.
 
 - **Low spread** (0.05-0.1): tight, well-separated clusters - ideal for testing index recall
 - **High spread** (0.3-0.5): overlapping clusters - more realistic for production-like data
 - **Zipfian** (`zipf.vector`): most vectors land in a few "hot" clusters, simulating real-world category skew
 - **Normal** (`norm.vector`): a central cluster is most popular, with gradual falloff
+- **Exponential** (`exp.vector`): cluster 0 is most popular and popularity decays smoothly - a softer skew than Zipfian
+- **Log-normal** (`lognorm.vector`): low cluster indices dominate but a long tail keeps the higher ones populated
 
 ## CockroachDB
 
@@ -80,6 +86,18 @@ LIMIT 5;
 SELECT id, title, embedding_norm <=> (SELECT embedding_norm FROM article LIMIT 1) AS distance
 FROM article
 ORDER BY embedding_norm <=> (SELECT embedding_norm FROM article LIMIT 1)
+LIMIT 5;
+
+-- Exponential: decay away from cluster 0.
+SELECT id, title, embedding_exp <=> (SELECT embedding_exp FROM article LIMIT 1) AS distance
+FROM article
+ORDER BY embedding_exp <=> (SELECT embedding_exp FROM article LIMIT 1)
+LIMIT 5;
+
+-- Log-normal: skewed toward low clusters with a long tail.
+SELECT id, title, embedding_lognorm <=> (SELECT embedding_lognorm FROM article LIMIT 1) AS distance
+FROM article
+ORDER BY embedding_lognorm <=> (SELECT embedding_lognorm FROM article LIMIT 1)
 LIMIT 5;
 ```
 

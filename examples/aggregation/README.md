@@ -10,10 +10,26 @@ Demonstrates the aggregation functions by computing summary statistics over an i
 | `avg` | `avg(name, field)` | `float64` | Average of a numeric field across all rows |
 | `min` | `min(name, field)` | `float64` | Minimum value of a numeric field |
 | `max` | `max(name, field)` | `float64` | Maximum value of a numeric field |
+| `median` | `median(name, field)` | `float64` | Median (50th percentile) of a numeric field |
+| `percentile` | `percentile(name, field, p)` | `float64` | Pth percentile of a numeric field, linear interpolation, `p` in [0, 100] |
+| `stddev` | `stddev(name, field)` | `float64` | Population standard deviation of a numeric field |
+| `variance` | `variance(name, field)` | `float64` | Population variance of a numeric field |
 | `count` | `count(name)` | `int` | Number of rows in the dataset |
 | `distinct` | `distinct(name, field)` | `int` | Number of distinct values for a field |
 
 All aggregation functions operate on named datasets populated by `init` queries.
+
+### Array form
+
+Every aggregate except `count` and `distinct` also accepts a single array in place of the `(name, field)` pair, which is handy for static reference data declared with `let`:
+
+| Array form | Dataset form |
+|---|---|
+| `sum([1, 2, 3])` | `sum('fetch_products', 'price')` |
+| `median(list_prices)` | `median('fetch_products', 'price')` |
+| `percentile(list_prices, 95)` | `percentile('fetch_products', 'price', 95)` |
+
+For `percentile` the `p` is always the last argument, so the array form takes two arguments and the dataset form takes three. The `list_median` and `list_p95` columns are computed this way from the `list_prices` array, giving each snapshot a fixed baseline to compare the sampled products against.
 
 ## CockroachDB
 

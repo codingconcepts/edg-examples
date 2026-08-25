@@ -47,6 +47,7 @@ weights {
   insert_exponential = 10
   insert_lognormal   = 10
   insert_pareto      = 10
+  insert_pareto_f    = 10
   insert_beta        = 10
   insert_gamma       = 10
   insert_weibull     = 10
@@ -54,6 +55,8 @@ weights {
   insert_binomial    = 10
   insert_empirical   = 10
   insert_rwalk       = 10
+  insert_uniform_n   = 10
+  insert_zipfian_n   = 10
 }
 
 run {
@@ -75,6 +78,9 @@ run {
   insert_pareto(type: exec) `INSERT INTO distributions (dist_type, value)
     VALUES ('pareto', :1)` (pareto.int(2.0, 99))
 
+  insert_pareto_f(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('pareto_float', :1)` (pareto.float(2.0, 0, 100, 2))
+
   insert_beta(type: exec) `INSERT INTO distributions (dist_type, value)
     VALUES ('beta', :1)` (beta.float(2, 5, 0, 100, 2))
 
@@ -95,4 +101,12 @@ run {
 
   insert_rwalk(type: exec) `INSERT INTO distributions (dist_type, value)
     VALUES ('rwalk', :1)` (rwalk_f('walk', 50, 0.0, 0.5, 2))
+
+  insert_uniform_n(type: exec) `INSERT INTO distributions (dist_type, value)
+    SELECT 'uniform_n', TO_NUMBER(column_value)
+    FROM XMLTABLE(('"' || REPLACE('$1', ',', '","') || '"'))` (uniform.n(0, 100, 3, 5))
+
+  insert_zipfian_n(type: exec) `INSERT INTO distributions (dist_type, value)
+    SELECT 'zipfian_n', TO_NUMBER(column_value)
+    FROM XMLTABLE(('"' || REPLACE('$1', ',', '","') || '"'))` (zipf.n(1.1, 1.0, 99, 3, 5))
 }

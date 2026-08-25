@@ -1,5 +1,6 @@
-let products   = 500
-let batch_size = 100
+let products    = 500
+let batch_size  = 100
+let list_prices = [4.99, 9.99, 14.99, 19.99, 24.99, 49.99, 99.99, 149.99, 199.99, 499.99]
 
 up {
   create_product `CREATE TABLE IF NOT EXISTS product (
@@ -16,7 +17,13 @@ up {
       avg_price DECIMAL(10,2) NOT NULL,
       min_price DECIMAL(10,2) NOT NULL,
       max_price DECIMAL(10,2) NOT NULL,
+      median_price DECIMAL(10,2) NOT NULL,
+      p95_price DECIMAL(10,2) NOT NULL,
+      stddev_price DECIMAL(10,2) NOT NULL,
+      variance_price DECIMAL(14,2) NOT NULL,
       distinct_categories INT NOT NULL,
+      list_median DECIMAL(10,2) NOT NULL,
+      list_p95 DECIMAL(10,2) NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT now()
     )`
 }
@@ -49,13 +56,23 @@ run {
     ORDER BY random()
     LIMIT $1::INT` (gen('number:1,10'))
 
-  record_snapshot(type: exec) `INSERT INTO agg_snapshot (total_products, total_value, avg_price, min_price, max_price, distinct_categories)
-    VALUES ($1, $2::DECIMAL, $3::DECIMAL, $4::DECIMAL, $5::DECIMAL, $6)` (
+  record_snapshot(type: exec) `INSERT INTO agg_snapshot (total_products, total_value, avg_price, min_price, max_price,
+      median_price, p95_price, stddev_price, variance_price, distinct_categories,
+      list_median, list_p95)
+    VALUES ($1, $2::DECIMAL, $3::DECIMAL, $4::DECIMAL, $5::DECIMAL,
+      $6::DECIMAL, $7::DECIMAL, $8::DECIMAL, $9::DECIMAL, $10,
+      $11::DECIMAL, $12::DECIMAL)` (
       count('fetch_products'),
       sum('fetch_products', 'price'),
       avg('fetch_products', 'price'),
       min('fetch_products', 'price'),
       max('fetch_products', 'price'),
-      distinct('fetch_products', 'category')
+      median('fetch_products', 'price'),
+      percentile('fetch_products', 'price', 95),
+      stddev('fetch_products', 'price'),
+      variance('fetch_products', 'price'),
+      distinct('fetch_products', 'category'),
+      median(list_prices),
+      percentile(list_prices, 95)
   )
 }

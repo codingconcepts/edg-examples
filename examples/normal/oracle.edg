@@ -75,7 +75,7 @@ run {
 
   add_batch_reviews(type: exec) `INSERT INTO review (product_id, rating)
     SELECT TO_NUMBER(column_value), $2
-    FROM XMLTABLE(('"' || REPLACE('$1', CHR(31), '","') || '"'))` (
+    FROM XMLTABLE(('"' || REPLACE('$1', ',', '","') || '"'))` (
       norm.n(50, 15, 1, 100, 3, 8),
       norm.int(4, 1, 1, 5)
   )

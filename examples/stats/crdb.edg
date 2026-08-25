@@ -1,0 +1,54 @@
+let customers  = 10000
+let batch_size = 1000
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL,
+      region STRING NOT NULL
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email, region)
+    __values__` (
+    gen('email'),
+    set(['us', 'eu', 'ap'],[])
+  )
+}
+
+deseed {
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+}
+
+down {
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+run {
+  read_customer `SELECT id, email FROM customer WHERE region = $1 LIMIT 1` (set(['us', 'eu', 'ap'],[]))
+}
+
+stats (rate: 1 / 1s) {
+  # Bar chart: the distribution of node ids the pool is currently connected
+  # to, as a live snapshot.
+  node_mix(
+    type:       bar,
+    post_print: { key: 'node', value: result().node_id, window: 10s }
+  ) `SHOW node_id`
+
+  # Line chart: one line per node id, showing how many times per second each
+  # one answered. Polls fast so each line has enough samples to be smooth.
+  node_over_time(
+    type:       line,
+    rate:       20 / 1s,
+    post_print: { key: 'node', value: result().node_id, series: value, window: 5s }
+  ) `SHOW node_id`
+
+  # Line chart: a plain numeric value over a sliding window, so a long run's
+  # numbers keep tracking what's happening now.
+  live_rows(
+    type:       line,
+    post_print: { key: 'rows', value: result().rows, window: 30s }
+  ) `SELECT count(*) AS rows FROM customer`
+}

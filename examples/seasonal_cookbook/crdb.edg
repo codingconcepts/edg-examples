@@ -1,0 +1,258 @@
+let rows       = 20000
+let batch_size = 1000
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      shape STRING NOT NULL,
+      ts TIMESTAMPTZ NOT NULL,
+      w FLOAT NOT NULL,
+      INDEX (shape, ts)
+    )`
+
+  create_regional_events `CREATE TABLE IF NOT EXISTS regional_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      region STRING NOT NULL,
+      ts TIMESTAMPTZ NOT NULL,
+      INDEX (region, ts)
+    )`
+}
+
+# ---------------------------------------------------------------------
+# One term at a time
+# ---------------------------------------------------------------------
+
+# Quiet weekends. Index 0 is Sunday.
+season weekly(from: '2024-01-01T00:00:00Z', to: '2024-04-01T00:00:00Z') {
+  weekdays = [0.3, 1, 1, 1, 1, 1, 0.3]
+}
+
+# A working day. Index 0 is midnight.
+season daily(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z') {
+  hours = [0.2, 0.1, 0.1, 0.1, 0.1, 0.2, 0.5, 1, 1.5, 1.5, 1.3, 1.2, 1.4, 1.3, 1.2, 1.2, 1.4, 1.8, 2, 1.8, 1.4, 1, 0.6, 0.3]
+}
+
+# A summer business. Index 0 is January.
+season annual(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
+  months = [0.6, 0.6, 0.8, 1, 1.2, 1.5, 1.8, 1.8, 1.2, 1, 0.9, 0.7]
+}
+
+# Office hours, cheaper to write than the equivalent hours array.
+season office(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z') {
+  business_hours = { from: 9, to: 17, off: 0.05 }
+}
+
+# A growing product, with no calendar shape at all.
+season growth(from: '2023-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
+  recency = { half_life: '4380h' }
+}
+
+# A launch. width is the half-width, so this spike is a fortnight wide.
+season launch(from: '2024-01-01T00:00:00Z', to: '2024-07-01T00:00:00Z') {
+  spikes = [{ at: '2024-03-15T00:00:00Z', width: '168h', mag: 25 }]
+}
+
+# ---------------------------------------------------------------------
+# Composing terms - every term is a multiplier
+# ---------------------------------------------------------------------
+
+# A nightly batch window that also thins out at the weekend.
+season etl(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z', bucket: '1h') {
+  hours    = [3, 4, 2, 0.5, 0.2, 0.2, 0.2, 0.3, 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.5, 0.4, 0.4, 0.5, 0.8, 1.5, 2.5]
+  weekdays = [0.4, 1, 1, 1, 1, 1, 0.4]
+}
+
+# A growing SaaS app: one shape per timescale that matters. business_hours
+# is blind to the day of week, so it composes with weekdays rather than
+# fighting it.
+season saas(from: '2023-06-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket: '1h') {
+  recency        = { half_life: '4380h' }
+  weekdays       = [0.2, 1, 1.1, 1.1, 1, 0.8, 0.2]
+  business_hours = { from: 8, to: 19, off: 0.1 }
+}
+
+# A spike with mag below 1 is a lull, which reads better than the
+# equivalent weight expression and needs no calendar arithmetic.
+season shutdown(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
+  weekdays = [0.3, 1, 1, 1, 1, 1, 0.3]
+
+  spikes = [
+    { at: '2024-08-10T00:00:00Z', width: '336h', mag: 0.2 },
+    { at: '2024-12-25T00:00:00Z', width: '240h', mag: 0.1 }
+  ]
+}
+
+# Month-end billing. Some shapes have no term, and that's what weight is
+# for: t, year, month, day, yearday, weekday and hour are all in scope.
+season billing(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
+  weight = day >= 28 || day <= 2 ? 6 : 1
+}
+
+# ---------------------------------------------------------------------
+# Interactions and multi-level shifts
+# ---------------------------------------------------------------------
+
+# Array terms are separable, so a daily curve whose shape changes with the
+# month has to be an interaction in weight. The inner sin walks the peak
+# hour between 13:00 and 21:00 over the year; the outer cos is the daily
+# curve around whatever peak that day has.
+season summer_evenings(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket: '1h') {
+  weight = 1 + 0.9 * cos(2 * pi * (hour - (17 + 4 * sin(2 * pi * (yearday - 105) / 365))) / 24)
+}
+
+# The same expression without an explicit bucket, kept here to show the
+# trap. A weight expression is opaque to edg, so nothing forces a finer
+# bucket than the 24h default, the expression is only sampled at midnight
+# where hour is always 0, and the daily shape aliases into a yearly one.
+season summer_evenings_coarse(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
+  weight = 1 + 0.9 * cos(2 * pi * (hour - (17 + 4 * sin(2 * pi * (yearday - 105) / 365))) / 24)
+}
+
+# Five levels of calendar structure plus a step change in traffic. The
+# step change lives in weight rather than recency because a regime shift
+# is a cliff and recency is a smooth curve; they compose, so growth
+# continues either side of the cliff.
+season platform(from: '2023-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket: '1h') {
+  months   = [0.9, 0.9, 1.3, 0.9, 0.9, 1.3, 0.9, 0.8, 1.3, 1, 1, 1.4]
+  weekdays = [0.3, 1.1, 1.2, 1.2, 1.1, 0.9, 0.3]
+  hours    = [0.3, 0.2, 0.2, 0.2, 0.3, 0.4, 0.6, 1, 1.4, 1.6, 1.6, 1.4, 1.2, 1.4, 1.6, 1.6, 1.4, 1.1, 0.8, 0.6, 0.5, 0.5, 0.4, 0.3]
+  recency  = { half_life: '8760h' }
+
+  spikes = [
+    { at: '2024-05-14T00:00:00Z', width: '72h', mag: 8 },
+    { at: '2024-09-03T12:00:00Z', width: '6h', mag: 0.05 }
+  ]
+
+  weight = (year > 2024 || (year == 2024 && month >= 3) ? 2 : 1) * (day >= 28 ? 1.8 : 1)
+}
+
+# Follow the sun: one season per region, chosen per row.
+season eu(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z', bucket: '1h') {
+  business_hours = { from: 7, to: 16, off: 0.05 }
+}
+
+season us(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z', bucket: '1h') {
+  business_hours = { from: 13, to: 22, off: 0.05 }
+}
+
+# business_hours can't wrap midnight, so an APAC day expressed in UTC
+# needs the hours array.
+season apac(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z', bucket: '1h') {
+  hours = [1, 1, 1, 1, 1, 1, 1, 1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 1]
+}
+
+seed {
+  populate_weekly(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('weekly'),
+      ts: season('weekly'),
+      w: season_weight('weekly', arg('ts'))
+    )
+
+  populate_daily(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('daily'),
+      ts: season('daily'),
+      w: season_weight('daily', arg('ts'))
+    )
+
+  populate_annual(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('annual'),
+      ts: season('annual'),
+      w: season_weight('annual', arg('ts'))
+    )
+
+  populate_office(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('office'),
+      ts: season('office'),
+      w: season_weight('office', arg('ts'))
+    )
+
+  populate_growth(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('growth'),
+      ts: season('growth'),
+      w: season_weight('growth', arg('ts'))
+    )
+
+  populate_launch(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('launch'),
+      ts: season('launch'),
+      w: season_weight('launch', arg('ts'))
+    )
+
+  populate_etl(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('etl'),
+      ts: season('etl'),
+      w: season_weight('etl', arg('ts'))
+    )
+
+  populate_saas(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('saas'),
+      ts: season('saas'),
+      w: season_weight('saas', arg('ts'))
+    )
+
+  populate_shutdown(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('shutdown'),
+      ts: season('shutdown'),
+      w: season_weight('shutdown', arg('ts'))
+    )
+
+  populate_billing(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('billing'),
+      ts: season('billing'),
+      w: season_weight('billing', arg('ts'))
+    )
+
+  populate_summer_evenings(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('summer_evenings'),
+      ts: season('summer_evenings'),
+      w: season_weight('summer_evenings', arg('ts'))
+    )
+
+  populate_summer_evenings_coarse(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('summer_evenings_coarse'),
+      ts: season('summer_evenings_coarse'),
+      w: season_weight('summer_evenings_coarse', arg('ts'))
+    )
+
+  # Peak weight here is 20.5 against a mean of 1.0, so damp it with sqrt
+  # before multiplying it into anything.
+  populate_platform(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO events (shape, ts, w) __values__` (
+      shape: const('platform'),
+      ts: season('platform'),
+      w: sqrt(season_weight('platform', arg('ts')))
+    )
+
+  # The ternary only evaluates the branch it takes, so each row draws from
+  # exactly one season. Weight the set to weight the regions; each season
+  # decides only when its own rows land.
+  populate_regional(type: exec_batch, count: rows, size: batch_size)
+    `INSERT INTO regional_events (region, ts) __values__` (
+      region: set(['eu', 'us', 'apac'], [50, 35, 15]),
+      ts: arg('region') == 'eu' ? season('eu') : arg('region') == 'us' ? season('us') : season('apac')
+    )
+}
+
+deseed {
+  truncate_regional_events `TRUNCATE TABLE regional_events`
+
+  truncate_events `TRUNCATE TABLE events`
+}
+
+down {
+  drop_regional_events `DROP TABLE IF EXISTS regional_events`
+
+  drop_events `DROP TABLE IF EXISTS events`
+}

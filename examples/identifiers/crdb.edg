@@ -1,0 +1,104 @@
+let events     = 10000
+let batch_size = 1000
+
+up {
+  create_event `CREATE TABLE IF NOT EXISTS event (
+      id STRING PRIMARY KEY,
+      email STRING NOT NULL,
+      dedup_key STRING NOT NULL,
+      shard_key STRING NOT NULL,
+      payload STRING NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+
+  create_idx_event_dedup `CREATE UNIQUE INDEX IF NOT EXISTS idx_event_dedup
+    ON event (dedup_key)`
+
+  create_idx_event_shard `CREATE INDEX IF NOT EXISTS idx_event_shard
+    ON event (shard_key) STORING (email)`
+
+  create_digest `CREATE TABLE IF NOT EXISTS digest (
+      source STRING PRIMARY KEY,
+      md5 STRING NOT NULL,
+      sha1 STRING NOT NULL,
+      sha256 STRING NOT NULL,
+      crc32 STRING NOT NULL
+    )`
+}
+
+seed {
+  populate_event(type: exec_batch, count: events, size: batch_size) `INSERT INTO event (id, email, dedup_key, shard_key, payload)
+    __values__
+    ON CONFLICT (dedup_key) DO NOTHING` (
+      id: ulid(),
+      email: gen('email'),
+      dedup_key: hash(email, 'sha256'),
+      shard_key: hash(email, 'crc32'),
+      payload: gen('sentence:6')
+  )
+
+  populate_digest(type: exec) `INSERT INTO digest (source, md5, sha1, sha256, crc32)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (source) DO NOTHING` (
+      source: const('user@example.com'),
+      md5: hash(source, 'md5'),
+      sha1: hash(source, 'sha1'),
+      sha256: hash(source, 'sha256'),
+      crc32: hash(source, 'crc32')
+  )
+}
+
+deseed {
+  truncate_event(type: exec) `TRUNCATE TABLE event`
+
+  truncate_digest(type: exec) `TRUNCATE TABLE digest`
+}
+
+down {
+  drop_event(type: exec) `DROP TABLE IF EXISTS event`
+
+  drop_digest(type: exec) `DROP TABLE IF EXISTS digest`
+}
+
+init {
+  fetch_emails(type: query) `SELECT email FROM event LIMIT 1000`
+}
+
+weights {
+  ingest_new      = 40
+  ingest_replay   = 20
+  lookup_by_email = 25
+  scan_shard      = 15
+}
+
+run {
+  ingest_new(type: exec) `INSERT INTO event (id, email, dedup_key, shard_key, payload)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (dedup_key) DO NOTHING` (
+      id: ulid(),
+      email: gen('email'),
+      dedup_key: hash(email, 'sha256'),
+      shard_key: hash(email, 'crc32'),
+      payload: gen('sentence:6')
+  )
+
+  ingest_replay(type: exec) `INSERT INTO event (id, email, dedup_key, shard_key, payload)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (dedup_key) DO NOTHING` (
+      id: ulid(),
+      email: ref('fetch_emails').email,
+      dedup_key: hash(email, 'sha256'),
+      shard_key: hash(email, 'crc32'),
+      payload: gen('sentence:6')
+  )
+
+  lookup_by_email(type: query) `SELECT id, payload, created_at
+    FROM event
+    WHERE dedup_key = $1` (hash(ref('fetch_emails').email, 'sha256'))
+
+  scan_shard(type: query) `SELECT id, email
+    FROM event
+    WHERE shard_key LIKE substr($1, 1, 1) || '%'
+    ORDER BY id DESC
+    LIMIT 50` (hash(ref('fetch_emails').email, 'crc32'))
+}
