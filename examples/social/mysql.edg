@@ -191,28 +191,28 @@ run {
 
   create_post(type: exec) `INSERT INTO post (author_id, body)
     VALUES (?, ?)` (
-      ref('fetch_users').id,
-      gen('sentence:10')
+    ref('fetch_users').id,
+    gen('sentence:10')
   )
 
   like_post(type: exec) `INSERT IGNORE INTO post_like (post_id, user_id)
     VALUES (?, ?)` (
-      ref('fetch_posts').id,
-      ref('fetch_users').id
+    ref('fetch_posts').id,
+    ref('fetch_users').id
   )
 
   add_comment(type: exec) `INSERT INTO comment (post_id, author_id, body)
     VALUES (?, ?, CONCAT(?, ': ', ?))` (
-      ref('fetch_posts').id,
-      ref_same('fetch_users').id,
-      ref_same('fetch_users').display_name,
-      gen('sentence:8')
+    ref('fetch_posts').id,
+    ref_same('fetch_users').id,
+    ref_same('fetch_users').display_name,
+    gen('sentence:8')
   )
 
   follow_user(type: exec) `INSERT IGNORE INTO follow (follower_id, following_id)
     VALUES (?, ?)` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 
   trending(type: query) `SELECT p.id, p.body, p.like_count, u.username
@@ -228,7 +228,7 @@ run {
     WHERE f1.follower_id = ?
       AND f2.follower_id = ?
     LIMIT 20` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 }

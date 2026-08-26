@@ -18,10 +18,10 @@ up {
 seed {
   populate_contact(type: exec_batch, count: contacts, size: batch_size) `INSERT INTO contact (name, email, phone)
     __values__` (
-      gen('name'),
-      bool(),
-      cond(arg(1), gen('email'), nil),
-      cond(! arg(1), gen('phone'), nil)
+    gen('name'),
+    bool(),
+    cond(arg(1), gen('email'), nil),
+    cond(! arg(1), gen('phone'), nil)
   )
 }
 

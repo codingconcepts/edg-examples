@@ -1,5 +1,5 @@
 let num_customers = 10000
-let batch_size = 1000
+let batch_size    = 1000
 
 up {
   create_customer `CREATE TABLE IF NOT EXISTS customer (

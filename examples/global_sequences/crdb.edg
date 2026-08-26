@@ -23,17 +23,17 @@ up {
 seed {
   seed_orders(type: exec_batch, count: orders, size: batch_size) `INSERT INTO orders (id, customer)
     __values__` (
-      seq_global('order_id'),
-      gen('firstname') + ' ' + gen('lastname')
+    seq_global('order_id'),
+    gen('firstname') + ' ' + gen('lastname')
   )
 
   seed_samples(type: exec_batch, count: samples, size: batch_size) `INSERT INTO samples (uniform_val, zipf_val, norm_val, exp_val, lognorm_val)
     __values__` (
-      uniform.seq('order_id'),
-      zipf.seq('order_id', 1.1, 1.0),
-      norm.seq('order_id', 500, 150),
-      exp.seq('order_id', 0.01),
-      lognorm.seq('order_id', 5.5, 0.5)
+    uniform.seq('order_id'),
+    zipf.seq('order_id', 1.1, 1.0),
+    norm.seq('order_id', 500, 150),
+    exp.seq('order_id', 0.01),
+    lognorm.seq('order_id', 5.5, 0.5)
   )
 }
 

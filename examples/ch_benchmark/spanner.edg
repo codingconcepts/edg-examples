@@ -198,8 +198,8 @@ seed {
       CAST(MOD(ABS(FARM_FINGERPRINT(GENERATE_UUID())), 1100000) / 100.0 - 1000 AS NUMERIC),
       SUBSTR(GENERATE_UUID(), 1, 30)
     FROM UNNEST(GENERATE_ARRAY(1, $2)) AS s` (
-      batch(10000 / batch_size),
-      batch_size
+    batch(10000 / batch_size),
+    batch_size
   )
 
   populate_item `INSERT INTO item (i_id, i_im_id, i_name, i_price, i_data)
@@ -215,8 +215,8 @@ seed {
           MOD(ABS(FARM_FINGERPRINT(GENERATE_UUID())), 24) + 26)
       END
     FROM UNNEST(GENERATE_ARRAY(1, $2)) AS s` (
-      batch(items / batch_size),
-      batch_size
+    batch(items / batch_size),
+    batch_size
   )
 
   populate_warehouse `INSERT INTO warehouse (w_id, w_name, w_street_1, w_street_2, w_city,
@@ -247,8 +247,8 @@ seed {
       CAST(30000 AS NUMERIC),
       3001
     FROM UNNEST(GENERATE_ARRAY(1, $2)) AS d` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts
   )
 
   populate_customer `INSERT INTO customer (c_w_id, c_d_id, c_id, c_first, c_middle, c_last,
@@ -303,10 +303,10 @@ seed {
         1, MOD(ABS(FARM_FINGERPRINT(GENERATE_UUID())), 200) + 300
       )
     FROM gen g` (
-      ref_each('SELECT w_id FROM warehouse'),
-      batch(customers / batch_size),
-      batch_size,
-      customers / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    batch(customers / batch_size),
+    batch_size,
+    customers / districts
   )
 
   populate_history `INSERT INTO history (h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
@@ -321,10 +321,10 @@ seed {
       CAST(10 AS NUMERIC),
       SUBSTR(GENERATE_UUID(), 1, MOD(ABS(FARM_FINGERPRINT(GENERATE_UUID())), 12) + 12)
     FROM UNNEST(GENERATE_ARRAY(1, $3)) AS s` (
-      ref_each('SELECT w_id FROM warehouse'),
-      batch(customers / batch_size),
-      batch_size,
-      customers / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    batch(customers / batch_size),
+    batch_size,
+    customers / districts
   )
 
   populate_oorder `INSERT INTO oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
@@ -342,18 +342,18 @@ seed {
       MOD(ABS(FARM_FINGERPRINT(GENERATE_UUID())), 11) + 5,
       1
     FROM UNNEST(GENERATE_ARRAY(1, $3)) AS s` (
-      ref_each('SELECT w_id FROM warehouse'),
-      batch(orders / batch_size),
-      batch_size,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    batch(orders / batch_size),
+    batch_size,
+    orders / districts
   )
 
   populate_new_order `INSERT INTO new_order (no_w_id, no_d_id, no_o_id)
     SELECT $1, $2 + 1, s
     FROM UNNEST(GENERATE_ARRAY(2101, $3)) AS s` (
-      ref_each('SELECT w_id FROM warehouse'),
-      batch(districts),
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    batch(districts),
+    orders / districts
   )
 
   populate_order_line `INSERT INTO order_line (ol_w_id, ol_d_id, ol_o_id, ol_number,
@@ -377,10 +377,10 @@ seed {
       AND o.o_d_id = DIV($2, $3) + 1
       AND o.o_id > MOD($2, $3) * $4
       AND o.o_id <= (MOD($2, $3) + 1) * $4` (
-      ref_each('SELECT w_id FROM warehouse'),
-      batch(districts),
-      1,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    batch(districts),
+    1,
+    orders / districts
   )
 
   populate_stock `INSERT INTO stock (s_w_id, s_i_id, s_quantity,
@@ -408,9 +408,9 @@ seed {
           MOD(ABS(FARM_FINGERPRINT(GENERATE_UUID())), 24) + 26)
       END
     FROM UNNEST(GENERATE_ARRAY(1, $3)) AS s` (
-      ref_each('SELECT w_id FROM warehouse'),
-      batch(stock / batch_size),
-      batch_size
+    ref_each('SELECT w_id FROM warehouse'),
+    batch(stock / batch_size),
+    batch_size
   )
 }
 
@@ -496,10 +496,10 @@ run {
           AND o_d_id = CAST(@p2 AS INT64)), 0) + 1,
       CAST(@p3 AS INT64), CURRENT_TIMESTAMP(),
       CAST(@p4 AS INT64), 1` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts),
-      gen('number:5,15')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts),
+    gen('number:5,15')
   )
 
   payment(type: exec, wait: 3s) `UPDATE customer SET
@@ -509,10 +509,10 @@ run {
     WHERE c_w_id = CAST(@p2 AS INT64)
       AND c_d_id = CAST(@p3 AS INT64)
       AND c_id = CAST(@p4 AS INT64)` (
-      gen('number:100,500000'),
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    gen('number:100,500000'),
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   order_status(type: query, wait: 2s) `SELECT o.o_id, o.o_entry_d, o.o_carrier_id,
@@ -531,9 +531,9 @@ run {
           AND o2.o_d_id = CAST(@p2 AS INT64)
           AND o2.o_c_id = CAST(@p3 AS INT64)
       )` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   delivery(type: exec, wait: 2s) `DELETE FROM new_order
@@ -544,8 +544,8 @@ run {
         WHERE no_w_id = CAST(@p1 AS INT64)
           AND no_d_id = CAST(@p2 AS INT64)
       )` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10')
   )
 
   stock_level(type: query, wait: 2s) `SELECT COUNT(DISTINCT s.s_i_id) AS low_stock
@@ -557,9 +557,9 @@ run {
       ON s.s_i_id = ol.ol_i_id AND s.s_w_id = d.d_w_id
     WHERE d.d_w_id = CAST(@p1 AS INT64) AND d.d_id = CAST(@p2 AS INT64)
       AND s.s_quantity < CAST(@p3 AS INT64)` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:10,20')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
   )
 
   q1_pricing_summary(type: query) `SELECT

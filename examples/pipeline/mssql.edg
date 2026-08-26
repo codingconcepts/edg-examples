@@ -35,16 +35,16 @@ seed {
     SELECT TOP $2 a.id, ABS(CHECKSUM(NEWID()) % 100)
     FROM a
     ORDER BY NEWID()` (
-      batch(b_rows / batch_size),
-      batch_size
+    batch(b_rows / batch_size),
+    batch_size
   )
 
   populate_c `INSERT INTO c (b_id)
     SELECT TOP $2 b.id
     FROM b
     ORDER BY NEWID()` (
-      batch(c_rows / batch_size),
-      batch_size
+    batch(c_rows / batch_size),
+    batch_size
   )
 }
 

@@ -171,9 +171,9 @@ run {
     FROM new_post p
     CROSS JOIN unnest(string_to_array($3, ',')) AS t
     ON CONFLICT DO NOTHING` (
-      ref('fetch_users').id,
-      gen('sentence:10'),
-      ref_n('fetch_tags', 'id', 1, 5)
+    ref('fetch_users').id,
+    gen('sentence:10'),
+    ref_n('fetch_tags', 'id', 1, 5)
   )
 
   like_post(type: exec) `WITH
@@ -186,23 +186,23 @@ run {
     UPDATE post SET like_count = like_count + 1
     FROM new_like
     WHERE post.id = new_like.post_id` (
-      ref('fetch_posts').id,
-      ref('fetch_users').id
+    ref('fetch_posts').id,
+    ref('fetch_users').id
   )
 
   add_comment(type: exec) `INSERT INTO comment (post_id, author_id, body)
     VALUES ($2::UUID, $1::UUID, $4 || ': ' || $3::STRING)` (
-      ref_same('fetch_users').id,
-      ref('fetch_posts').id,
-      gen('sentence:8'),
-      ref_same('fetch_users').display_name
+    ref_same('fetch_users').id,
+    ref('fetch_posts').id,
+    gen('sentence:8'),
+    ref_same('fetch_users').display_name
   )
 
   follow_user(type: exec) `INSERT INTO follow (follower_id, following_id)
     VALUES ($1::UUID, $2::UUID)
     ON CONFLICT DO NOTHING` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 
   trending(type: query) `SELECT p.id, p.body, p.like_count, u.username
@@ -218,7 +218,7 @@ run {
     WHERE f1.follower_id = $1::UUID
       AND f2.follower_id = $2::UUID
     LIMIT 20` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 }

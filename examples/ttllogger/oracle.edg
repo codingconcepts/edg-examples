@@ -1,0 +1,78 @@
+let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_events(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE events (
+          id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
+          "LEVEL" VARCHAR2(10) NOT NULL,
+          source VARCHAR2(50) NOT NULL,
+          message VARCHAR2(4000) NOT NULL,
+          created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_idx_events_level_created(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX idx_events_level_created ON events ("LEVEL", created_at DESC)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_idx_events_created(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX idx_events_created ON events (created_at DESC)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+deseed {
+  truncate_events(type: exec) `TRUNCATE TABLE events`
+}
+
+down {
+  drop_events(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE events PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+}
+
+weights {
+  delete_expired = 14
+  read_by_level  = 13
+  read_recent    = 13
+  write_log      = 60
+}
+
+run {
+  write_log(type: exec) `INSERT INTO events ("LEVEL", source, message)
+    VALUES (:1, :2, :3)` (
+    uniform.set(['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],[10, 50, 25, 12, 3]),
+    uniform.set(['api', 'worker', 'scheduler', 'auth', 'billing'],[]),
+    regex('[a-zA-Z0-9 ]{64,256}')
+  )
+
+  read_recent(type: query) `SELECT id, "LEVEL", source, message, created_at
+    FROM events
+    ORDER BY created_at DESC
+    FETCH FIRST 20 ROWS ONLY`
+
+  read_by_level(type: query) `SELECT id, source, message, created_at
+    FROM events
+    WHERE "LEVEL" = :1
+      AND created_at > SYSTIMESTAMP - INTERVAL '5' MINUTE
+    ORDER BY created_at DESC
+    FETCH FIRST 20 ROWS ONLY` (uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]))
+
+  delete_expired(type: exec) `DELETE FROM events
+    WHERE created_at < SYSTIMESTAMP - INTERVAL '10' MINUTE
+      AND ROWNUM <= 1000`
+}

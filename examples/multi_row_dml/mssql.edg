@@ -23,17 +23,17 @@ up {
 seed {
   insert_products(type: exec_batch, count: products, size: 10) `INSERT INTO product (name, price)
     __values__` (
-      gen('productname'),
-      uniform.float(1.00, 100.00, 2)
+    gen('productname'),
+    uniform.float(1.00, 100.00, 2)
   )
 
   fetch_products(type: query) `SELECT id, name FROM product`
 
   insert_reviews(type: exec_batch, count: reviews, size: 10) `INSERT INTO review (product_id, rating, body)
     __values__` (
-      ref('fetch_products').id,
-      norm.int(4, 1, 1, 5),
-      gen('loremipsumsentence:5')
+    ref('fetch_products').id,
+    norm.int(4, 1, 1, 5),
+    gen('loremipsumsentence:5')
   )
 
   upsert_products(type: exec_batch, count: products, size: 10) `MERGE INTO product AS target
@@ -43,8 +43,8 @@ seed {
     ON target.name = source.name
     WHEN MATCHED THEN UPDATE SET price = source.price
     WHEN NOT MATCHED THEN INSERT (name, price) VALUES (source.name, source.price);` (
-      gen('productname'),
-      uniform.float(50.00, 200.00, 2)
+    gen('productname'),
+    uniform.float(50.00, 200.00, 2)
   )
 }
 

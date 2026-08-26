@@ -18,18 +18,20 @@ seed {
   seed_uniform `INSERT INTO distributions (dist_type, value)
     SELECT 'uniform', (random() * 100)::FLOAT8
     FROM generate_series(1, $2::INT)` (
-      batch(rows / batch_size),
-      batch_size
+    batch(rows / batch_size),
+    batch_size
   )
 }
 
 deseed {
   truncate_distributions(type: exec) `TRUNCATE TABLE distributions`
+
   truncate_orders(type: exec) `TRUNCATE TABLE orders`
 }
 
 down {
   drop_distributions(type: exec) `DROP TABLE IF EXISTS distributions`
+
   drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
 }
 
@@ -105,15 +107,6 @@ run {
     FROM unnest(string_to_array($1, ',')) AS v` (zipf.n(1.1, 1.0, 99, 3, 5))
 
   insert_order(type: exec) `INSERT INTO orders (status) VALUES ($1)` (
-    markov('order_status',
-      ['pending', 'processing', 'shipped', 'delivered', 'returned'],
-      [
-        0.0, 1.0, 0.0, 0.0, 0.0,
-        0.0, 0.3, 0.7, 0.0, 0.0,
-        0.0, 0.0, 0.2, 0.8, 0.0,
-        0.0, 0.0, 0.0, 0.9, 0.1,
-        0.0, 0.0, 0.0, 0.0, 1.0
-      ]
-    )
+    markov('order_status',['pending', 'processing', 'shipped', 'delivered', 'returned'],[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.7, 0.0, 0.0, 0.0, 0.0, 0.2, 0.8, 0.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 1.0])
   )
 }

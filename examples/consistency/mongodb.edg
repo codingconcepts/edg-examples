@@ -27,8 +27,8 @@ up {
 
 seed {
   populate_accounts(type: exec_batch, count: accounts, size: accounts) `{"insert": "account", "documents": [{"_id": $1, "balance": $2, "version": 0}]}` (
-      iter(),
-      initial_balance
+    iter(),
+    initial_balance
   )
 
   populate_counters(type: exec_batch, count: 2, size: 2) `{"insert": "counter", "documents": [{"_id": $1, "value": 0}]}` (iter())
@@ -83,9 +83,9 @@ run {
   count_ledger(type: query) `{"aggregate": "ledger", "pipeline": [{"$match": {"account_id": $1}}, {"$group": {"_id": null, "entries": {"$sum": 1}, "total": {"$sum": "$amount"}}}], "cursor": {}}` (gen('number:1,' + string(accounts)))
 
   insert_ledger(type: exec) `{"insert": "ledger", "documents": [{"_id": {"$oid": "$1"}, "account_id": $2, "amount": $3}]}` (
-      objectid(),
-      gen('number:1,' + string(accounts)),
-      gen('number:1,500')
+    objectid(),
+    gen('number:1,' + string(accounts)),
+    gen('number:1,500')
   )
 
   increment_counter(type: exec) `{"update": "counter", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"value": 1}}}]}` (gen('number:1,2'))
@@ -96,18 +96,18 @@ run {
     let to_id = gen('number:1,' + string(accounts))
     rollback_if local('from_id') == local('to_id')
     debit_from(type: exec) `{"update": "account", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"balance": -$2}}}]}` (
-        local('from_id'),
-        local('amount')
+      local('from_id'),
+      local('amount')
     )
     credit_to(type: exec) `{"update": "account", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"balance": $2}}}]}` (
-        local('to_id'),
-        local('amount')
+      local('to_id'),
+      local('amount')
     )
   }
 
   blind_write(type: exec) `{"update": "blind_write", "updates": [{"q": {"_id": $1}, "u": {"$set": {"value": $2}}}]}` (
-      gen('number:1,' + string(accounts)),
-      gen('number:100,900')
+    gen('number:1,' + string(accounts)),
+    gen('number:100,900')
   )
 
   transaction cas_update {
@@ -115,9 +115,9 @@ run {
     let overwrite_id = gen('number:1,' + string(accounts))
     read_version(type: query) `{"find": "cas", "filter": {"_id": $1}, "projection": {"version": 1}}` (local('overwrite_id'))
     update_if_match(type: exec) `{"update": "cas", "updates": [{"q": {"_id": $1, "version": $2}, "u": {"$inc": {"value": $3, "version": 1}}}]}` (
-        local('overwrite_id'),
-        ref_same('read_version').version,
-        local('amount')
+      local('overwrite_id'),
+      ref_same('read_version').version,
+      local('amount')
     )
   }
 

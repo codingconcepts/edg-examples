@@ -62,17 +62,17 @@ run {
     VALUES ($1, $2::DECIMAL, $3::DECIMAL, $4::DECIMAL, $5::DECIMAL,
       $6::DECIMAL, $7::DECIMAL, $8::DECIMAL, $9::DECIMAL, $10,
       $11::DECIMAL, $12::DECIMAL)` (
-      count('fetch_products'),
-      sum('fetch_products', 'price'),
-      avg('fetch_products', 'price'),
-      min('fetch_products', 'price'),
-      max('fetch_products', 'price'),
-      median('fetch_products', 'price'),
-      percentile('fetch_products', 'price', 95),
-      stddev('fetch_products', 'price'),
-      variance('fetch_products', 'price'),
-      distinct('fetch_products', 'category'),
-      median(list_prices),
-      percentile(list_prices, 95)
+    count('fetch_products'),
+    sum('fetch_products', 'price'),
+    avg('fetch_products', 'price'),
+    min('fetch_products', 'price'),
+    max('fetch_products', 'price'),
+    median('fetch_products', 'price'),
+    percentile('fetch_products', 'price', 95),
+    stddev('fetch_products', 'price'),
+    variance('fetch_products', 'price'),
+    distinct('fetch_products', 'category'),
+    median(list_prices),
+    percentile(list_prices, 95)
   )
 }

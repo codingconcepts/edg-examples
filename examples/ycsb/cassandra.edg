@@ -1,0 +1,94 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let zipf_s     = float(coalesce(env_nil('ZIPF_S'), 1.2))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_usertable(type: exec) `CREATE TABLE IF NOT EXISTS edg.usertable (
+      ycsb_key TEXT PRIMARY KEY,
+      field0 TEXT,
+      field1 TEXT,
+      field2 TEXT,
+      field3 TEXT,
+      field4 TEXT,
+      field5 TEXT,
+      field6 TEXT,
+      field7 TEXT,
+      field8 TEXT,
+      field9 TEXT
+    )`
+}
+
+seed {
+  populate_usertable(type: exec_batch, count: records, size: 5) `INSERT INTO edg.usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)` (
+    template('%d', seq(1, 1)),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}
+
+deseed {
+  truncate_usertable(type: exec) `TRUNCATE edg.usertable`
+}
+
+down {
+  drop_usertable(type: exec) `DROP TABLE IF EXISTS edg.usertable`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+weights {
+  read   = 50
+  update = 50
+}
+
+run {
+  read(type: query) `SELECT * FROM edg.usertable WHERE ycsb_key = $1` (template('user%010d', zipf.int(zipf_s, 1, records - 1)))
+
+  update(type: exec) `UPDATE edg.usertable SET field0 = $2 WHERE ycsb_key = $1` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  insert(type: exec) `INSERT INTO edg.usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)` (
+    uuid_v7(),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  scan(type: query) `SELECT * FROM edg.usertable WHERE ycsb_key = $1 LIMIT $2` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    gen('number:1,100')
+  )
+
+  read_modify_write(type: exec) `UPDATE edg.usertable SET field0 = $2 WHERE ycsb_key = $1` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}

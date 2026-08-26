@@ -16,7 +16,7 @@ seed {
       gen('email'),
       int(uniform.int(1, 10000)),
       blob(value_size)
-  )
+    )
 
   # A set of every customer id, so reads can pick one without a SCAN.
   index_customer(type: exec_batch, count: customers, size: batch_size)
@@ -43,8 +43,8 @@ run {
   # $1 appears twice: placeholders are inlined into the command text, so
   # repeating one is fine.
   credit_balance(type: exec) `HINCRBY customer:$1 balance $2` (
-      int(uniform.int(1, customers)),
-      int(uniform.int(1, 100))
+    int(uniform.int(1, customers)),
+    int(uniform.int(1, 100))
   )
 
   random_member(type: query) `SRANDMEMBER customer:ids 5`

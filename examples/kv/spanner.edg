@@ -1,0 +1,48 @@
+let keys       = int(coalesce(env_nil('KEYS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_kv `CREATE TABLE IF NOT EXISTS kv (
+      k INT64 NOT NULL,
+      v BYTES(MAX) NOT NULL
+    ) PRIMARY KEY (k)`
+}
+
+seed {
+  populate_kv `INSERT INTO kv (k, v)
+    SELECT
+      $1 * $2 + s,
+      REPEAT(CAST(GENERATE_UUID() AS BYTES), CAST(CEIL($3 / 36) AS INT64))
+    FROM UNNEST(GENERATE_ARRAY(1, $2)) AS s` (
+    batch(keys / batch_size),
+    batch_size,
+    value_size
+  )
+}
+
+deseed {
+  delete_kv(type: exec) `DELETE FROM kv WHERE TRUE`
+}
+
+down {
+  drop_kv(type: exec) `DROP TABLE IF EXISTS kv`
+}
+
+weights {
+  read  = 50
+  write = 50
+}
+
+run {
+  read(type: query) `SELECT k, v FROM kv WHERE k = @p1` (gen('number:1,' + string(keys)))
+
+  write(type: exec) `INSERT OR UPDATE INTO kv (k, v) VALUES (CAST(@p1 AS INT64), @p2)` (
+    gen('number:1,' + string(keys)),
+    blob(value_size)
+  )
+}

@@ -29,9 +29,9 @@ seed {
     FROM customer c
     ORDER BY c.id
     LIMIT $3 OFFSET $1` (
-      batch(customers / batch_size, batch_size),
-      initial_balance,
-      batch_size
+    batch(customers / batch_size, batch_size),
+    initial_balance,
+    batch_size
   )
 }
 
@@ -50,8 +50,8 @@ run {
 
   credit_account(type: exec) `UPDATE account SET balance = balance + ?
     WHERE id = ?` (
-      gen('number:1,1000'),
-      ref('fetch_accounts').id
+    gen('number:1,1000'),
+    ref('fetch_accounts').id
   )
 
   make_transfer(type: exec) `UPDATE account a
@@ -61,8 +61,8 @@ run {
                       WHEN a.id = p.from_id THEN a.balance - p.amount
                     END
     WHERE a.id = p.from_id OR a.id = p.to_id` (
-      ref_diff('fetch_accounts').id,
-      ref_diff('fetch_accounts').id,
-      gen('number:1,100')
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
   )
 }

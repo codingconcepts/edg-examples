@@ -4,10 +4,10 @@ let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 expect {
   error_rate < 25
   lost_update `SELECT COALESCE(SUM(value), 0)::INT8 AS counter_total FROM counter` counter_total >= increment_counter.success_count
-  phantom_row `SELECT COUNT(*) AS n FROM account` n = = accounts
-  dirty_write `SELECT COALESCE(SUM(balance), 0)::INT8 AS total FROM account` total = = accounts * initial_balance
+  phantom_row `SELECT COUNT(*) AS n FROM account` n == accounts
+  dirty_write `SELECT COALESCE(SUM(balance), 0)::INT8 AS total FROM account` total == accounts * initial_balance
   write_skew `SELECT COALESCE(SUM(version), 0)::INT8 AS total_versions FROM cas` total_versions <= cas_update.success_count
-  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n = = accounts
+  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n == accounts
   read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = true` on_duty >= 1
 }
 
@@ -52,8 +52,8 @@ seed {
     SELECT s, $2::INT8
     FROM generate_series(1, $1::INT) AS s
     ON CONFLICT (id) DO NOTHING` (
-      accounts,
-      initial_balance
+    accounts,
+    initial_balance
   )
 
   populate_counters `INSERT INTO counter (id, value)
@@ -121,8 +121,8 @@ run {
 
   insert_ledger(type: exec) `INSERT INTO ledger (account_id, amount)
     VALUES ($1::INT8, $2::INT8)` (
-      gen('number:1,' + string(accounts)),
-      gen('number:1,500')
+    gen('number:1,' + string(accounts)),
+    gen('number:1,500')
   )
 
   increment_counter(type: exec) `UPDATE counter SET value = value + 1 WHERE id = $1::INT8` (gen('number:1,2'))
@@ -134,22 +134,22 @@ run {
                   END
     WHERE id IN ($1::INT8, $2::INT8)
       AND $1::INT8 != $2::INT8` (
-      gen('number:1,' + string(accounts)),
-      gen('number:1,' + string(accounts)),
-      gen('number:1,100')
+    gen('number:1,' + string(accounts)),
+    gen('number:1,' + string(accounts)),
+    gen('number:1,100')
   )
 
   blind_write(type: exec) `UPDATE blind_write SET value = $2::INT8 WHERE id = $1::INT8` (
-      gen('number:1,' + string(accounts)),
-      gen('number:100,900')
+    gen('number:1,' + string(accounts)),
+    gen('number:100,900')
   )
 
   cas_update(type: exec) `UPDATE cas
     SET value = value + $2::INT8, version = version + 1
     WHERE id = $1::INT8
       AND version = (SELECT version FROM cas WHERE id = $1::INT8)` (
-      gen('number:1,' + string(accounts)),
-      gen('number:1,100')
+    gen('number:1,' + string(accounts)),
+    gen('number:1,100')
   )
 
   check_total_balance(type: query) `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts

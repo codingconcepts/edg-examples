@@ -84,71 +84,71 @@ seed {
       byte2_6, byte2_7, byte2_8, byte2_9, byte2_10,
       msc_location, vlr_location)
     __values__` (
-      seq(1, 1),
-      template('%015d', arg(0)),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,1'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,15'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      gen('number:0,65535'),
-      gen('number:0,65535')
+    seq(1, 1),
+    template('%015d', arg(0)),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,1'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,15'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    gen('number:0,65535'),
+    gen('number:0,65535')
   )
 
   populate_access_info(type: exec_batch, count: subscribers, size: batch_size) `INSERT IGNORE INTO access_info (s_id, ai_type, data1, data2, data3, data4)
     __values__` (
-      seq(1, 1),
-      gen('number:1,4'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      regex('[a-z]{3}'),
-      regex('[a-z]{5}')
+    seq(1, 1),
+    gen('number:1,4'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    regex('[a-z]{3}'),
+    regex('[a-z]{5}')
   )
 
   populate_special_facility(type: exec_batch, count: subscribers, size: batch_size) `INSERT IGNORE INTO special_facility (s_id, sf_type, is_active,
       error_cntrl, data_a, data_b)
     __values__` (
-      seq(1, 1),
-      gen('number:1,4'),
-      gen('number:0,1'),
-      gen('number:0,255'),
-      gen('number:0,255'),
-      regex('[a-z]{5}')
+    seq(1, 1),
+    gen('number:1,4'),
+    gen('number:0,1'),
+    gen('number:0,255'),
+    gen('number:0,255'),
+    regex('[a-z]{5}')
   )
 
   populate_call_forwarding(type: exec_batch, count: subscribers, size: batch_size) `INSERT IGNORE INTO call_forwarding (s_id, sf_type, start_time,
       end_time, numberx)
     __values__` (
-      seq(1, 1),
-      gen('number:1,4'),
-      gen('number:0,2') * 8,
-      gen('number:0,2') * 8 + gen('number:1,8'),
-      template('%015d', gen('number:1,999999999'))
+    seq(1, 1),
+    gen('number:1,4'),
+    gen('number:0,2') * 8,
+    gen('number:0,2') * 8 + gen('number:1,8'),
+    template('%015d', gen('number:1,999999999'))
   )
 }
 
@@ -187,7 +187,7 @@ weights {
 }
 
 run {
-  get_subscriber_data(type: query) `SELECT * FROM subscriber WHERE s_id = ?` (ref('fetch_subscribers').s_id)
+  get_subscriber_data(type: query) `SELECT * FROM subscriber WHERE s_id = ?` (uniform.ref('fetch_subscribers').s_id)
 
   get_new_destination(type: query) `SELECT cf.numberx
     FROM special_facility sf
@@ -196,29 +196,29 @@ run {
     WHERE sf.s_id = ? AND sf.sf_type = ?
       AND sf.is_active = 1
       AND cf.start_time <= ? AND cf.end_time > ?` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4'),
-      gen('number:0,23'),
-      gen('number:1,24')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4'),
+    gen('number:0,23'),
+    gen('number:1,24')
   )
 
   get_access_data(type: query) `SELECT data1, data2, data3, data4
     FROM access_info
     WHERE s_id = ? AND ai_type = ?` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4')
   )
 
   update_subscriber_data(type: exec) `UPDATE subscriber SET bit_1 = ?
     WHERE s_id = ?` (
-      gen('number:0,1'),
-      ref('fetch_subscribers').s_id
+    gen('number:0,1'),
+    uniform.ref('fetch_subscribers').s_id
   )
 
   update_location(type: exec) `UPDATE subscriber SET vlr_location = ?
     WHERE sub_nbr = ?` (
-      gen('number:0,65535'),
-      ref('fetch_subscribers').sub_nbr
+    gen('number:0,65535'),
+    uniform.ref('fetch_subscribers').sub_nbr
   )
 
   insert_call_forwarding(type: exec) `INSERT IGNORE INTO call_forwarding (s_id, sf_type, start_time,
@@ -227,20 +227,20 @@ run {
     FROM special_facility
     WHERE s_id = ? AND sf_type = ?
     LIMIT 1` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4'),
-      gen('number:0,23'),
-      gen('number:1,24'),
-      template('%015d', gen('number:1,999999999')),
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4'),
+    gen('number:0,23'),
+    gen('number:1,24'),
+    template('%015d', gen('number:1,999999999')),
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4')
   )
 
   delete_call_forwarding(type: exec) `DELETE FROM call_forwarding
     WHERE s_id = ? AND sf_type = ?
       AND start_time = ?` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4'),
-      gen('number:0,23')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4'),
+    gen('number:0,23')
   )
 }

@@ -18,9 +18,9 @@ init {
 run {
   insert_blob(type: exec) `INSERT INTO blob_test (id, label, data_blob)
     VALUES ($1, $2, $3)` (
-      uuid_v4(),
-      gen('word'),
-      blob(256)
+    uuid_v4(),
+    gen('word'),
+    blob(256)
   )
 
   read_blob(type: query) `SELECT id, label, LENGTH(data_blob) AS blob_len

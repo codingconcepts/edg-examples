@@ -1,0 +1,46 @@
+let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_events(type: exec) `{"create": "events"}`
+
+  create_ttl_index(type: exec) `{"createIndexes": "events", "indexes": [{"key": {"created_at": 1}, "name": "ttl_idx", "expireAfterSeconds": 600}]}`
+
+  create_level_index(type: exec) `{"createIndexes": "events", "indexes": [{"key": {"level": 1, "created_at": -1}, "name": "idx_events_level_created"}]}`
+
+  create_created_index(type: exec) `{"createIndexes": "events", "indexes": [{"key": {"created_at": -1}, "name": "idx_events_created"}]}`
+}
+
+deseed {
+  delete_events(type: exec) `{"delete": "events", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_events(type: exec) `{"drop": "events"}`
+}
+
+weights {
+  read_by_level = 15
+  read_recent   = 15
+  write_log     = 70
+}
+
+run {
+  write_log(type: exec) `{"insert": "events", "documents": [{"_id": {"$oid": "$1"}, "level": "$2", "source": "$3", "message": "$4", "created_at": {"$date": "$5"}}]}` (
+    objectid(),
+    uniform.set(['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],[10, 50, 25, 12, 3]),
+    uniform.set(['api', 'worker', 'scheduler', 'auth', 'billing'],[]),
+    regex('[a-zA-Z0-9 ]{64,256}'),
+    date_offset('0s')
+  )
+
+  read_recent(type: query) `{"find": "events", "filter": {}, "sort": {"created_at": -1}, "limit": 20}`
+
+  read_by_level(type: query) `{"find": "events", "filter": {"level": "$1", "created_at": {"$gte": {"$date": "$2"}}}, "sort": {"created_at": -1}, "limit": 20}` (
+    uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]),
+    date_offset('-5m')
+  )
+}

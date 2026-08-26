@@ -21,7 +21,6 @@ up {
 # ---------------------------------------------------------------------
 # One term at a time
 # ---------------------------------------------------------------------
-
 # Quiet weekends. Index 0 is Sunday.
 season weekly(from: '2024-01-01T00:00:00Z', to: '2024-04-01T00:00:00Z') {
   weekdays = [0.3, 1, 1, 1, 1, 1, 0.3]
@@ -55,7 +54,6 @@ season launch(from: '2024-01-01T00:00:00Z', to: '2024-07-01T00:00:00Z') {
 # ---------------------------------------------------------------------
 # Composing terms - every term is a multiplier
 # ---------------------------------------------------------------------
-
 # A nightly batch window that also thins out at the weekend.
 season etl(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z', bucket: '1h') {
   hours    = [3, 4, 2, 0.5, 0.2, 0.2, 0.2, 0.3, 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.5, 0.4, 0.4, 0.5, 0.8, 1.5, 2.5]
@@ -76,7 +74,7 @@ season saas(from: '2023-06-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket: '1
 season shutdown(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
   weekdays = [0.3, 1, 1, 1, 1, 1, 0.3]
 
-  spikes = [
+  spikes   = [
     { at: '2024-08-10T00:00:00Z', width: '336h', mag: 0.2 },
     { at: '2024-12-25T00:00:00Z', width: '240h', mag: 0.1 }
   ]
@@ -91,13 +89,12 @@ season billing(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
 # ---------------------------------------------------------------------
 # Interactions and multi-level shifts
 # ---------------------------------------------------------------------
-
 # Array terms are separable, so a daily curve whose shape changes with the
 # month has to be an interaction in weight. The inner sin walks the peak
 # hour between 13:00 and 21:00 over the year; the outer cos is the daily
 # curve around whatever peak that day has.
 season summer_evenings(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket: '1h') {
-  weight = 1 + 0.9 * cos(2 * pi * (hour - (17 + 4 * sin(2 * pi * (yearday - 105) / 365))) / 24)
+  weight = 1 + 0.9 * cos(2 * pi *(hour -(17 + 4 * sin(2 * pi *(yearday - 105) / 365))) / 24)
 }
 
 # The same expression without an explicit bucket, kept here to show the
@@ -105,7 +102,7 @@ season summer_evenings(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z',
 # bucket than the 24h default, the expression is only sampled at midnight
 # where hour is always 0, and the daily shape aliases into a yearly one.
 season summer_evenings_coarse(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
-  weight = 1 + 0.9 * cos(2 * pi * (hour - (17 + 4 * sin(2 * pi * (yearday - 105) / 365))) / 24)
+  weight = 1 + 0.9 * cos(2 * pi *(hour -(17 + 4 * sin(2 * pi *(yearday - 105) / 365))) / 24)
 }
 
 # Five levels of calendar structure plus a step change in traffic. The
@@ -118,12 +115,12 @@ season platform(from: '2023-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket
   hours    = [0.3, 0.2, 0.2, 0.2, 0.3, 0.4, 0.6, 1, 1.4, 1.6, 1.6, 1.4, 1.2, 1.4, 1.6, 1.6, 1.4, 1.1, 0.8, 0.6, 0.5, 0.5, 0.4, 0.3]
   recency  = { half_life: '8760h' }
 
-  spikes = [
+  spikes   = [
     { at: '2024-05-14T00:00:00Z', width: '72h', mag: 8 },
     { at: '2024-09-03T12:00:00Z', width: '6h', mag: 0.05 }
   ]
 
-  weight = (year > 2024 || (year == 2024 && month >= 3) ? 2 : 1) * (day >= 28 ? 1.8 : 1)
+  weight   = (year > 2024 ||(year == 2024 && month >= 3) ? 2 : 1) *(day >= 28 ? 1.8 : 1)
 }
 
 # Follow the sun: one season per region, chosen per row.
@@ -240,7 +237,7 @@ seed {
   # decides only when its own rows land.
   populate_regional(type: exec_batch, count: rows, size: batch_size)
     `INSERT INTO regional_events (region, ts) __values__` (
-      region: set(['eu', 'us', 'apac'], [50, 35, 15]),
+      region: set(['eu', 'us', 'apac'],[50, 35, 15]),
       ts: arg('region') == 'eu' ? season('eu') : arg('region') == 'us' ? season('us') : season('apac')
     )
 }

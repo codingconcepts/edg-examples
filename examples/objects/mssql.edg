@@ -41,25 +41,25 @@ run {
 
   insert_order_field(type: exec, object: order) `INSERT INTO orders (email, product, quantity, ordered_at)
     VALUES (@p1, @p2, @p3, @p4)` (
-      field('email'),
-      field('product'),
-      field('quantity'),
-      field('ordered_at')
+    field('email'),
+    field('product'),
+    field('quantity'),
+    field('ordered_at')
   )
 
   insert_order_obj(type: exec) `INSERT INTO orders (email, product, quantity, ordered_at)
     VALUES (@p1, @p2, @p3, @p4)` (
-      obj('order', 'email'),
-      obj('order', 'product'),
-      obj('order', 'quantity'),
-      obj('order', 'ordered_at')
+    obj('order', 'email'),
+    obj('order', 'product'),
+    obj('order', 'quantity'),
+    obj('order', 'ordered_at')
   )
 
   insert_order_dot(type: exec) `INSERT INTO orders (email, product, quantity, ordered_at)
     VALUES (@p1, @p2, @p3, @p4)` (
-      obj('order').email,
-      obj('order').product,
-      obj('order').quantity,
-      obj('order').ordered_at
+    obj('order').email,
+    obj('order').product,
+    obj('order').quantity,
+    obj('order').ordered_at
   )
 }

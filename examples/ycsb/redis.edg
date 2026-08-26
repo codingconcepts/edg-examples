@@ -1,0 +1,75 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let zipf_s     = float(coalesce(env_nil('ZIPF_S'), 1.2))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  # Redis has no schema to create; PING keeps the lifecycle uniform.
+  create_usertable(type: exec) `PING`
+}
+
+seed {
+  populate_usertable(type: exec_batch, count: records, size: batch_size) `HSET usertable:$1 field0 $2 field1 $3 field2 $4 field3 $5 field4 $6 field5 $7 field6 $8 field7 $9 field8 $10 field9 $11` (
+    template('user%010d', seq(1, 1)),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}
+
+deseed {
+  # SCAN + UNLINK rather than KEYS, which would block the server for the
+  # whole sweep on a large keyspace.
+  delete_usertable(type: exec) `EVAL "local c=0 repeat local r=redis.call('SCAN',c,'MATCH',ARGV[1],'COUNT',1000) c=tonumber(r[1]) for _,k in ipairs(r[2]) do redis.call('UNLINK',k) end until c==0 return 1" 0 usertable:*`
+}
+
+down {
+  drop_usertable(type: exec) `EVAL "local c=0 repeat local r=redis.call('SCAN',c,'MATCH',ARGV[1],'COUNT',1000) c=tonumber(r[1]) for _,k in ipairs(r[2]) do redis.call('UNLINK',k) end until c==0 return 1" 0 usertable:*`
+}
+
+weights {
+  read   = 50
+  update = 50
+}
+
+run {
+  read(type: query) `HGETALL usertable:$1` (template('user%010d', zipf.int(zipf_s, 1, records - 1)))
+
+  update(type: exec) `HSET usertable:$1 field0 $2` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  insert(type: exec) `HSET usertable:$1 field0 $2 field1 $3 field2 $4 field3 $5 field4 $6 field5 $7 field6 $8 field7 $9 field8 $10 field9 $11` (
+    uuid_v7(),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  # Redis keys are unordered, so this samples the keyspace rather than
+  # reading a contiguous key range like the SQL variants do.
+  scan(type: query) `SCAN 0 MATCH usertable:* COUNT $1` (gen('number:1,100'))
+
+  read_modify_write(type: query) `EVAL "local v=redis.call('HGET',KEYS[1],'field0') redis.call('HSET',KEYS[1],'field0',ARGV[1]) return v" 1 usertable:$1 $2` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}

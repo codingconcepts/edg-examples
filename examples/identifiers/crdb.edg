@@ -30,21 +30,21 @@ seed {
   populate_event(type: exec_batch, count: events, size: batch_size) `INSERT INTO event (id, email, dedup_key, shard_key, payload)
     __values__
     ON CONFLICT (dedup_key) DO NOTHING` (
-      id: ulid(),
-      email: gen('email'),
-      dedup_key: hash(email, 'sha256'),
-      shard_key: hash(email, 'crc32'),
-      payload: gen('sentence:6')
+    id: ulid(),
+    email: gen('email'),
+    dedup_key: hash(email, 'sha256'),
+    shard_key: hash(email, 'crc32'),
+    payload: gen('sentence:6')
   )
 
   populate_digest(type: exec) `INSERT INTO digest (source, md5, sha1, sha256, crc32)
     VALUES ($1, $2, $3, $4, $5)
     ON CONFLICT (source) DO NOTHING` (
-      source: const('user@example.com'),
-      md5: hash(source, 'md5'),
-      sha1: hash(source, 'sha1'),
-      sha256: hash(source, 'sha256'),
-      crc32: hash(source, 'crc32')
+    source: const('user@example.com'),
+    md5: hash(source, 'md5'),
+    sha1: hash(source, 'sha1'),
+    sha256: hash(source, 'sha256'),
+    crc32: hash(source, 'crc32')
   )
 }
 
@@ -75,21 +75,21 @@ run {
   ingest_new(type: exec) `INSERT INTO event (id, email, dedup_key, shard_key, payload)
     VALUES ($1, $2, $3, $4, $5)
     ON CONFLICT (dedup_key) DO NOTHING` (
-      id: ulid(),
-      email: gen('email'),
-      dedup_key: hash(email, 'sha256'),
-      shard_key: hash(email, 'crc32'),
-      payload: gen('sentence:6')
+    id: ulid(),
+    email: gen('email'),
+    dedup_key: hash(email, 'sha256'),
+    shard_key: hash(email, 'crc32'),
+    payload: gen('sentence:6')
   )
 
   ingest_replay(type: exec) `INSERT INTO event (id, email, dedup_key, shard_key, payload)
     VALUES ($1, $2, $3, $4, $5)
     ON CONFLICT (dedup_key) DO NOTHING` (
-      id: ulid(),
-      email: ref('fetch_emails').email,
-      dedup_key: hash(email, 'sha256'),
-      shard_key: hash(email, 'crc32'),
-      payload: gen('sentence:6')
+    id: ulid(),
+    email: ref('fetch_emails').email,
+    dedup_key: hash(email, 'sha256'),
+    shard_key: hash(email, 'crc32'),
+    payload: gen('sentence:6')
   )
 
   lookup_by_email(type: query) `SELECT id, payload, created_at

@@ -104,8 +104,8 @@ seed {
       floor(random()::FLOAT8 * 65536)::INT,
       floor(random()::FLOAT8 * 65536)::INT
     FROM generate_series(1, $2::INT) AS s` (
-      batch(subscribers / batch_size),
-      batch_size
+    batch(subscribers / batch_size),
+    batch_size
   )
 
   populate_access_info `INSERT INTO access_info (s_id, ai_type, data1, data2, data3, data4)
@@ -179,7 +179,7 @@ weights {
 }
 
 run {
-  get_subscriber_data(type: query) `SELECT * FROM subscriber WHERE s_id = $1::INT` (ref('fetch_subscribers').s_id)
+  get_subscriber_data(type: query) `SELECT * FROM subscriber WHERE s_id = $1::INT` (uniform.ref('fetch_subscribers').s_id)
 
   get_new_destination(type: query) `SELECT cf.numberx
     FROM special_facility sf
@@ -188,29 +188,29 @@ run {
     WHERE sf.s_id = $1::INT AND sf.sf_type = $2::INT
       AND sf.is_active = 1
       AND cf.start_time <= $3::INT AND cf.end_time > $4::INT` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4'),
-      gen('number:0,23'),
-      gen('number:1,24')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4'),
+    gen('number:0,23'),
+    gen('number:1,24')
   )
 
   get_access_data(type: query) `SELECT data1, data2, data3, data4
     FROM access_info
     WHERE s_id = $1::INT AND ai_type = $2::INT` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4')
   )
 
   update_subscriber_data(type: exec) `UPDATE subscriber SET bit_1 = $2::INT
     WHERE s_id = $1::INT` (
-      ref('fetch_subscribers').s_id,
-      gen('number:0,1')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:0,1')
   )
 
   update_location(type: exec) `UPDATE subscriber SET vlr_location = $2::INT
     WHERE sub_nbr = $1` (
-      ref('fetch_subscribers').sub_nbr,
-      gen('number:0,65535')
+    uniform.ref('fetch_subscribers').sub_nbr,
+    gen('number:0,65535')
   )
 
   insert_call_forwarding(type: exec) `INSERT INTO call_forwarding (s_id, sf_type, start_time,
@@ -220,17 +220,17 @@ run {
     FROM special_facility
     WHERE s_id = $1::INT AND sf_type = $2::INT
     ON CONFLICT DO NOTHING` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4'),
-      gen('number:0,23'),
-      gen('number:1,24')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4'),
+    gen('number:0,23'),
+    gen('number:1,24')
   )
 
   delete_call_forwarding(type: exec) `DELETE FROM call_forwarding
     WHERE s_id = $1::INT AND sf_type = $2::INT
       AND start_time = $3::INT` (
-      ref('fetch_subscribers').s_id,
-      gen('number:1,4'),
-      gen('number:0,23')
+    uniform.ref('fetch_subscribers').s_id,
+    gen('number:1,4'),
+    gen('number:0,23')
   )
 }

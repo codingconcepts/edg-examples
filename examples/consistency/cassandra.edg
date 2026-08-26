@@ -52,8 +52,8 @@ up {
 
 seed {
   populate_accounts(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.account (id, balance, version) VALUES ($1, $2, 0)` (
-      iter(),
-      initial_balance
+    iter(),
+    initial_balance
   )
 
   populate_counters(type: exec_batch, count: 2, size: 2) `INSERT INTO edg.counter (id, value) VALUES ($1, 0)` (iter())
@@ -79,8 +79,8 @@ deseed {
   truncate_cas(type: exec) `TRUNCATE edg.cas`
 
   reseed_accounts(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.account (id, balance, version) VALUES ($1, $2, 0)` (
-      iter(),
-      initial_balance
+    iter(),
+    initial_balance
   )
 
   reseed_counters(type: exec_batch, count: 2, size: 2) `INSERT INTO edg.counter (id, value) VALUES ($1, 0)` (iter())
@@ -125,16 +125,16 @@ run {
     WHERE account_id = $1` (gen('number:1,' + string(accounts)))
 
   insert_ledger(type: exec) `INSERT INTO edg.ledger (account_id, id, amount) VALUES ($1, now(), $2)` (
-      gen('number:1,' + string(accounts)),
-      gen('number:1,500')
+    gen('number:1,' + string(accounts)),
+    gen('number:1,500')
   )
 
   transaction increment_counter {
     let counter_id = gen('number:1,2')
     read_counter(type: query) `SELECT id, value FROM edg.counter WHERE id = $1` (local('counter_id'))
     write_counter(type: exec) `UPDATE edg.counter SET value = $2 WHERE id = $1` (
-        local('counter_id'),
-        ref_same('read_counter').value + 1
+      local('counter_id'),
+      ref_same('read_counter').value + 1
     )
   }
 
@@ -146,18 +146,18 @@ run {
     read_from(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (local('from_id'))
     read_to(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (local('to_id'))
     debit_from(type: exec) `UPDATE edg.account SET balance = $2 WHERE id = $1` (
-        local('from_id'),
-        ref_same('read_from').balance - local('amount')
+      local('from_id'),
+      ref_same('read_from').balance - local('amount')
     )
     credit_to(type: exec) `UPDATE edg.account SET balance = $2 WHERE id = $1` (
-        local('to_id'),
-        ref_same('read_to').balance + local('amount')
+      local('to_id'),
+      ref_same('read_to').balance + local('amount')
     )
   }
 
   blind_write(type: exec) `UPDATE edg.blind_write SET value = $2 WHERE id = $1` (
-      gen('number:1,' + string(accounts)),
-      gen('number:100,900')
+    gen('number:1,' + string(accounts)),
+    gen('number:100,900')
   )
 
   transaction cas_update {
@@ -165,10 +165,10 @@ run {
     let overwrite_id = gen('number:1,' + string(accounts))
     read_version(type: query) `SELECT id, value, version FROM edg.cas WHERE id = $1` (local('overwrite_id'))
     update_if_match(type: exec) `UPDATE edg.cas SET value = $2, version = $3 WHERE id = $1 IF version = $4` (
-        local('overwrite_id'),
-        ref_same('read_version').value + local('amount'),
-        ref_same('read_version').version + 1,
-        ref_same('read_version').version
+      local('overwrite_id'),
+      ref_same('read_version').value + local('amount'),
+      ref_same('read_version').version + 1,
+      ref_same('read_version').version
     )
   }
 

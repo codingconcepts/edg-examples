@@ -114,8 +114,8 @@ seed {
       END
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT CAST(id AS NVARCHAR(36)) AS id FROM tenant'),
-      users_per_tenant
+    ref_each('SELECT CAST(id AS NVARCHAR(36)) AS id FROM tenant'),
+    users_per_tenant
   )
 
   populate_project `WITH seq AS (
@@ -129,8 +129,8 @@ seed {
       CONCAT('project-', s, '-', SUBSTRING('$1', 1, 8))
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT CAST(id AS NVARCHAR(36)) AS id FROM tenant'),
-      projects_per_tenant
+    ref_each('SELECT CAST(id AS NVARCHAR(36)) AS id FROM tenant'),
+    projects_per_tenant
   )
 
   populate_task `WITH seq AS (
@@ -147,8 +147,8 @@ seed {
       (SELECT TOP 1 id FROM app_user WHERE tenant_id = '$2' ORDER BY NEWID())
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT CAST(p.id AS NVARCHAR(36)) AS project_id, CAST(p.tenant_id AS NVARCHAR(36)) AS tenant_id FROM project p'),
-      tasks_per_project
+    ref_each('SELECT CAST(p.id AS NVARCHAR(36)) AS project_id, CAST(p.tenant_id AS NVARCHAR(36)) AS tenant_id FROM project p'),
+    tasks_per_project
   )
 }
 
@@ -209,8 +209,8 @@ run {
       AND t.deleted_at IS NULL
       AND t.status = CHOOSE(@p2, 'open','in_progress','review','done')
     ORDER BY t.updated_at DESC` (
-      ref_perm('fetch_tenants').id,
-      gen('number:1,4')
+    ref_perm('fetch_tenants').id,
+    gen('number:1,4')
   )
 
   create_task(type: exec) `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
@@ -218,12 +218,12 @@ run {
     WHERE EXISTS (
       SELECT 1 FROM project WHERE id = @p5 AND tenant_id = @p6
     )` (
-      ref_same('fetch_projects').id,
-      ref_perm('fetch_tenants').id,
-      gen('sentence:5'),
-      ref('fetch_users').id,
-      ref_same('fetch_projects').id,
-      ref_perm('fetch_tenants').id
+    ref_same('fetch_projects').id,
+    ref_perm('fetch_tenants').id,
+    gen('sentence:5'),
+    ref('fetch_users').id,
+    ref_same('fetch_projects').id,
+    ref_perm('fetch_tenants').id
   )
 
   update_task(type: exec) `UPDATE task SET
@@ -238,10 +238,10 @@ run {
 
   add_comment(type: exec) `INSERT INTO task_comment (task_id, tenant_id, author_id, body)
     VALUES (@p1, @p2, @p3, @p4)` (
-      ref('fetch_tasks').id,
-      ref_same('fetch_users').tenant_id,
-      ref_same('fetch_users').id,
-      gen('sentence:6')
+    ref('fetch_tasks').id,
+    ref_same('fetch_users').tenant_id,
+    ref_same('fetch_users').id,
+    gen('sentence:6')
   )
 
   soft_delete(type: exec) `UPDATE task

@@ -26,9 +26,9 @@ seed {
     ORDER BY c.id
     LIMIT $3
     OFFSET $1` (
-      batch(customers / batch_size, batch_size),
-      initial_balance,
-      batch_size
+    batch(customers / batch_size, batch_size),
+    initial_balance,
+    batch_size
   )
 }
 
@@ -37,9 +37,9 @@ init {
 }
 
 weights {
-  check_balance = 50
+  check_balance  = 50
   credit_account = 5
-  make_transfer = 45
+  make_transfer  = 45
 }
 
 run {
@@ -47,8 +47,8 @@ run {
 
   credit_account(type: exec) `UPDATE account SET balance = balance + CAST($2 AS FLOAT64)
     WHERE id = $1` (
-      ref('fetch_accounts').id,
-      gen('number:1,1000')
+    ref('fetch_accounts').id,
+    gen('number:1,1000')
   )
 
   make_transfer(type: exec) `UPDATE account SET
@@ -57,8 +57,8 @@ run {
                   WHEN id = $1 THEN balance - CAST($3 AS FLOAT64)
                 END
     WHERE id IN UNNEST([$1, $2])` (
-      ref_diff('fetch_accounts').id,
-      ref_diff('fetch_accounts').id,
-      gen('number:1,100')
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
   )
 }

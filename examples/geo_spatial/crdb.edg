@@ -91,8 +91,8 @@ seed {
 
   populate_zone `INSERT INTO zone (name, boundary)
     VALUES ($1::STRING, ST_SetSRID(ST_GeomFromText($2::STRING), 4326)::GEOGRAPHY)` (
-      gen('city'),
-      polygon_wkt(40.7128, -74.0060, 5, 15, 8)
+    gen('city'),
+    polygon_wkt(40.7128, -74.0060, 5, 15, 8)
   )
 
   populate_swipe_forward `INSERT INTO swipe (swiper_id, swiped_id, direction)
@@ -185,8 +185,8 @@ run {
     )
     ORDER BY distance_km ASC
     LIMIT 20` (
-      ref('fetch_profiles').lon,
-      ref('fetch_profiles').lat
+    ref('fetch_profiles').lon,
+    ref('fetch_profiles').lat
   )
 
   discover_in_zone(type: query) `SELECT p.id, p.display_name, p.age, p.gender
@@ -197,34 +197,24 @@ run {
 
   log_encounter(type: exec) `INSERT INTO encounter (viewer_id, viewed_id, distance_km, bearing_deg)
     VALUES ($1::UUID, $2::UUID, $3::FLOAT8, $4::FLOAT8)` (
-      ref_perm('fetch_profiles').id,
-      ref_same('fetch_profiles').id,
-      geo_distance(
-        ref_perm('fetch_profiles').lat,
-        ref_perm('fetch_profiles').lon,
-        ref_same('fetch_profiles').lat,
-        ref_same('fetch_profiles').lon
-      ),
-      geo_bearing(
-        ref_perm('fetch_profiles').lat,
-        ref_perm('fetch_profiles').lon,
-        ref_same('fetch_profiles').lat,
-        ref_same('fetch_profiles').lon
-      )
+    ref_perm('fetch_profiles').id,
+    ref_same('fetch_profiles').id,
+    geo_distance(ref_perm('fetch_profiles').lat, ref_perm('fetch_profiles').lon, ref_same('fetch_profiles').lat, ref_same('fetch_profiles').lon),
+    geo_bearing(ref_perm('fetch_profiles').lat, ref_perm('fetch_profiles').lon, ref_same('fetch_profiles').lat, ref_same('fetch_profiles').lon)
   )
 
   swipe_right(type: exec) `INSERT INTO swipe (swiper_id, swiped_id, direction)
     VALUES ($1::UUID, $2::UUID, 'right')
     ON CONFLICT (swiper_id, swiped_id) DO NOTHING` (
-      ref_diff('fetch_profiles').id,
-      ref_diff('fetch_profiles').id
+    ref_diff('fetch_profiles').id,
+    ref_diff('fetch_profiles').id
   )
 
   swipe_left(type: exec) `INSERT INTO swipe (swiper_id, swiped_id, direction)
     VALUES ($1::UUID, $2::UUID, 'left')
     ON CONFLICT (swiper_id, swiped_id) DO NOTHING` (
-      ref_diff('fetch_profiles').id,
-      ref_diff('fetch_profiles').id
+    ref_diff('fetch_profiles').id,
+    ref_diff('fetch_profiles').id
   )
 
   check_match(type: exec) `INSERT INTO match (user_a, user_b)
@@ -238,15 +228,15 @@ run {
       WHERE swiper_id = $2::UUID AND swiped_id = $1::UUID AND direction = 'right'
     )
     ON CONFLICT (user_a, user_b) DO NOTHING` (
-      ref_diff('fetch_profiles').id,
-      ref_diff('fetch_profiles').id
+    ref_diff('fetch_profiles').id,
+    ref_diff('fetch_profiles').id
   )
 
   send_message(type: exec) `INSERT INTO message (match_id, sender_id, body)
     VALUES ($1::UUID, $2::UUID, $3::STRING)` (
-      ref_same('fetch_matches').id,
-      ref_same('fetch_matches').user_a,
-      gen('sentence:8')
+    ref_same('fetch_matches').id,
+    ref_same('fetch_matches').user_a,
+    gen('sentence:8')
   )
 
   read_conversation(type: query) `SELECT m.body, m.created_at, p.display_name

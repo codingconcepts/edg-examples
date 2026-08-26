@@ -245,8 +245,8 @@ seed {
       30000,
       3001
     FROM generate_series(1, $2) AS d` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts
   )
 
   populate_customer `INSERT INTO customer (c_w_id, c_d_id, c_id, c_first, c_middle, c_last,
@@ -285,9 +285,9 @@ seed {
                   ELSE floor(random()::FLOAT8 * 1000)::INT
              END AS n
     ) AS ln` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      customers / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    customers / districts
   )
 
   populate_history `INSERT INTO history (h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
@@ -312,18 +312,18 @@ seed {
       1
     FROM generate_series(1, $2) AS d
     CROSS JOIN generate_series(1, $3) AS o` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_new_order `INSERT INTO new_order (no_w_id, no_d_id, no_o_id)
     SELECT $1::INT, d, o
     FROM generate_series(1, $2) AS d
     CROSS JOIN generate_series(2101, $3) AS o` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_order_line `INSERT INTO order_line (ol_w_id, ol_d_id, ol_o_id, ol_number,
@@ -367,8 +367,8 @@ seed {
         ELSE substr(md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text), 1, (random()::FLOAT8 * 24 + 26)::INT)
       END
     FROM generate_series(1, $2) AS i` (
-      ref_each('SELECT w_id FROM warehouse'),
-      stock
+    ref_each('SELECT w_id FROM warehouse'),
+    stock
   )
 }
 
@@ -507,10 +507,10 @@ run {
     SELECT du.next_o_id AS o_id, wi.w_tax, du.d_tax,
       ci.c_discount, ci.c_last
     FROM district_update du, warehouse_info wi, customer_info ci` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts),
-      nurand_n(8191, 1, items, 5, 15)
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts),
+    nurand_n(8191, 1, items, 5, 15)
   )
 
   payment(type: query, wait: 3s) `WITH
@@ -589,10 +589,10 @@ run {
       )
     SELECT cu.c_first, cu.c_middle, cu.c_last, cu.c_balance
     FROM customer_update cu` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts),
-      gen('number:100,500000')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts),
+    gen('number:100,500000')
   )
 
   order_status(type: query, wait: 2s) `WITH
@@ -630,9 +630,9 @@ run {
     JOIN order_line ol
       ON ol.ol_w_id = $1::INT AND ol.ol_d_id = $2::INT
       AND ol.ol_o_id = lo.o_id` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   delivery(type: exec, wait: 2s) `WITH
@@ -683,8 +683,8 @@ run {
     WHERE customer.c_w_id = t.o_w_id
       AND customer.c_d_id = t.o_d_id
       AND customer.c_id = t.o_c_id` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10')
   )
 
   stock_level(type: query, wait: 2s) `SELECT COUNT(DISTINCT s.s_i_id) AS low_stock
@@ -696,9 +696,9 @@ run {
       ON s.s_i_id = ol.ol_i_id AND s.s_w_id = d.d_w_id
     WHERE d.d_w_id = $1::INT AND d.d_id = $2::INT
       AND s.s_quantity < $3::INT` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:10,20')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
   )
 
   q1_pricing_summary(type: query) `SELECT

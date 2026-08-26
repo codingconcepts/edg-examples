@@ -43,9 +43,9 @@ seed {
     FROM customer c
     ORDER BY c.id
     OFFSET $1 * $3 ROWS FETCH NEXT $3 ROWS ONLY` (
-      batch(customers / batch_size),
-      initial_balance,
-      batch_size
+    batch(customers / batch_size),
+    initial_balance,
+    batch_size
   )
 }
 
@@ -54,9 +54,9 @@ init {
 }
 
 weights {
-  check_balance = 50
+  check_balance  = 50
   credit_account = 5
-  make_transfer = 45
+  make_transfer  = 45
 }
 
 run {
@@ -64,8 +64,8 @@ run {
 
   credit_account(type: exec) `UPDATE account SET balance = balance + :2
     WHERE id = :1` (
-      ref('fetch_accounts').id,
-      gen('number:1,1000')
+    ref('fetch_accounts').id,
+    gen('number:1,1000')
   )
 
   make_transfer(type: exec) `DECLARE
@@ -80,8 +80,8 @@ run {
                   END
       WHERE id IN (v_from_id, v_to_id);
     END;` (
-      ref_diff('fetch_accounts').id,
-      ref_diff('fetch_accounts').id,
-      gen('number:1,100')
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
   )
 }

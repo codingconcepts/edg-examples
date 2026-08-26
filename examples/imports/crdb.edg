@@ -26,9 +26,9 @@ seed {
     ORDER BY c.id
     OFFSET $1::INT * $3::INT
     LIMIT $3::INT` (
-      batch(top.customers / top.batch_size),
-      top.initial_balance,
-      top.batch_size
+    batch(top.customers / top.batch_size),
+    top.initial_balance,
+    top.batch_size
   )
 }
 
@@ -49,7 +49,7 @@ init {
 }
 
 weights {
-  check_balance = 50
+  check_balance  = 50
   credit_account = 50
 }
 
@@ -60,7 +60,7 @@ run {
   credit_account(type: exec)
     `UPDATE account SET balance = balance + $2::FLOAT
     WHERE id = $1::UUID` (
-        ref('fetch_accounts').id,
-        gen('number:1,1000')
+      ref('fetch_accounts').id,
+      gen('number:1,1000')
     )
 }

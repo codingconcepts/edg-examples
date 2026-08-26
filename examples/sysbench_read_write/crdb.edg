@@ -24,8 +24,8 @@ seed {
       lpad('', 120, md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text)),
       lpad('', 60, md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text))
     FROM generate_series(1, $2::INT) AS s` (
-      batch(records / batch_size),
-      batch_size
+    batch(records / batch_size),
+    batch_size
   )
 }
 
@@ -68,8 +68,8 @@ run {
   update_index(type: exec) `UPDATE sbtest1 SET k = k + 1 WHERE id = $1::INT` (gen('number:1,' + string(records)))
 
   update_non_index(type: exec) `UPDATE sbtest1 SET c = $2 WHERE id = $1::INT` (
-      gen('number:1,' + string(records)),
-      regex('[a-zA-Z0-9]{120}')
+    gen('number:1,' + string(records)),
+    regex('[a-zA-Z0-9]{120}')
   )
 
   transaction delete_insert {
@@ -83,9 +83,9 @@ run {
         floor(random()::FLOAT8 * 10000)::INT,
         $2, $3
       )` (
-        local('rid'),
-        local('new_c'),
-        local('new_pad')
+      local('rid'),
+      local('new_c'),
+      local('new_pad')
     )
   }
 }

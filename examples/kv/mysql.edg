@@ -1,0 +1,54 @@
+let keys       = int(coalesce(env_nil('KEYS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_kv `CREATE TABLE IF NOT EXISTS kv (
+      k BIGINT NOT NULL PRIMARY KEY,
+      v BLOB NOT NULL
+    )`
+}
+
+seed {
+  populate_kv `INSERT INTO kv (k, v)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $2
+    )
+    SELECT
+      $1 * $2 + s,
+      RANDOM_BYTES($3)
+    FROM seq` (
+    batch(keys / batch_size),
+    batch_size,
+    value_size
+  )
+}
+
+deseed {
+  delete_kv(type: exec) `DELETE FROM kv`
+}
+
+down {
+  drop_kv(type: exec) `DROP TABLE IF EXISTS kv`
+}
+
+weights {
+  read  = 50
+  write = 50
+}
+
+run {
+  read(type: query) `SELECT k, v FROM kv WHERE k = ?` (gen('number:1,' + string(keys)))
+
+  write(type: exec) `INSERT INTO kv (k, v) VALUES (?, ?)
+    ON DUPLICATE KEY UPDATE v = VALUES(v)` (
+    gen('number:1,' + string(keys)),
+    blob(value_size)
+  )
+}

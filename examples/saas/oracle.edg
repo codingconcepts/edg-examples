@@ -166,8 +166,8 @@ seed {
       END
     FROM DUAL
     CONNECT BY LEVEL <= $2` (
-      ref_each('SELECT RAWTOHEX(id) AS id FROM tenant'),
-      users_per_tenant
+    ref_each('SELECT RAWTOHEX(id) AS id FROM tenant'),
+    users_per_tenant
   )
 
   populate_project `INSERT INTO project (tenant_id, name)
@@ -176,8 +176,8 @@ seed {
       'project-' || LEVEL || '-' || SUBSTR('$1', 1, 8)
     FROM DUAL
     CONNECT BY LEVEL <= $2` (
-      ref_each('SELECT RAWTOHEX(id) AS id FROM tenant'),
-      projects_per_tenant
+    ref_each('SELECT RAWTOHEX(id) AS id FROM tenant'),
+    projects_per_tenant
   )
 
   populate_task `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
@@ -190,8 +190,8 @@ seed {
       (SELECT id FROM (SELECT id FROM app_user WHERE tenant_id = HEXTORAW('$2') ORDER BY DBMS_RANDOM.VALUE) WHERE ROWNUM = 1)
     FROM DUAL
     CONNECT BY LEVEL <= $3` (
-      ref_each('SELECT RAWTOHEX(p.id) AS project_id, RAWTOHEX(p.tenant_id) AS tenant_id FROM project p'),
-      tasks_per_project
+    ref_each('SELECT RAWTOHEX(p.id) AS project_id, RAWTOHEX(p.tenant_id) AS tenant_id FROM project p'),
+    tasks_per_project
   )
 }
 
@@ -277,8 +277,8 @@ run {
       AND t.status = DECODE(:2, 1,'open', 2,'in_progress', 3,'review', 4,'done')
     ORDER BY t.updated_at DESC
     FETCH FIRST 20 ROWS ONLY` (
-      ref_perm('fetch_tenants').id,
-      gen('number:1,4')
+    ref_perm('fetch_tenants').id,
+    gen('number:1,4')
   )
 
   create_task(type: exec) `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
@@ -287,10 +287,10 @@ run {
     WHERE EXISTS (
       SELECT 1 FROM project WHERE id = HEXTORAW(:2) AND tenant_id = HEXTORAW(:1)
     )` (
-      ref_perm('fetch_tenants').id,
-      ref('fetch_projects').id,
-      ref('fetch_users').id,
-      gen('sentence:5')
+    ref_perm('fetch_tenants').id,
+    ref('fetch_projects').id,
+    ref('fetch_users').id,
+    gen('sentence:5')
   )
 
   update_task(type: exec) `UPDATE task SET
@@ -305,10 +305,10 @@ run {
 
   add_comment(type: exec) `INSERT INTO task_comment (task_id, tenant_id, author_id, body)
     VALUES (HEXTORAW(:3), HEXTORAW(:2), HEXTORAW(:1), :4)` (
-      ref_same('fetch_users').id,
-      ref_same('fetch_users').tenant_id,
-      ref('fetch_tasks').id,
-      gen('sentence:6')
+    ref_same('fetch_users').id,
+    ref_same('fetch_users').tenant_id,
+    ref('fetch_tasks').id,
+    gen('sentence:6')
   )
 
   soft_delete(type: exec) `UPDATE task

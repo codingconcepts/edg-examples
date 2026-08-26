@@ -1,0 +1,57 @@
+let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+      id CHAR(36) NOT NULL DEFAULT (UUID()) PRIMARY KEY,
+      level VARCHAR(10) NOT NULL,
+      source VARCHAR(50) NOT NULL,
+      message TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_events_level_created (level, created_at DESC),
+      INDEX idx_events_created (created_at DESC)
+    )`
+}
+
+deseed {
+  delete_events(type: exec) `DELETE FROM events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+}
+
+weights {
+  delete_expired = 14
+  read_by_level  = 13
+  read_recent    = 13
+  write_log      = 60
+}
+
+run {
+  write_log(type: exec) `INSERT INTO events (level, source, message)
+    VALUES (?, ?, ?)` (
+    uniform.set(['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],[10, 50, 25, 12, 3]),
+    uniform.set(['api', 'worker', 'scheduler', 'auth', 'billing'],[]),
+    regex('[a-zA-Z0-9 ]{64,256}')
+  )
+
+  read_recent(type: query) `SELECT id, level, source, message, created_at
+    FROM events
+    ORDER BY created_at DESC
+    LIMIT 20`
+
+  read_by_level(type: query) `SELECT id, source, message, created_at
+    FROM events
+    WHERE level = ?
+      AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+    ORDER BY created_at DESC
+    LIMIT 20` (uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]))
+
+  delete_expired(type: exec) `DELETE FROM events
+    WHERE created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+    LIMIT 1000`
+}

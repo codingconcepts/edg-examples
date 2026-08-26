@@ -26,9 +26,9 @@ seed {
       CAST(SUBSTRING_INDEX(SUBSTRING_INDEX('$3', ',', 2), ',', -1) AS DECIMAL(12,2)),
       CAST(SUBSTRING_INDEX('$3', ',', -1) AS DECIMAL(12,2))
     )` (
-      uuid_v4(),
-      uniform.float(100, 10000, 2),
-      distribute_weighted(arg(1),[85, 10, 5], 0.1, 2)
+    uuid_v4(),
+    uniform.float(100, 10000, 2),
+    distribute_weighted(arg(1),[85, 10, 5], 0.1, 2)
   )
 
   fetch_invoices(type: query) `SELECT id, total FROM invoice`
@@ -39,9 +39,9 @@ seed {
       CONCAT('["', REPLACE('$3', ',', '","'), '"]'),
       '$[*]' COLUMNS(val VARCHAR(20) PATH '$')
     ) j` (
-      ref_diff('fetch_invoices'),
-      arg(0).id,
-      distribute_sum(arg(0).total, 3, 7, 2)
+    ref_diff('fetch_invoices'),
+    arg(0).id,
+    distribute_sum(arg(0).total, 3, 7, 2)
   )
 }
 

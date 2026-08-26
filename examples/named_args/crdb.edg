@@ -19,10 +19,10 @@ up {
 seed {
   populate_order(type: exec_batch, count: customers, size: 10) `INSERT INTO named_args_order (email, region, city, amount)
     __values__` (
-      email: gen('email'),
-      region: ref_same('regions').name,
-      city: set(ref_same('regions').cities,[]),
-      amount: uniform.int(1, 500)
+    email: gen('email'),
+    region: ref_same('regions').name,
+    city: set(ref_same('regions').cities,[]),
+    amount: uniform.int(1, 500)
   )
 }
 
@@ -37,10 +37,10 @@ down {
 run {
   insert_order(type: exec, print: ref_same('regions').name, print: arg('amount')) `INSERT INTO named_args_order (email, region, city, amount)
     VALUES ($1, $2, $3, $4::DECIMAL)` (
-      email: gen('email'),
-      region: ref_same('regions').name,
-      city: set(ref_same('regions').cities,[]),
-      amount: uniform.int(1, 500)
+    email: gen('email'),
+    region: ref_same('regions').name,
+    city: set(ref_same('regions').cities,[]),
+    amount: uniform.int(1, 500)
   )
 
   read_order `SELECT id, amount FROM named_args_order WHERE region = $1 LIMIT 1` (region: ref_same('regions').name)

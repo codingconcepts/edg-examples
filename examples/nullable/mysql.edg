@@ -14,10 +14,10 @@ up {
 seed {
   populate_user(type: exec_batch, count: users, size: batch_size) `INSERT INTO app_user (email, phone, bio, referred_by)
     __values__` (
-      gen('email'),
-      nullable(gen('phone'), 0.3),
-      nullable(gen('sentence:5'), 0.5),
-      nullable(uuid_v4(), 0.8)
+    gen('email'),
+    nullable(gen('phone'), 0.3),
+    nullable(gen('sentence:5'), 0.5),
+    nullable(uuid_v4(), 0.8)
   )
 }
 

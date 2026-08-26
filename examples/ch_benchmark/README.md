@@ -9,6 +9,21 @@ Workload mix:
 - **OLTP (80%)** - TPC-C transactions (new_order, payment, order_status, delivery, stock_level)
 - **OLAP (20%)** - Analytical queries adapted to TPC-C schema (pricing summary, revenue forecast, important stock, shipping modes)
 
+## Parameters
+
+Sizing is read from the environment, so the defaults can be overridden without editing the config:
+
+| Variable | Default | Description |
+|---|---|---|
+| `WAREHOUSES` | `1` | Number of warehouses to seed |
+| `DISTRICTS` | `10` | Districts per warehouse |
+| `CUSTOMERS` | `300` | Customers per district |
+| `ORDERS` | `300` | Orders per district |
+| `STOCK` | `1000` | Stock rows per warehouse |
+| `ITEMS` | `1000` | Number of items to seed |
+| `BATCH_SIZE` | `100` | Rows per batch during seeding |
+| `OL_BATCH` | `100` | Order-line rows per batch during seeding |
+
 ## CockroachDB
 
 ### Setup
@@ -286,4 +301,41 @@ edg down \
 --driver spanner \
 --config examples/ch_benchmark/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/ch"
+```
+
+## SQLite
+
+### Setup
+
+SQLite is embedded, so there's no container to start; the database file is created on first connect.
+
+### Run
+
+```sh
+edg up \
+--driver sqlite \
+--config examples/ch_benchmark/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg seed \
+--driver sqlite \
+--config examples/ch_benchmark/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg run \
+--driver sqlite \
+--config examples/ch_benchmark/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate" \
+-w 10 \
+-d 1m
+
+edg deseed \
+--driver sqlite \
+--config examples/ch_benchmark/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg down \
+--driver sqlite \
+--config examples/ch_benchmark/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
 ```

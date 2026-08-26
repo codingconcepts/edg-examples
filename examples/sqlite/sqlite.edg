@@ -24,7 +24,7 @@ seed {
     `INSERT INTO customer (id, email) __values__` (
       gen('uuid'),
       gen('email')
-  )
+    )
 
   fetch_customers `SELECT id FROM customer`
 
@@ -33,7 +33,7 @@ seed {
       gen('uuid'),
       ref('fetch_customers').id,
       initial_balance
-  )
+    )
 }
 
 init {

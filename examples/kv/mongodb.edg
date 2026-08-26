@@ -1,0 +1,40 @@
+let keys       = int(coalesce(env_nil('KEYS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_kv(type: exec) `{"create": "kv"}`
+}
+
+seed {
+  populate_kv(type: exec_batch, count: keys, size: batch_size) `{"insert": "kv", "documents": [{"_id": $1, "k": $1, "v": {"$binary": {"base64": "$2", "subType": "00"}}}]}` (
+    seq(1, 1),
+    blob(value_size)
+  )
+}
+
+deseed {
+  delete_kv(type: exec) `{"delete": "kv", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_kv(type: exec) `{"drop": "kv"}`
+}
+
+weights {
+  read  = 50
+  write = 50
+}
+
+run {
+  read(type: query) `{"find": "kv", "filter": {"k": $1}}` (gen('number:1,' + string(keys)))
+
+  write(type: exec) `{"update": "kv", "updates": [{"q": {"k": $1}, "u": {"$set": {"k": $1, "v": {"$binary": {"base64": "$2", "subType": "00"}}}}, "upsert": true}]}` (
+    gen('number:1,' + string(keys)),
+    blob(value_size)
+  )
+}

@@ -1,0 +1,635 @@
+let warehouses = int(coalesce(env_nil('WAREHOUSES'), 1))
+let districts  = int(coalesce(env_nil('DISTRICTS'), 10))
+let customers  = int(coalesce(env_nil('CUSTOMERS'), 300))
+let orders     = int(coalesce(env_nil('ORDERS'), 300))
+let stock      = int(coalesce(env_nil('STOCK'), 1000))
+let items      = int(coalesce(env_nil('ITEMS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_warehouse `CREATE TABLE IF NOT EXISTS warehouse (
+      w_id INTEGER NOT NULL,
+      w_name TEXT NOT NULL,
+      w_street_1 TEXT NOT NULL,
+      w_street_2 TEXT NOT NULL,
+      w_city TEXT NOT NULL,
+      w_state TEXT NOT NULL,
+      w_zip TEXT NOT NULL,
+      w_tax REAL NOT NULL,
+      w_ytd REAL NOT NULL,
+      PRIMARY KEY (w_id)
+    )`
+
+  create_district `CREATE TABLE IF NOT EXISTS district (
+      d_w_id INTEGER NOT NULL,
+      d_id INTEGER NOT NULL,
+      d_name TEXT NOT NULL,
+      d_street_1 TEXT NOT NULL,
+      d_street_2 TEXT NOT NULL,
+      d_city TEXT NOT NULL,
+      d_state TEXT NOT NULL,
+      d_zip TEXT NOT NULL,
+      d_tax REAL NOT NULL,
+      d_ytd REAL NOT NULL,
+      d_next_o_id INTEGER NOT NULL,
+      PRIMARY KEY (d_w_id, d_id)
+    )`
+
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      c_w_id INTEGER NOT NULL,
+      c_d_id INTEGER NOT NULL,
+      c_id INTEGER NOT NULL,
+      c_first TEXT NOT NULL,
+      c_middle TEXT NOT NULL,
+      c_last TEXT NOT NULL,
+      c_street_1 TEXT NOT NULL,
+      c_street_2 TEXT NOT NULL,
+      c_city TEXT NOT NULL,
+      c_state TEXT NOT NULL,
+      c_zip TEXT NOT NULL,
+      c_phone TEXT NOT NULL,
+      c_since TIMESTAMP NOT NULL,
+      c_credit TEXT NOT NULL,
+      c_credit_lim REAL NOT NULL,
+      c_discount REAL NOT NULL,
+      c_balance REAL NOT NULL,
+      c_ytd_payment REAL NOT NULL,
+      c_payment_cnt INTEGER NOT NULL,
+      c_delivery_cnt INTEGER NOT NULL,
+      c_data TEXT NOT NULL,
+      PRIMARY KEY (c_w_id, c_d_id, c_id)
+    )`
+
+  create_history `CREATE TABLE IF NOT EXISTS history (
+      h_id TEXT NOT NULL DEFAULT (lower(hex(randomblob(16)))),
+      h_c_id INTEGER NOT NULL,
+      h_c_d_id INTEGER NOT NULL,
+      h_c_w_id INTEGER NOT NULL,
+      h_d_id INTEGER NOT NULL,
+      h_w_id INTEGER NOT NULL,
+      h_date TIMESTAMP NOT NULL,
+      h_amount REAL NOT NULL,
+      h_data TEXT NOT NULL,
+      PRIMARY KEY (h_id)
+    )`
+
+  create_oorder `CREATE TABLE IF NOT EXISTS oorder (
+      o_w_id INTEGER NOT NULL,
+      o_d_id INTEGER NOT NULL,
+      o_id INTEGER NOT NULL,
+      o_c_id INTEGER NOT NULL,
+      o_entry_d TIMESTAMP NOT NULL,
+      o_carrier_id INTEGER,
+      o_ol_cnt INTEGER NOT NULL,
+      o_all_local INTEGER NOT NULL,
+      PRIMARY KEY (o_w_id, o_d_id, o_id)
+    )`
+
+  create_new_order `CREATE TABLE IF NOT EXISTS new_order (
+      no_w_id INTEGER NOT NULL,
+      no_d_id INTEGER NOT NULL,
+      no_o_id INTEGER NOT NULL,
+      PRIMARY KEY (no_w_id, no_d_id, no_o_id)
+    )`
+
+  create_order_line `CREATE TABLE IF NOT EXISTS order_line (
+      ol_w_id INTEGER NOT NULL,
+      ol_d_id INTEGER NOT NULL,
+      ol_o_id INTEGER NOT NULL,
+      ol_number INTEGER NOT NULL,
+      ol_i_id INTEGER NOT NULL,
+      ol_supply_w_id INTEGER NOT NULL,
+      ol_delivery_d TIMESTAMP,
+      ol_quantity INTEGER NOT NULL,
+      ol_amount REAL NOT NULL,
+      ol_dist_info TEXT NOT NULL,
+      PRIMARY KEY (ol_w_id, ol_d_id, ol_o_id, ol_number)
+    )`
+
+  create_item `CREATE TABLE IF NOT EXISTS item (
+      i_id INTEGER NOT NULL,
+      i_im_id INTEGER NOT NULL,
+      i_name TEXT NOT NULL,
+      i_price REAL NOT NULL,
+      i_data TEXT NOT NULL,
+      PRIMARY KEY (i_id)
+    )`
+
+  create_stock `CREATE TABLE IF NOT EXISTS stock (
+      s_w_id INTEGER NOT NULL,
+      s_i_id INTEGER NOT NULL,
+      s_quantity INTEGER NOT NULL,
+      s_dist_01 TEXT NOT NULL,
+      s_dist_02 TEXT NOT NULL,
+      s_dist_03 TEXT NOT NULL,
+      s_dist_04 TEXT NOT NULL,
+      s_dist_05 TEXT NOT NULL,
+      s_dist_06 TEXT NOT NULL,
+      s_dist_07 TEXT NOT NULL,
+      s_dist_08 TEXT NOT NULL,
+      s_dist_09 TEXT NOT NULL,
+      s_dist_10 TEXT NOT NULL,
+      s_ytd INTEGER NOT NULL,
+      s_order_cnt INTEGER NOT NULL,
+      s_remote_cnt INTEGER NOT NULL,
+      s_data TEXT NOT NULL,
+      PRIMARY KEY (s_w_id, s_i_id)
+    )`
+
+  create_nation `CREATE TABLE IF NOT EXISTS nation (
+      n_nationkey INTEGER NOT NULL PRIMARY KEY,
+      n_name TEXT NOT NULL,
+      n_regionkey INTEGER NOT NULL,
+      n_comment TEXT
+    )`
+
+  create_region `CREATE TABLE IF NOT EXISTS region (
+      r_regionkey INTEGER NOT NULL PRIMARY KEY,
+      r_name TEXT NOT NULL,
+      r_comment TEXT
+    )`
+
+  create_supplier `CREATE TABLE IF NOT EXISTS supplier (
+      su_suppkey INTEGER NOT NULL PRIMARY KEY,
+      su_name TEXT NOT NULL,
+      su_address TEXT NOT NULL,
+      su_nationkey INTEGER NOT NULL,
+      su_phone TEXT NOT NULL,
+      su_acctbal REAL NOT NULL,
+      su_comment TEXT
+    )`
+
+  create_idx_customer_name `CREATE INDEX IF NOT EXISTS idx_customer_name
+    ON customer (c_w_id, c_d_id, c_last, c_first)`
+
+  create_idx_oorder_customer `CREATE INDEX IF NOT EXISTS idx_oorder_customer
+    ON oorder (o_w_id, o_d_id, o_c_id, o_id DESC)`
+}
+
+seed {
+  populate_region `INSERT INTO region (r_regionkey, r_name, r_comment)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < 5
+    )
+    SELECT
+      s - 1,
+      CASE s
+        WHEN 1 THEN 'AFRICA' WHEN 2 THEN 'AMERICA' WHEN 3 THEN 'ASIA'
+        WHEN 4 THEN 'EUROPE' ELSE 'MIDDLE EAST'
+      END,
+      substr(hex(randomblob(16)), 1, 30)
+    FROM seq`
+
+  populate_nation `INSERT INTO nation (n_nationkey, n_name, n_regionkey, n_comment)
+    VALUES
+      (0,'ALGERIA',0,''),    (1,'ARGENTINA',1,''),  (2,'BRAZIL',1,''),
+      (3,'CANADA',1,''),     (4,'EGYPT',4,''),      (5,'ETHIOPIA',0,''),
+      (6,'FRANCE',3,''),     (7,'GERMANY',3,''),    (8,'INDIA',2,''),
+      (9,'INDONESIA',2,''),  (10,'IRAN',4,''),      (11,'IRAQ',4,''),
+      (12,'JAPAN',2,''),     (13,'JORDAN',4,''),    (14,'KENYA',0,''),
+      (15,'MOROCCO',0,''),   (16,'MOZAMBIQUE',0,''), (17,'PERU',1,''),
+      (18,'CHINA',2,''),     (19,'ROMANIA',3,''),   (20,'SAUDI ARABIA',4,''),
+      (21,'VIETNAM',2,''),   (22,'RUSSIA',3,''),    (23,'UNITED KINGDOM',3,''),
+      (24,'UNITED STATES',1,'')`
+
+  populate_supplier `INSERT INTO supplier (su_suppkey, su_name, su_address, su_nationkey,
+      su_phone, su_acctbal, su_comment)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < 10000
+    )
+    SELECT
+      s,
+      'Supplier#' || substr('000000000' || s, -9),
+      substr(hex(randomblob(20)), 1, abs(random()) % 25 + 15),
+      abs(random()) % 25,
+      substr('00' || (abs(random()) % 90 + 10), -2) || '-' ||
+        substr('000' || (abs(random()) % 1000), -3) || '-' ||
+        substr('000' || (abs(random()) % 1000), -3) || '-' ||
+        substr('0000' || (abs(random()) % 10000), -4),
+      round(abs(random()) % 1000000 / 1000000.0 * 10000 - 1000, 2),
+      substr(hex(randomblob(16)), 1, 30)
+    FROM seq`
+
+  populate_item `INSERT INTO item (i_id, i_im_id, i_name, i_price, i_data)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    SELECT
+      s,
+      abs(random()) % 10000 + 1,
+      substr(hex(randomblob(16)), 1, abs(random()) % 18 + 6),
+      round(abs(random()) % 1000000 / 1000000.0 * 99 + 1, 2),
+      iif(abs(random()) % 1000000 / 1000000.0 < 0.1,
+        'ORIGINAL' || substr(hex(randomblob(20)), 1, abs(random()) % 16 + 18),
+        substr(hex(randomblob(32)), 1, abs(random()) % 24 + 26)
+      )
+    FROM seq` (items)
+
+  populate_warehouse `INSERT INTO warehouse (w_id, w_name, w_street_1, w_street_2, w_city,
+      w_state, w_zip, w_tax, w_ytd)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < $1
+    )
+    SELECT
+      s,
+      substr(hex(randomblob(16)), 1, abs(random()) % 4 + 6),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, 2),
+      substr('0000' || (abs(random()) % 10000), -4) || '11111',
+      abs(random()) % 1000000 / 1000000.0 / 5,
+      300000
+    FROM seq` (warehouses)
+
+  populate_district `INSERT INTO district (d_w_id, d_id, d_name, d_street_1, d_street_2,
+      d_city, d_state, d_zip, d_tax, d_ytd, d_next_o_id)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS d
+      UNION ALL
+      SELECT d + 1 FROM seq WHERE d < $2
+    )
+    SELECT
+      $1, d,
+      substr(hex(randomblob(16)), 1, abs(random()) % 4 + 6),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, 2),
+      substr('0000' || (abs(random()) % 10000), -4) || '11111',
+      abs(random()) % 1000000 / 1000000.0 / 5,
+      30000,
+      3001
+    FROM seq` (
+    ref_each('SELECT w_id FROM warehouse'),
+    districts
+  )
+
+  populate_customer `INSERT INTO customer (c_w_id, c_d_id, c_id, c_first, c_middle, c_last,
+      c_street_1, c_street_2, c_city, c_state, c_zip, c_phone,
+      c_since, c_credit, c_credit_lim, c_discount, c_balance,
+      c_ytd_payment, c_payment_cnt, c_delivery_cnt, c_data)
+    WITH RECURSIVE d_seq AS (
+      SELECT 1 AS d
+      UNION ALL
+      SELECT d + 1 FROM d_seq WHERE d < $2
+    ),
+    c_seq AS (
+      SELECT 1 AS c
+      UNION ALL
+      SELECT c + 1 FROM c_seq WHERE c < $3
+    ),
+    syl(i, w) AS (
+      VALUES (0,'BAR'),(1,'OUGHT'),(2,'ABLE'),(3,'PRI'),(4,'PRES'),
+             (5,'ESE'),(6,'ANTI'),(7,'CALLY'),(8,'ATION'),(9,'EING')
+    ),
+    cust AS (
+      SELECT d, c, iif(c <= 1000, c - 1, abs(random()) % 1000) AS n
+      FROM d_seq CROSS JOIN c_seq
+    )
+    SELECT
+      $1, cust.d, cust.c,
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 6),
+      'OE',
+      (SELECT w FROM syl WHERE i = cust.n / 100) ||
+        (SELECT w FROM syl WHERE i = (cust.n / 10) % 10) ||
+        (SELECT w FROM syl WHERE i = cust.n % 10),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, abs(random()) % 10 + 10),
+      substr(hex(randomblob(16)), 1, 2),
+      substr('0000' || (abs(random()) % 10000), -4) || '11111',
+      substr('0000' || (abs(random()) % 9999), -4) ||
+        substr('0000' || (abs(random()) % 9999), -4) ||
+        substr('0000' || (abs(random()) % 9999), -4) ||
+        substr('0000' || (abs(random()) % 9999), -4),
+      datetime('now'),
+      iif(abs(random()) % 1000000 / 1000000.0 < 0.1, 'BC', 'GC'),
+      50000,
+      abs(random()) % 1000000 / 1000000.0 / 2,
+      -10,
+      10,
+      1,
+      0,
+      substr(hex(randomblob(256)), 1, abs(random()) % 200 + 300)
+    FROM cust` (
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    customers / districts
+  )
+
+  populate_history `INSERT INTO history (h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
+      h_date, h_amount, h_data)
+    SELECT
+      c.c_id, c.c_d_id, c.c_w_id,
+      c.c_d_id, c.c_w_id,
+      datetime('now'),
+      10,
+      substr(hex(randomblob(16)), 1, abs(random()) % 12 + 12)
+    FROM customer c
+    WHERE c.c_w_id = $1` (ref_each('SELECT w_id FROM warehouse'))
+
+  populate_oorder `INSERT INTO oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
+      o_carrier_id, o_ol_cnt, o_all_local)
+    WITH RECURSIVE d_seq AS (
+      SELECT 1 AS d
+      UNION ALL
+      SELECT d + 1 FROM d_seq WHERE d < $2
+    ),
+    o_seq AS (
+      SELECT 1 AS o
+      UNION ALL
+      SELECT o + 1 FROM o_seq WHERE o < $3
+    )
+    SELECT
+      $1, d, o,
+      abs(random()) % 3000 + 1,
+      datetime('now'),
+      iif(o <= 2100, abs(random()) % 10 + 1, NULL),
+      abs(random()) % 11 + 5,
+      1
+    FROM d_seq
+    CROSS JOIN o_seq` (
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
+  )
+
+  populate_new_order `INSERT INTO new_order (no_w_id, no_d_id, no_o_id)
+    WITH RECURSIVE d_seq AS (
+      SELECT 1 AS d
+      UNION ALL
+      SELECT d + 1 FROM d_seq WHERE d < $2
+    ),
+    o_seq AS (
+      SELECT 2101 AS o
+      UNION ALL
+      SELECT o + 1 FROM o_seq WHERE o < $3
+    )
+    SELECT $1, d, o
+    FROM d_seq
+    CROSS JOIN o_seq` (
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
+  )
+
+  populate_order_line `INSERT INTO order_line (ol_w_id, ol_d_id, ol_o_id, ol_number,
+      ol_i_id, ol_supply_w_id, ol_delivery_d, ol_quantity, ol_amount,
+      ol_dist_info)
+    WITH RECURSIVE n_seq AS (
+      SELECT 1 AS n
+      UNION ALL
+      SELECT n + 1 FROM n_seq WHERE n < 15
+    )
+    SELECT
+      o.o_w_id, o.o_d_id, o.o_id,
+      n,
+      abs(random()) % 100000 + 1,
+      o.o_w_id,
+      iif(o.o_id <= 2100, o.o_entry_d, NULL),
+      5,
+      iif(o.o_id <= 2100, 0, abs(random()) % 1000000 / 1000000.0 * 9999),
+      substr(hex(randomblob(16)), 1, 24)
+    FROM oorder o
+    JOIN n_seq ON n <= o.o_ol_cnt
+    WHERE o.o_w_id = $1` (ref_each('SELECT w_id FROM warehouse'))
+
+  populate_stock `INSERT INTO stock (s_w_id, s_i_id, s_quantity,
+      s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05,
+      s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10,
+      s_ytd, s_order_cnt, s_remote_cnt, s_data)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS i
+      UNION ALL
+      SELECT i + 1 FROM seq WHERE i < $2
+    )
+    SELECT
+      $1, i,
+      abs(random()) % 91 + 10,
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      substr(hex(randomblob(16)), 1, 24),
+      0, 0, 0,
+      iif(abs(random()) % 1000000 / 1000000.0 < 0.1,
+        'ORIGINAL' || substr(hex(randomblob(20)), 1, abs(random()) % 16 + 18),
+        substr(hex(randomblob(32)), 1, abs(random()) % 24 + 26)
+      )
+    FROM seq` (
+    ref_each('SELECT w_id FROM warehouse'),
+    stock
+  )
+}
+
+deseed {
+  truncate_order_line(type: exec) `DELETE FROM order_line`
+
+  truncate_new_order(type: exec) `DELETE FROM new_order`
+
+  truncate_oorder(type: exec) `DELETE FROM oorder`
+
+  truncate_history(type: exec) `DELETE FROM history`
+
+  truncate_stock(type: exec) `DELETE FROM stock`
+
+  truncate_customer(type: exec) `DELETE FROM customer`
+
+  truncate_district(type: exec) `DELETE FROM district`
+
+  truncate_warehouse(type: exec) `DELETE FROM warehouse`
+
+  truncate_item(type: exec) `DELETE FROM item`
+
+  truncate_supplier(type: exec) `DELETE FROM supplier`
+
+  truncate_nation(type: exec) `DELETE FROM nation`
+
+  truncate_region(type: exec) `DELETE FROM region`
+}
+
+down {
+  drop_order_line(type: exec) `DROP TABLE IF EXISTS order_line`
+
+  drop_new_order(type: exec) `DROP TABLE IF EXISTS new_order`
+
+  drop_oorder(type: exec) `DROP TABLE IF EXISTS oorder`
+
+  drop_history(type: exec) `DROP TABLE IF EXISTS history`
+
+  drop_stock(type: exec) `DROP TABLE IF EXISTS stock`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_district(type: exec) `DROP TABLE IF EXISTS district`
+
+  drop_warehouse(type: exec) `DROP TABLE IF EXISTS warehouse`
+
+  drop_item(type: exec) `DROP TABLE IF EXISTS item`
+
+  drop_supplier(type: exec) `DROP TABLE IF EXISTS supplier`
+
+  drop_nation(type: exec) `DROP TABLE IF EXISTS nation`
+
+  drop_region(type: exec) `DROP TABLE IF EXISTS region`
+}
+
+init {
+  fetch_warehouses(type: query) `SELECT w_id FROM warehouse`
+}
+
+weights {
+  delivery               = 4
+  new_order              = 36
+  order_status           = 4
+  payment                = 34
+  q11_important_stock    = 5
+  q12_shipping_modes     = 5
+  q1_pricing_summary     = 5
+  q6_forecasting_revenue = 5
+  stock_level            = 2
+}
+
+run {
+  transaction new_order(wait: 18s) {
+    let c_id = nurand(1023, 1, customers / districts)
+    let d_id = gen('number:1,10')
+    let ol_cnt = gen('number:5,15')
+    let w_id = ref_perm('fetch_warehouses').w_id
+    # SQLite serialises writers, so there is no FOR UPDATE to take here.
+    get_next_o_id(type: query) `SELECT d_next_o_id FROM district
+      WHERE d_w_id = ? AND d_id = ?` (
+      local('w_id'),
+      local('d_id')
+    )
+    incr_next_o_id(type: exec) `UPDATE district SET d_next_o_id = d_next_o_id + 1
+      WHERE d_w_id = ? AND d_id = ?` (
+      local('w_id'),
+      local('d_id')
+    )
+    insert_oorder(type: exec) `INSERT INTO oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
+        o_ol_cnt, o_all_local)
+      VALUES (?, ?, ?, ?, datetime('now'), ?, 1)` (
+      local('w_id'),
+      local('d_id'),
+      ref_same('get_next_o_id').d_next_o_id,
+      local('c_id'),
+      local('ol_cnt')
+    )
+  }
+
+  payment(type: exec, wait: 3s) `UPDATE customer SET
+      c_balance = c_balance - $1 / 100.0,
+      c_ytd_payment = c_ytd_payment + $1 / 100.0,
+      c_payment_cnt = c_payment_cnt + 1
+    WHERE c_w_id = $2 AND c_d_id = $3 AND c_id = $4` (
+    gen('number:100,500000'),
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
+  )
+
+  order_status(type: query, wait: 2s) `SELECT o.o_id, o.o_entry_d, o.o_carrier_id,
+      ol.ol_i_id, ol.ol_supply_w_id, ol.ol_quantity,
+      ol.ol_amount, ol.ol_delivery_d
+    FROM oorder o
+    JOIN order_line ol
+      ON ol.ol_w_id = o.o_w_id AND ol.ol_d_id = o.o_d_id
+      AND ol.ol_o_id = o.o_id
+    WHERE o.o_w_id = $1 AND o.o_d_id = $2 AND o.o_c_id = $3
+      AND o.o_id = (
+        SELECT MAX(o2.o_id) FROM oorder o2
+        WHERE o2.o_w_id = $1 AND o2.o_d_id = $2 AND o2.o_c_id = $3
+      )` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
+  )
+
+  delivery(type: exec, wait: 2s) `DELETE FROM new_order
+    WHERE no_w_id = $1 AND no_d_id = $2
+      AND no_o_id = (
+        SELECT MIN(no_o_id) FROM new_order
+        WHERE no_w_id = $1 AND no_d_id = $2
+      )` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10')
+  )
+
+  stock_level(type: query, wait: 2s) `SELECT COUNT(DISTINCT s.s_i_id) AS low_stock
+    FROM district d
+    JOIN order_line ol
+      ON ol.ol_w_id = d.d_w_id AND ol.ol_d_id = d.d_id
+      AND ol.ol_o_id BETWEEN d.d_next_o_id - 20 AND d.d_next_o_id - 1
+    JOIN stock s
+      ON s.s_i_id = ol.ol_i_id AND s.s_w_id = d.d_w_id
+    WHERE d.d_w_id = ? AND d.d_id = ?
+      AND s.s_quantity < ?` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
+  )
+
+  q1_pricing_summary(type: query) `SELECT
+      ol_number,
+      SUM(ol_quantity) AS sum_qty,
+      SUM(ol_amount) AS sum_amount,
+      AVG(ol_quantity) AS avg_qty,
+      AVG(ol_amount) AS avg_amount,
+      COUNT(*) AS count_order
+    FROM order_line
+    WHERE ol_delivery_d IS NOT NULL
+    GROUP BY ol_number
+    ORDER BY ol_number`
+
+  q6_forecasting_revenue(type: query) `SELECT SUM(ol_amount) AS revenue
+    FROM order_line
+    WHERE ol_delivery_d IS NOT NULL
+      AND ol_quantity BETWEEN 1 AND 100000`
+
+  q11_important_stock(type: query) `SELECT s_i_id, SUM(s_quantity) AS total_qty
+    FROM stock
+    JOIN supplier ON supplier.su_suppkey = stock.s_i_id % 10000 + 1
+    JOIN nation ON nation.n_nationkey = supplier.su_nationkey
+    WHERE s_w_id = $1
+    GROUP BY s_i_id
+    HAVING SUM(s_quantity) > (
+      SELECT SUM(s_quantity) * 0.0001
+      FROM stock
+      WHERE s_w_id = $1
+    )
+    ORDER BY total_qty DESC` (ref_perm('fetch_warehouses').w_id)
+
+  q12_shipping_modes(type: query) `SELECT
+      o.o_ol_cnt,
+      SUM(CASE WHEN o.o_carrier_id BETWEEN 1 AND 5
+        THEN 1 ELSE 0 END) AS high_line_count,
+      SUM(CASE WHEN o.o_carrier_id > 5 OR o.o_carrier_id IS NULL
+        THEN 1 ELSE 0 END) AS low_line_count
+    FROM oorder o
+    JOIN order_line ol
+      ON o.o_w_id = ol.ol_w_id AND o.o_d_id = ol.ol_d_id
+      AND o.o_id = ol.ol_o_id
+    WHERE ol.ol_delivery_d IS NOT NULL
+    GROUP BY o.o_ol_cnt
+    ORDER BY o.o_ol_cnt`
+}

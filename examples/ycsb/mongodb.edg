@@ -1,0 +1,73 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let zipf_s     = float(coalesce(env_nil('ZIPF_S'), 1.2))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_usertable(type: exec) `{"create": "usertable"}`
+}
+
+seed {
+  populate_usertable(type: exec_batch, count: records, size: batch_size) `{"insert": "usertable", "documents": [{"_id": $1, "ycsb_key": "$1", "field0": "$2", "field1": "$3", "field2": "$4", "field3": "$5", "field4": "$6", "field5": "$7", "field6": "$8", "field7": "$9", "field8": "$10", "field9": "$11"}]}` (
+    seq(1, 1),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}
+
+deseed {
+  delete_usertable(type: exec) `{"delete": "usertable", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_usertable(type: exec) `{"drop": "usertable"}`
+}
+
+weights {
+  read   = 50
+  update = 50
+}
+
+run {
+  read(type: query) `{"find": "usertable", "filter": {"ycsb_key": "$1"}}` (template('user%010d', zipf.int(zipf_s, 1, records - 1)))
+
+  update(type: exec) `{"update": "usertable", "updates": [{"q": {"ycsb_key": "$1"}, "u": {"$set": {"field0": "$2"}}}]}` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  insert(type: exec) `{"insert": "usertable", "documents": [{"ycsb_key": "$1", "field0": "$2", "field1": "$3", "field2": "$4", "field3": "$5", "field4": "$6", "field5": "$7", "field6": "$8", "field7": "$9", "field8": "$10", "field9": "$11"}]}` (
+    objectid(),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  scan(type: query) `{"find": "usertable", "filter": {"ycsb_key": {"$gte": "$1"}}, "sort": {"ycsb_key": 1}, "limit": $2}` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    gen('number:1,100')
+  )
+
+  read_modify_write(type: query) `{"findAndModify": "usertable", "query": {"ycsb_key": "$1"}, "update": {"$set": {"field0": "$2"}}, "new": true}` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}

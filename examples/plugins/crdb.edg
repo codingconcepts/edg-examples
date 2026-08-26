@@ -21,12 +21,12 @@ seed {
   populate_greetings(type: exec_batch, count: rows, size: batch_size)
     `INSERT INTO greetings (message, roll, card_number, initials, slug, secret)
     __values__` (
-        hello(gen('firstname')),
-        dice(20),
-        card_mask(string(gen('creditcardnumber')), 4),
-        initials(gen('name')),
-        slug(gen('name')),
-        rot13(gen('firstname'))
+      hello(gen('firstname')),
+      dice(20),
+      card_mask(string(gen('creditcardnumber')), 4),
+      initials(gen('name')),
+      slug(gen('name')),
+      rot13(gen('firstname'))
     )
 }
 

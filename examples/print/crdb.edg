@@ -19,10 +19,10 @@ up {
 seed {
   populate_order(type: exec_batch, count: customers, size: 10) `INSERT INTO print_order (email, region, city, amount)
     __values__` (
-      gen('email'),
-      ref_same('regions').name,
-      set(ref_same('regions').cities,[]),
-      uniform.int(1, 500)
+    gen('email'),
+    ref_same('regions').name,
+    set(ref_same('regions').cities,[]),
+    uniform.int(1, 500)
   )
 }
 
@@ -36,24 +36,24 @@ down {
 
 run {
   insert_order(
-    type: exec,
+    type:  exec,
     print: ref_same('regions').name,
     print: arg(3),
-    print: { expr : set(ref_same('regions').cities,[]), agg : "join(map(sortBy(toPairs(freq), -#[1])[:5], #[0] + '=' + string(#[1])), ' ')" },
-    print: { expr : arg(3), agg : 'avg $' + string(int(avg)) + ' n=' + string(count) },
-    print: { expr : arg(3), agg : 'total=$' + string(int(sum)) },
-    print: { expr : arg(3), agg : string(int(min)) + ' - ' + string(int(max)) },
-    print: { expr : set(ref_same('regions').cities,[]), agg : string(len(freq)) + ' unique' }
+    print: { expr: set(ref_same('regions').cities,[]), agg: "join(map(sortBy(toPairs(freq), -#[1])[:5], #[0] + '=' + string(#[1])), ' ')" },
+    print: { expr: arg(3),                             agg: 'avg $' + string(int(avg)) + ' n=' + string(count) },
+    print: { expr: arg(3),                             agg: 'total=$' + string(int(sum)) },
+    print: { expr: arg(3),                             agg: string(int(min)) + ' - ' + string(int(max)) },
+    print: { expr: set(ref_same('regions').cities,[]), agg: string(len(freq)) + ' unique' }
   ) `INSERT INTO print_order (email, region, city, amount)
     VALUES ($1, $2, $3, $4::DECIMAL)` (
-      gen('email'),
-      ref_same('regions').name,
-      set(ref_same('regions').cities,[]),
-      uniform.int(1, 500)
+    gen('email'),
+    ref_same('regions').name,
+    set(ref_same('regions').cities,[]),
+    uniform.int(1, 500)
   )
 
   read_order(
-    print: { expr : ref_same('regions').name, agg : "join(map(sortBy(toPairs(freq), -#[1]), #[0] + '=' + string(#[1])), ' ')" },
-    print: { expr : arg(0), agg : string(count) }
+    print: { expr: ref_same('regions').name, agg: "join(map(sortBy(toPairs(freq), -#[1]), #[0] + '=' + string(#[1])), ' ')" },
+    print: { expr: arg(0),                   agg: string(count) }
   ) `SELECT id, amount FROM print_order WHERE region = $1 LIMIT 1` (ref_same('regions').name)
 }

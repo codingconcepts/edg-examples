@@ -19,9 +19,9 @@ up {
 seed {
   populate_customer(type: exec_batch, count: customers, size: 10) `INSERT INTO customer (email, region, city)
     __values__` (
-      gen('email'),
-      ref_same('regions').name,
-      set(ref_same('regions').cities,[])
+    gen('email'),
+    ref_same('regions').name,
+    set(ref_same('regions').cities,[])
   )
 }
 

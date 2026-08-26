@@ -1,0 +1,43 @@
+let keys       = int(coalesce(env_nil('KEYS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  # Redis has no schema to create; PING keeps the lifecycle uniform.
+  create_kv(type: exec) `PING`
+}
+
+seed {
+  populate_kv(type: exec_batch, count: keys, size: batch_size) `SET kv:$1 $2` (
+    seq(1, 1),
+    blob(value_size)
+  )
+}
+
+deseed {
+  # SCAN + UNLINK rather than KEYS, which would block the server for the
+  # whole sweep on a large keyspace.
+  delete_kv(type: exec) `EVAL "local c=0 repeat local r=redis.call('SCAN',c,'MATCH',ARGV[1],'COUNT',1000) c=tonumber(r[1]) for _,k in ipairs(r[2]) do redis.call('UNLINK',k) end until c==0 return 1" 0 kv:*`
+}
+
+down {
+  drop_kv(type: exec) `EVAL "local c=0 repeat local r=redis.call('SCAN',c,'MATCH',ARGV[1],'COUNT',1000) c=tonumber(r[1]) for _,k in ipairs(r[2]) do redis.call('UNLINK',k) end until c==0 return 1" 0 kv:*`
+}
+
+weights {
+  read  = 50
+  write = 50
+}
+
+run {
+  read(type: query) `GET kv:$1` (gen('number:1,' + string(keys)))
+
+  write(type: exec) `SET kv:$1 $2` (
+    gen('number:1,' + string(keys)),
+    blob(value_size)
+  )
+}

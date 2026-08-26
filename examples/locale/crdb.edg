@@ -20,32 +20,32 @@ up {
 seed {
   jp_users(type: exec_batch, count: jp_users) `INSERT INTO users (id, region, first_name, last_name, full_name, email, phone, city, address, masked_name, masked_email)
     __values__` (
-      id: uuid_v4(),
-      region: const('JP'),
-      first_name: gen_locale('first_name', 'ja_JP'),
-      last_name: gen_locale('last_name', 'ja_JP'),
-      full_name: last_name + first_name,
-      email: gen('email'),
-      phone: gen_locale('phone', 'ja_JP'),
-      city: gen_locale('city', 'ja_JP'),
-      address: gen_locale('address', 'ja_JP'),
-      masked_name: mask('key', full_name),
-      masked_email: mask('key', email)
+    id: uuid_v4(),
+    region: const('JP'),
+    first_name: gen_locale('first_name', 'ja_JP'),
+    last_name: gen_locale('last_name', 'ja_JP'),
+    full_name: last_name + first_name,
+    email: gen('email'),
+    phone: gen_locale('phone', 'ja_JP'),
+    city: gen_locale('city', 'ja_JP'),
+    address: gen_locale('address', 'ja_JP'),
+    masked_name: mask('key', full_name),
+    masked_email: mask('key', email)
   )
 
   de_users(type: exec_batch, count: de_users) `INSERT INTO users (id, region, first_name, last_name, full_name, email, phone, city, address, masked_name, masked_email)
     __values__` (
-      id: uuid_v4(),
-      region: const('DE'),
-      first_name: gen_locale('first_name', 'de_DE'),
-      last_name: gen_locale('last_name', 'de_DE'),
-      full_name: first_name + ' ' + last_name,
-      email: gen('email'),
-      phone: gen_locale('phone', 'de_DE'),
-      city: gen_locale('city', 'de_DE'),
-      address: gen_locale('address', 'de_DE'),
-      masked_name: mask('key', full_name),
-      masked_email: mask('key', email)
+    id: uuid_v4(),
+    region: const('DE'),
+    first_name: gen_locale('first_name', 'de_DE'),
+    last_name: gen_locale('last_name', 'de_DE'),
+    full_name: first_name + ' ' + last_name,
+    email: gen('email'),
+    phone: gen_locale('phone', 'de_DE'),
+    city: gen_locale('city', 'de_DE'),
+    address: gen_locale('address', 'de_DE'),
+    masked_name: mask('key', full_name),
+    masked_email: mask('key', email)
   )
 }
 

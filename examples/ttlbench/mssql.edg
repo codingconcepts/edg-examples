@@ -1,0 +1,43 @@
+let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_ttlbench `IF OBJECT_ID('ttlbench', 'U') IS NULL
+    CREATE TABLE ttlbench (
+      id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,
+      payload VARBINARY(MAX) NOT NULL,
+      inserted_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    )`
+
+  create_idx_ttlbench_inserted `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_ttlbench_inserted')
+    CREATE INDEX idx_ttlbench_inserted ON ttlbench (inserted_at)`
+}
+
+deseed {
+  delete_ttlbench(type: exec) `DELETE FROM ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
+}
+
+weights {
+  delete_expired = 10
+  insert_row     = 70
+  read_recent    = 20
+}
+
+run {
+  insert_row(type: exec) `INSERT INTO ttlbench (payload) VALUES (@p1)` (blob(payload_size))
+
+  read_recent(type: query) `SELECT TOP 10 id, inserted_at
+    FROM ttlbench
+    WHERE inserted_at > DATEADD(MINUTE, -5, SYSUTCDATETIME())
+    ORDER BY inserted_at DESC`
+
+  delete_expired(type: exec) `DELETE TOP(1000) FROM ttlbench
+    WHERE inserted_at < DATEADD(MINUTE, -30, SYSUTCDATETIME())`
+}

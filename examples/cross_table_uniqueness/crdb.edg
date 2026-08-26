@@ -24,10 +24,12 @@ seed {
 
 deseed {
   truncate_users(type: exec) `TRUNCATE TABLE users CASCADE`
+
   truncate_admins(type: exec) `TRUNCATE TABLE admins CASCADE`
 }
 
 down {
   drop_admins(type: exec) `DROP TABLE IF EXISTS admins`
+
   drop_users(type: exec) `DROP TABLE IF EXISTS users`
 }

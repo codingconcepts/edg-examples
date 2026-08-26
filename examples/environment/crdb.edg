@@ -1,5 +1,7 @@
 up {
-  create e `CREATE TABLE IF NOT EXISTS e (
+  create
+
+  e `CREATE TABLE IF NOT EXISTS e (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       key STRING NOT NULL,
       val STRING NOT NULL

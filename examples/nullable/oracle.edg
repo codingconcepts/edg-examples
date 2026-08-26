@@ -22,10 +22,10 @@ seed {
   clear_user(type: exec) `TRUNCATE TABLE "user"`
 
   populate_user(type: exec_batch, count: users, size: 100) `INSERT ALL __values__("user"(email, phone, bio, referred_by))` (
-      gen('email'),
-      nullable(gen('phone'), 0.3),
-      nullable(gen('sentence:5'), 0.5),
-      nullable(uuid_v4(), 0.8)
+    gen('email'),
+    nullable(gen('phone'), 0.3),
+    nullable(gen('sentence:5'), 0.5),
+    nullable(uuid_v4(), 0.8)
   )
 }
 

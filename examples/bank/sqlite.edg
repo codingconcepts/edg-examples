@@ -1,0 +1,78 @@
+let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      email TEXT NOT NULL
+    )`
+
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      balance REAL NOT NULL,
+      customer_id TEXT NOT NULL REFERENCES customer(id)
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
+    __values__` (gen('email'))
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2, c.id
+    FROM customer c
+    ORDER BY c.id
+    LIMIT $3 OFFSET $1 * $3` (
+    batch(customers / batch_size),
+    initial_balance,
+    batch_size
+  )
+}
+
+deseed {
+  delete_account(type: exec) `DELETE FROM account`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+}
+
+weights {
+  check_balance  = 50
+  credit_account = 5
+  make_transfer  = 45
+}
+
+run {
+  check_balance(type: query) `SELECT balance FROM account WHERE id = ?` (uniform.ref('fetch_accounts').id)
+
+  credit_account(type: exec) `UPDATE account SET balance = balance + ?
+    WHERE id = ?` (
+    gen('number:1,1000'),
+    uniform.ref('fetch_accounts').id
+  )
+
+  make_transfer(type: exec) `UPDATE account SET
+      balance = CASE
+                  WHEN id = $2 THEN balance + $3
+                  WHEN id = $1 THEN balance - $3
+                END
+    WHERE id IN ($1, $2)` (
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
+  )
+}

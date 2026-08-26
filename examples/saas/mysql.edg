@@ -106,8 +106,8 @@ seed {
            ELSE 'member'
       END
     FROM seq` (
-      ref_each('SELECT id FROM tenant'),
-      users_per_tenant
+    ref_each('SELECT id FROM tenant'),
+    users_per_tenant
   )
 
   populate_project `INSERT INTO project (tenant_id, name)
@@ -120,8 +120,8 @@ seed {
       '$1',
       CONCAT('project-', s, '-', SUBSTRING('$1', 1, 8))
     FROM seq` (
-      ref_each('SELECT id FROM tenant'),
-      projects_per_tenant
+    ref_each('SELECT id FROM tenant'),
+    projects_per_tenant
   )
 
   populate_task `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
@@ -137,8 +137,8 @@ seed {
       ELT(FLOOR(RAND() * 4) + 1, 'open','in_progress','review','done'),
       (SELECT id FROM app_user WHERE tenant_id = '$2' ORDER BY RAND() LIMIT 1)
     FROM seq` (
-      ref_each('SELECT p.id AS project_id, p.tenant_id FROM project p'),
-      tasks_per_project
+    ref_each('SELECT p.id AS project_id, p.tenant_id FROM project p'),
+    tasks_per_project
   )
 }
 
@@ -200,8 +200,8 @@ run {
       AND t.status = ELT(?, 'open','in_progress','review','done')
     ORDER BY t.updated_at DESC
     LIMIT 20` (
-      ref_perm('fetch_tenants').id,
-      gen('number:1,4')
+    ref_perm('fetch_tenants').id,
+    gen('number:1,4')
   )
 
   create_task(type: exec) `INSERT INTO task (project_id, tenant_id, title, status, assignee_id)
@@ -210,12 +210,12 @@ run {
     WHERE EXISTS (
       SELECT 1 FROM project WHERE id = ? AND tenant_id = ?
     )` (
-      ref_same('fetch_projects').id,
-      ref_perm('fetch_tenants').id,
-      gen('sentence:5'),
-      ref('fetch_users').id,
-      ref_same('fetch_projects').id,
-      ref_perm('fetch_tenants').id
+    ref_same('fetch_projects').id,
+    ref_perm('fetch_tenants').id,
+    gen('sentence:5'),
+    ref('fetch_users').id,
+    ref_same('fetch_projects').id,
+    ref_perm('fetch_tenants').id
   )
 
   update_task(type: exec) `UPDATE task SET
@@ -230,10 +230,10 @@ run {
 
   add_comment(type: exec) `INSERT INTO task_comment (task_id, tenant_id, author_id, body)
     VALUES (?, ?, ?, ?)` (
-      ref('fetch_tasks').id,
-      ref_same('fetch_users').tenant_id,
-      ref_same('fetch_users').id,
-      gen('sentence:6')
+    ref('fetch_tasks').id,
+    ref_same('fetch_users').tenant_id,
+    ref_same('fetch_users').id,
+    gen('sentence:6')
   )
 
   soft_delete(type: exec) `UPDATE task

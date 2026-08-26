@@ -1,0 +1,34 @@
+let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_ttlbench(type: exec) `{"create": "ttlbench"}`
+
+  create_ttl_index(type: exec) `{"createIndexes": "ttlbench", "indexes": [{"key": {"inserted_at": 1}, "name": "ttl_idx", "expireAfterSeconds": 1800}]}`
+}
+
+deseed {
+  delete_ttlbench(type: exec) `{"delete": "ttlbench", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_ttlbench(type: exec) `{"drop": "ttlbench"}`
+}
+
+weights {
+  insert_row  = 80
+  read_recent = 20
+}
+
+run {
+  insert_row(type: exec) `{"insert": "ttlbench", "documents": [{"_id": {"$oid": "$1"}, "payload": "$2", "inserted_at": {"$date": "$3"}}]}` (
+    objectid(),
+    blob(payload_size),
+    date_offset('0s')
+  )
+
+  read_recent(type: query) `{"aggregate": "ttlbench", "pipeline": [{"$match": {"inserted_at": {"$gte": {"$date": "$1"}}}}, {"$sort": {"inserted_at": -1}}, {"$limit": 10}, {"$project": {"_id": 1, "inserted_at": 1}}], "cursor": {}}` (date_offset('-5m'))
+}

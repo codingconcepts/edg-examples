@@ -17,7 +17,7 @@ down {
 run {
   add_event(type: exec) `INSERT INTO event (region, payload)
     VALUES ($1, $2)` (
-      { 'fra' : 'eu-central-1', 'sin' : 'ap-southeast-1' }[env('FLY_REGION')] ?? fail('bad region'),
-      gen('sentence')
+    { 'fra': 'eu-central-1', 'sin': 'ap-southeast-1' }[env('FLY_REGION')] ?? fail('bad region'),
+    gen('sentence')
   )
 }

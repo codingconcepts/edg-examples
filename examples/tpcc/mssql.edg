@@ -1,9 +1,15 @@
-let warehouses = 1
-let districts  = 10
-let customers  = 30000
-let orders     = 30000
-let stock      = 100000
-let items      = 100000
+let warehouses = int(coalesce(env_nil('WAREHOUSES'), 1))
+let districts  = int(coalesce(env_nil('DISTRICTS'), 10))
+let customers  = int(coalesce(env_nil('CUSTOMERS'), 300))
+let orders     = int(coalesce(env_nil('ORDERS'), 300))
+let stock      = int(coalesce(env_nil('STOCK'), 1000))
+let items      = int(coalesce(env_nil('ITEMS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
+
+expect {
+  error_rate < 1
+}
 
 up {
   create_warehouse `IF OBJECT_ID('warehouse', 'U') IS NULL
@@ -223,8 +229,8 @@ seed {
       3001
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts
   )
 
   populate_customer `WITH d_seq AS (
@@ -247,12 +253,15 @@ seed {
         CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 10 + 6) AS INT)),
       'OE',
       CONCAT(
-        CHOOSE(CAST(FLOOR(CASE WHEN c <= 1000 THEN c - 1 ELSE CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 1000) AS INT) END / 100) AS INT) + 1,
-          'BAR','OUGHT','ABLE','PRI','PRES','ESE','ANTI','CALLY','ATION','EING'),
-        CHOOSE(CAST(FLOOR(CASE WHEN c <= 1000 THEN c - 1 ELSE CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 1000) AS INT) END / 10) AS INT) % 10 + 1,
-          'BAR','OUGHT','ABLE','PRI','PRES','ESE','ANTI','CALLY','ATION','EING'),
-        CHOOSE(CAST(CASE WHEN c <= 1000 THEN c - 1 ELSE CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 1000) AS INT) END % 10 AS INT) + 1,
-          'BAR','OUGHT','ABLE','PRI','PRES','ESE','ANTI','CALLY','ATION','EING')
+        CASE CAST(FLOOR(CASE WHEN c <= 1000 THEN c - 1 ELSE CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 1000) AS INT) END / 100) AS INT) % 10
+          WHEN 0 THEN 'BAR' WHEN 1 THEN 'OUGHT' WHEN 2 THEN 'ABLE' WHEN 3 THEN 'PRI' WHEN 4 THEN 'PRES'
+          WHEN 5 THEN 'ESE' WHEN 6 THEN 'ANTI' WHEN 7 THEN 'CALLY' WHEN 8 THEN 'ATION' ELSE 'EING' END,
+        CASE CAST(FLOOR(CASE WHEN c <= 1000 THEN c - 1 ELSE CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 1000) AS INT) END / 10) AS INT) % 10
+          WHEN 0 THEN 'BAR' WHEN 1 THEN 'OUGHT' WHEN 2 THEN 'ABLE' WHEN 3 THEN 'PRI' WHEN 4 THEN 'PRES'
+          WHEN 5 THEN 'ESE' WHEN 6 THEN 'ANTI' WHEN 7 THEN 'CALLY' WHEN 8 THEN 'ATION' ELSE 'EING' END,
+        CASE CAST(CASE WHEN c <= 1000 THEN c - 1 ELSE CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 1000) AS INT) END % 10 AS INT)
+          WHEN 0 THEN 'BAR' WHEN 1 THEN 'OUGHT' WHEN 2 THEN 'ABLE' WHEN 3 THEN 'PRI' WHEN 4 THEN 'PRES'
+          WHEN 5 THEN 'ESE' WHEN 6 THEN 'ANTI' WHEN 7 THEN 'CALLY' WHEN 8 THEN 'ATION' ELSE 'EING' END
       ),
       SUBSTRING(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), 1,
         CAST(FLOOR(RAND(CHECKSUM(NEWID())) * 10 + 10) AS INT)),
@@ -281,9 +290,9 @@ seed {
     FROM d_seq
     CROSS JOIN c_seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      customers / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    customers / districts
   )
 
   populate_history `INSERT INTO history (h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
@@ -320,9 +329,9 @@ seed {
     FROM d_seq
     CROSS JOIN o_seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_new_order `WITH d_seq AS (
@@ -340,9 +349,9 @@ seed {
     FROM d_seq
     CROSS JOIN o_seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_order_line `WITH n_seq AS (
@@ -399,8 +408,8 @@ seed {
       END
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      stock
+    ref_each('SELECT w_id FROM warehouse'),
+    stock
   )
 }
 
@@ -457,18 +466,33 @@ weights {
 }
 
 run {
-  new_order(type: exec, wait: 18s) `INSERT INTO oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
-      o_ol_cnt, o_all_local)
-    SELECT p.w_id, p.d_id, d.d_next_o_id, p.c_id, GETDATE(), p.ol_cnt, 1
-    FROM (SELECT @p1 AS w_id, @p2 AS d_id, @p3 AS c_id, @p4 AS ol_cnt) p
-    JOIN district d ON d.d_w_id = p.w_id AND d.d_id = p.d_id` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts),
-      gen('number:5,15')
-  )
+  transaction new_order(wait: 180ms) {
+    let c_id = nurand(1023, 1, customers / districts)
+    let d_id = gen('number:1,10')
+    let ol_cnt = gen('number:5,15')
+    let w_id = ref_perm('fetch_warehouses').w_id
+    get_next_o_id(type: query) `SELECT d_next_o_id FROM district WITH (UPDLOCK, HOLDLOCK)
+      WHERE d_w_id = @p1 AND d_id = @p2` (
+      local('w_id'),
+      local('d_id')
+    )
+    incr_next_o_id(type: exec) `UPDATE district SET d_next_o_id = d_next_o_id + 1
+      WHERE d_w_id = @p1 AND d_id = @p2` (
+      local('w_id'),
+      local('d_id')
+    )
+    insert_oorder(type: exec) `INSERT INTO oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
+        o_ol_cnt, o_all_local)
+      VALUES (@p1, @p2, @p3, @p4, GETDATE(), @p5, 1)` (
+      local('w_id'),
+      local('d_id'),
+      ref_same('get_next_o_id').d_next_o_id,
+      local('c_id'),
+      local('ol_cnt')
+    )
+  }
 
-  payment(type: exec, wait: 3s) `UPDATE c
+  payment(type: exec, wait: 30ms) `UPDATE c
     SET
       c.c_balance = c.c_balance - p.amount / 100,
       c.c_ytd_payment = c.c_ytd_payment + p.amount / 100,
@@ -476,13 +500,13 @@ run {
     FROM customer c
     JOIN (SELECT @p1 AS amount, @p2 AS w_id, @p3 AS d_id, @p4 AS c_id) p ON 1=1
     WHERE c.c_w_id = p.w_id AND c.c_d_id = p.d_id AND c.c_id = p.c_id` (
-      gen('number:100,500000'),
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    gen('number:100,500000'),
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
-  order_status(type: query, wait: 2s) `SELECT o.o_id, o.o_entry_d, o.o_carrier_id,
+  order_status(type: query, wait: 20ms) `SELECT o.o_id, o.o_entry_d, o.o_carrier_id,
       ol.ol_i_id, ol.ol_supply_w_id, ol.ol_quantity,
       ol.ol_amount, ol.ol_delivery_d
     FROM (SELECT @p1 AS w_id, @p2 AS d_id, @p3 AS c_id) p
@@ -496,23 +520,23 @@ run {
         WHERE o2.o_w_id = p.w_id AND o2.o_d_id = p.d_id
           AND o2.o_c_id = p.c_id
       )` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
-  delivery(type: exec, wait: 2s) `DELETE n FROM new_order n
+  delivery(type: exec, wait: 20ms) `DELETE n FROM new_order n
     JOIN (SELECT @p1 AS w_id, @p2 AS d_id) p ON 1=1
     WHERE n.no_w_id = p.w_id AND n.no_d_id = p.d_id
       AND n.no_o_id = (
         SELECT MIN(no_o_id) FROM new_order
         WHERE no_w_id = p.w_id AND no_d_id = p.d_id
       )` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10')
   )
 
-  stock_level(type: query, wait: 2s) `SELECT COUNT(DISTINCT s.s_i_id) AS low_stock
+  stock_level(type: query, wait: 20ms) `SELECT COUNT(DISTINCT s.s_i_id) AS low_stock
     FROM district d
     JOIN order_line ol
       ON ol.ol_w_id = d.d_w_id AND ol.ol_d_id = d.d_id
@@ -521,8 +545,8 @@ run {
       ON s.s_i_id = ol.ol_i_id AND s.s_w_id = d.d_w_id
     WHERE d.d_w_id = @p1 AND d.d_id = @p2
       AND s.s_quantity < @p3` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:10,20')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
   )
 }

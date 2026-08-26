@@ -1,6 +1,10 @@
-let customers       = 100000
-let initial_balance = 10000
-let batch_size      = 10000
+let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
 
 up {
   create_customer `CREATE TABLE IF NOT EXISTS customer (
@@ -17,17 +21,21 @@ up {
 }
 
 seed {
-  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
-    __values__` (gen('email'))
+  populate_customer `INSERT INTO customer (email)
+    SELECT j.val
+    FROM JSON_TABLE(
+      CONCAT('["', REPLACE('$1', CHAR(31), '","'), '"]'),
+      '$[*]' COLUMNS(val VARCHAR(255) PATH '$')
+    ) j` (gen_batch(customers, batch_size, 'email'))
 
   populate_account `INSERT INTO account (balance, customer_id)
     SELECT $2, c.id
     FROM customer c
     ORDER BY c.id
     LIMIT $3 OFFSET $1` (
-      batch(customers / batch_size, batch_size),
-      initial_balance,
-      batch_size
+    batch(customers / batch_size, batch_size),
+    initial_balance,
+    batch_size
   )
 }
 
@@ -54,12 +62,12 @@ weights {
 }
 
 run {
-  check_balance(type: query) `SELECT balance FROM account WHERE id = ?` (ref('fetch_accounts').id)
+  check_balance(type: query) `SELECT balance FROM account WHERE id = ?` (uniform.ref('fetch_accounts').id)
 
   credit_account(type: exec) `UPDATE account SET balance = balance + ?
     WHERE id = ?` (
-      gen('number:1,1000'),
-      ref('fetch_accounts').id
+    gen('number:1,1000'),
+    uniform.ref('fetch_accounts').id
   )
 
   make_transfer(type: exec) `UPDATE account a
@@ -69,8 +77,8 @@ run {
                       WHEN a.id = p.from_id THEN a.balance - p.amount
                     END
     WHERE a.id = p.from_id OR a.id = p.to_id` (
-      ref_diff('fetch_accounts').id,
-      ref_diff('fetch_accounts').id,
-      gen('number:1,100')
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
   )
 }

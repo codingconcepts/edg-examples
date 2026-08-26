@@ -23,8 +23,8 @@ seed {
     SELECT 'uniform', DBMS_RANDOM.VALUE * 100
     FROM DUAL
     CONNECT BY LEVEL <= $2` (
-      batch(rows / batch_size),
-      batch_size
+    batch(rows / batch_size),
+    batch_size
   )
 }
 

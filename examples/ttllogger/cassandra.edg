@@ -1,0 +1,58 @@
+let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_events(type: exec) `CREATE TABLE IF NOT EXISTS edg.events (
+      id UUID,
+      level TEXT,
+      source TEXT,
+      message TEXT,
+      created_at TIMESTAMP,
+      PRIMARY KEY (level, created_at, id)
+    ) WITH CLUSTERING ORDER BY (created_at DESC, id ASC)`
+}
+
+deseed {
+  truncate_events(type: exec) `TRUNCATE edg.events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS edg.events`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+weights {
+  read_by_level = 15
+  read_recent   = 15
+  write_log     = 70
+}
+
+run {
+  write_log(type: exec) `INSERT INTO edg.events (id, level, source, message, created_at)
+    VALUES ($1, $2, $3, $4, toTimestamp(now()))
+    USING TTL 600` (
+    gen('uuid'),
+    uniform.set(['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],[10, 50, 25, 12, 3]),
+    uniform.set(['api', 'worker', 'scheduler', 'auth', 'billing'],[]),
+    regex('[a-zA-Z0-9 ]{64,256}')
+  )
+
+  read_recent(type: query) `SELECT id, level, source, message, created_at
+    FROM edg.events
+    WHERE level = $1
+    ORDER BY created_at DESC
+    LIMIT 20` (uniform.set(['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],[10, 50, 25, 12, 3]))
+
+  read_by_level(type: query) `SELECT id, source, message, created_at
+    FROM edg.events
+    WHERE level = $1
+    ORDER BY created_at DESC
+    LIMIT 20` (uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]))
+}

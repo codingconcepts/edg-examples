@@ -3,7 +3,7 @@ run {
 
   credit_account(type: exec) `UPDATE account SET balance = balance + ?
     WHERE id = ?` (
-      gen('number:1,1000'),
-      ref('fetch_accounts').id
+    gen('number:1,1000'),
+    ref('fetch_accounts').id
   )
 }

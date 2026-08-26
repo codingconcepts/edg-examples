@@ -1,6 +1,10 @@
-let records    = 10000
-let batch_size = 1000
-let zipf_s     = 1.2
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let zipf_s     = float(coalesce(env_nil('ZIPF_S'), 1.2))
+
+expect {
+  error_rate < 1
+}
 
 up {
   create_usertable `CREATE TABLE IF NOT EXISTS usertable (
@@ -39,8 +43,8 @@ seed {
       LPAD('', 100, MD5(RAND())),
       LPAD('', 100, MD5(RAND()))
     FROM seq` (
-      batch(records / batch_size),
-      batch_size
+    batch(records / batch_size),
+    batch_size
   )
 }
 
@@ -62,37 +66,37 @@ run {
 
   update(type: exec) `UPDATE usertable SET field0 = ?
     WHERE ycsb_key = ?` (
-      regex('[a-zA-Z0-9]{100}'),
-      template('user%010d', zipf.int(zipf_s, 1, records - 1))
+    regex('[a-zA-Z0-9]{100}'),
+    template('user%010d', zipf.int(zipf_s, 1, records - 1))
   )
 
   insert(type: exec) `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
       field4, field5, field6, field7, field8, field9)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` (
-      uuid_v7(),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}'),
-      regex('[a-zA-Z0-9]{100}')
+    uuid_v7(),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
   )
 
   scan(type: query) `SELECT * FROM usertable
     WHERE ycsb_key >= ?
     ORDER BY ycsb_key
     LIMIT ?` (
-      template('user%010d', zipf.int(zipf_s, 1, records - 1)),
-      gen('number:1,100')
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    gen('number:1,100')
   )
 
   read_modify_write(type: exec) `UPDATE usertable SET field0 = ?
     WHERE ycsb_key = ?` (
-      regex('[a-zA-Z0-9]{100}'),
-      template('user%010d', zipf.int(zipf_s, 1, records - 1))
+    regex('[a-zA-Z0-9]{100}'),
+    template('user%010d', zipf.int(zipf_s, 1, records - 1))
   )
 }

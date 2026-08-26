@@ -59,14 +59,14 @@ up {
 seed {
   populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email, market)
     __values__` (
-      gen('email'),
-      set(['uk', 'us', 'eu'],[34, 33, 33])
+    gen('email'),
+    set(['uk', 'us', 'eu'],[34, 33, 33])
   )
 
   populate_product(type: exec_batch, count: products, size: batch_size) `INSERT INTO product (name, price)
     __values__` (
-      gen('productname'),
-      uniform.float(5.00, 500.00, 2)
+    gen('productname'),
+    uniform.float(5.00, 500.00, 2)
   )
 }
 
@@ -99,8 +99,6 @@ init {
 run {
   read_customer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref('fetch_customers').id)
 
-  
-
   transaction place_order {
     read_buyer(type: query) `SELECT id, market FROM customer WHERE id = $1::UUID` (ref('fetch_customers').id)
     read_product(type: query) `SELECT id, price FROM product WHERE id = $1::UUID` (ref('fetch_products').id)
@@ -120,12 +118,12 @@ run {
     }
     insert_order(type: exec) `INSERT INTO order_log (customer_id, product_id, subtotal, tax, currency, market)
       VALUES ($1::UUID, $2::UUID, $3::FLOAT, $4::FLOAT, $5::STRING, $6::STRING)` (
-        ref_same('read_buyer').id,
-        ref_same('read_product').id,
-        ref_same('read_product').price,
-        ref_same('read_product').price * local('tax_rate'),
-        local('currency'),
-        ref_same('read_buyer').market
+      ref_same('read_buyer').id,
+      ref_same('read_product').id,
+      ref_same('read_product').price,
+      ref_same('read_product').price * local('tax_rate'),
+      local('currency'),
+      ref_same('read_buyer').market
     )
   }
 }

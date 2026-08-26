@@ -85,15 +85,15 @@ seed {
       'Airport_' || lpad($1::TEXT, 4, '0'),
       'City_' || lpad($1::TEXT, 4, '0'),
       (($1::INT - 1) % $3::INT) + 1)` (
-      iter(),
-      uniq("regex('[A-Z]{3}')"),
-      countries
+    iter(),
+    uniq("regex('[A-Z]{3}')"),
+    countries
   )
 
   populate_airline(type: exec_batch, count: airlines, size: batch_size) `INSERT INTO airline (al_id, al_iata_code, al_name)
     VALUES ($1::INT, $2, 'Airline_' || lpad($1::TEXT, 3, '0'))` (
-      iter(),
-      uniq("regex('[A-Z]{2}')")
+    iter(),
+    uniq("regex('[A-Z]{2}')")
   )
 
   populate_customer `INSERT INTO customer (c_id, c_base_ap_id, c_balance,
@@ -107,9 +107,9 @@ seed {
       floor(random()::FLOAT8 * 1000)::INT,
       floor(random()::FLOAT8 * 1000)::INT
     FROM generate_series(1, $2::INT) AS s` (
-      batch(customers / batch_size),
-      batch_size,
-      airports
+    batch(customers / batch_size),
+    batch_size,
+    airports
   )
 
   populate_flight `INSERT INTO flight (f_id, f_al_id, f_depart_ap_id, f_arrive_ap_id,
@@ -126,11 +126,11 @@ seed {
       $5,
       (random()::FLOAT8 * 900 + 100)::DECIMAL(12,2)
     FROM generate_series(1, $2::INT) AS s` (
-      batch(flights / batch_size),
-      batch_size,
-      airports,
-      airlines,
-      seats_per_flight
+    batch(flights / batch_size),
+    batch_size,
+    airports,
+    airlines,
+    seats_per_flight
   )
 
   populate_reservation `WITH flight_batch AS (
@@ -150,10 +150,10 @@ seed {
       floor(random()::FLOAT8 * 100)::INT
     FROM flight_batch fb
     CROSS JOIN generate_series(1, $3) AS s` (
-      batch(flights / batch_size),
-      batch_size,
-      reservations_per_flight,
-      customers
+    batch(flights / batch_size),
+    batch_size,
+    reservations_per_flight,
+    customers
   )
 
   update_seats_left(type: exec) `UPDATE flight SET f_seats_left = f_seats_total - (
@@ -215,9 +215,9 @@ run {
     WHERE f_depart_ap_id = $1::INT
       AND f_depart_time > now()
     ORDER BY f_depart_time
-    LIMIT 10` (ref('fetch_airports').ap_id)
+    LIMIT 10` (uniform.ref('fetch_airports').ap_id)
 
-  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = $1::INT` (ref('fetch_flights').f_id)
+  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = $1::INT` (uniform.ref('fetch_flights').f_id)
 
   new_reservation(type: query) `WITH
       seat_check AS (
@@ -240,23 +240,23 @@ run {
         RETURNING 1
       )
     SELECT nr.r_id FROM new_res nr` (
-      ref('fetch_customers').c_id,
-      ref('fetch_flights').f_id,
-      gen('number:1,150'),
-      gen('number:50,1000')
+    uniform.ref('fetch_customers').c_id,
+    uniform.ref('fetch_flights').f_id,
+    gen('number:1,150'),
+    gen('number:50,1000')
   )
 
   update_customer(type: exec) `UPDATE customer SET c_iattr00 = $2::INT, c_iattr01 = $3::INT
     WHERE c_id = $1::INT` (
-      ref('fetch_customers').c_id,
-      gen('number:0,1000'),
-      gen('number:0,1000')
+    uniform.ref('fetch_customers').c_id,
+    gen('number:0,1000'),
+    gen('number:0,1000')
   )
 
   update_reservation(type: exec) `UPDATE reservation SET r_iattr00 = $2::INT
     WHERE r_id = $1::UUID` (
-      ref('fetch_reservations').r_id,
-      gen('number:0,100')
+    uniform.ref('fetch_reservations').r_id,
+    gen('number:0,100')
   )
 
   delete_reservation(type: exec) `WITH del AS (
@@ -266,7 +266,7 @@ run {
     UPDATE flight SET f_seats_left = f_seats_left + 1
     FROM del
     WHERE flight.f_id = del.r_f_id` (
-      ref('fetch_reservations').r_id,
-      ref('fetch_reservations').r_f_id
+    uniform.ref('fetch_reservations').r_id,
+    uniform.ref('fetch_reservations').r_f_id
   )
 }

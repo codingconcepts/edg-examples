@@ -1,0 +1,56 @@
+let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_ttlbench(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE ttlbench (
+          id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
+          payload RAW(2000) NOT NULL,
+          inserted_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_idx_ttlbench_inserted(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX idx_ttlbench_inserted ON ttlbench (inserted_at)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+deseed {
+  truncate_ttlbench(type: exec) `TRUNCATE TABLE ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE ttlbench PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+}
+
+weights {
+  delete_expired = 10
+  insert_row     = 70
+  read_recent    = 20
+}
+
+run {
+  insert_row(type: exec) `INSERT INTO ttlbench (payload) VALUES (:1)` (blob(payload_size))
+
+  read_recent(type: query) `SELECT id, inserted_at
+    FROM ttlbench
+    WHERE inserted_at > SYSTIMESTAMP - INTERVAL '5' MINUTE
+    ORDER BY inserted_at DESC
+    FETCH FIRST 10 ROWS ONLY`
+
+  delete_expired(type: exec) `DELETE FROM ttlbench
+    WHERE inserted_at < SYSTIMESTAMP - INTERVAL '30' MINUTE
+      AND ROWNUM <= 1000`
+}

@@ -62,8 +62,8 @@ seed {
       (ARRAY[15.0, 20.0, 30.0, 500.0, 110.0])[s]::DECIMAL(10,2),
       (ARRAY[35.0, 80.0, 70.0, 3000.0, 240.0])[s]::DECIMAL(10,2)
     FROM generate_series(1, $2) AS s` (
-      ref_each('SELECT id FROM device'),
-      sensors_per_device
+    ref_each('SELECT id FROM device'),
+    sensors_per_device
   )
 
   populate_reading `INSERT INTO reading (sensor_id, value, recorded_at)
@@ -72,8 +72,8 @@ seed {
       $2::FLOAT8 + random()::FLOAT8 * ($3::FLOAT8 - $2::FLOAT8),
       now() - (s * INTERVAL '1 minute')
     FROM generate_series(1, $4) AS s` (
-      ref_each('SELECT id, min_threshold, max_threshold FROM sensor'),
-      readings_per_sensor
+    ref_each('SELECT id, min_threshold, max_threshold FROM sensor'),
+    readings_per_sensor
   )
 }
 
@@ -115,8 +115,8 @@ weights {
 run {
   ingest_reading(type: exec) `INSERT INTO reading (sensor_id, value)
     VALUES ($1::INT, $2::DECIMAL / 100.0)` (
-      ref('fetch_sensors').id,
-      gen('number:1,10000')
+    ref('fetch_sensors').id,
+    gen('number:1,10000')
   )
 
   check_alerts(type: query) `SELECT r.id, r.value, r.recorded_at, s.metric_name
@@ -127,8 +127,8 @@ run {
       AND r.value > $2::DECIMAL
     ORDER BY r.recorded_at DESC
     LIMIT 20` (
-      ref('fetch_sensors').id,
-      ref('fetch_sensors').max_threshold
+    ref('fetch_sensors').id,
+    ref('fetch_sensors').max_threshold
   )
 
   hourly_rollup(type: query) `SELECT
@@ -150,15 +150,15 @@ run {
     WHERE s.device_id = $1::INT
     ORDER BY r.recorded_at DESC
     LIMIT $3::INT OFFSET $2::INT * $3::INT` (
-      ref('fetch_devices').id,
-      gen('number:0,19'),
-      page_size
+    ref('fetch_devices').id,
+    gen('number:0,19'),
+    page_size
   )
 
   update_threshold(type: exec) `UPDATE sensor SET max_threshold = $2::DECIMAL
     WHERE id = $1::INT` (
-      ref('fetch_sensors').id,
-      gen('number:50,300')
+    ref('fetch_sensors').id,
+    gen('number:50,300')
   )
 
   detect_anomaly(type: query) `SELECT sensor_id, value, recorded_at,

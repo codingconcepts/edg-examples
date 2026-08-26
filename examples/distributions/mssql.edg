@@ -20,8 +20,8 @@ seed {
     SELECT 'uniform', RAND(CHECKSUM(NEWID())) * 100
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      batch(rows / batch_size),
-      batch_size
+    batch(rows / batch_size),
+    batch_size
   )
 }
 

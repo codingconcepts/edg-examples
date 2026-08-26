@@ -13,6 +13,9 @@ convert:
 		fi; \
 	done
 
+format:
+	@find . -name "*.edg" -print0 | xargs -0 edg fmt -w
+
 validate:
 	@included=$$(grep -rh "^include " --include="*.edg" . 2>/dev/null | sed "s/include '//;s/'.*//"); \
 	find . -name "*.edg" -not -path "*/includes/shared/*" -not -path "*/includes/output/*" -not -path "*/capture/output/*" -not -path "*/plugins/*" -not -path "*/correlated_signals/*" | sort | while read -r edg; do \

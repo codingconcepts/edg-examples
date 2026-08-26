@@ -18,15 +18,15 @@ up {
 seed {
   populate_events(type: exec_batch, count: timestamp_steps('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z', '5m'), size: batch_size) `INSERT INTO events (event_type, occurred_at)
     __values__` (
-      set(['click', 'view', 'purchase', 'signup'],[40, 35, 15, 10]),
-      timestamp_step()
+    set(['click', 'view', 'purchase', 'signup'],[40, 35, 15, 10]),
+    timestamp_step()
   )
 
   populate_metrics(type: exec_batch, count: timestamp_steps('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z', 10000), size: batch_size) `INSERT INTO metrics (sensor_id, reading, recorded_at)
     __values__` (
-      int(uniform.int(1, 50)),
-      norm.float(100, 15, 0, 200, 2),
-      timestamp_step()
+    int(uniform.int(1, 50)),
+    norm.float(100, 15, 0, 200, 2),
+    timestamp_step()
   )
 }
 

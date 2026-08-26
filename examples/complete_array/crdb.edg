@@ -34,16 +34,16 @@ up {
 seed {
   populate_product(type: exec_batch, count: products, size: products) `INSERT INTO product (name, description)
     __values__` (
-      ref_each(product_catalog).name,
-      ref_each(product_catalog).description
+    ref_each(product_catalog).name,
+    ref_each(product_catalog).description
   )
 
   populate_review(type: exec_batch, count: products, size: products) `INSERT INTO review (product_name, review_text, sentiment, rating)
     __values__` (
-      ref_each(product_catalog).name,
-      local('review').review_text,
-      local('review').sentiment,
-      local('review').rating
+    ref_each(product_catalog).name,
+    local('review').review_text,
+    local('review').sentiment,
+    local('review').rating
   )
 }
 

@@ -25,10 +25,10 @@ seed {
   clear_contact(type: exec) `TRUNCATE TABLE contact`
 
   populate_contact(type: exec_batch, count: contacts, size: 100) `INSERT ALL __values__(contact(name, email, phone))` (
-      gen('name'),
-      bool(),
-      cond(arg(1), gen('email'), nil),
-      cond(! arg(1), gen('phone'), nil)
+    gen('name'),
+    bool(),
+    cond(arg(1), gen('email'), nil),
+    cond(! arg(1), gen('phone'), nil)
   )
 }
 

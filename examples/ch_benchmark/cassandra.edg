@@ -213,35 +213,35 @@ seed {
   populate_supplier(type: exec_batch, count: 10000, size: 50) `INSERT INTO edg.supplier (su_suppkey, su_name, su_address,
       su_nationkey, su_phone, su_acctbal, su_comment)
     VALUES ($1, $2, $3, $4, $5, $6, $7)` (
-      iter(),
-      regex('[a-zA-Z]{15,25}'),
-      regex('[a-zA-Z]{15,40}'),
-      gen('number:0,24'),
-      regex('[a-zA-Z]{15,15}'),
-      uniform.float(-1000.00, 9000.00, 2),
-      regex('[a-zA-Z]{10,30}')
+    iter(),
+    regex('[a-zA-Z]{15,25}'),
+    regex('[a-zA-Z]{15,40}'),
+    gen('number:0,24'),
+    regex('[a-zA-Z]{15,15}'),
+    uniform.float(-1000.00, 9000.00, 2),
+    regex('[a-zA-Z]{10,30}')
   )
 
   populate_item(type: exec_batch, count: items, size: 50) `INSERT INTO edg.item (i_id, i_im_id, i_name, i_price, i_data)
     VALUES ($1, $2, $3, $4, $5)` (
-      iter(),
-      gen('number:1,10000'),
-      regex('[a-zA-Z]{6,24}'),
-      uniform.float(1.00, 100.00, 2),
-      regex('[a-zA-Z]{26,50}')
+    iter(),
+    gen('number:1,10000'),
+    regex('[a-zA-Z]{6,24}'),
+    uniform.float(1.00, 100.00, 2),
+    regex('[a-zA-Z]{26,50}')
   )
 
   populate_warehouse(type: exec_batch, count: warehouses, size: 50) `INSERT INTO edg.warehouse (w_id, w_name, w_street_1, w_street_2,
       w_city, w_state, w_zip, w_tax, w_ytd)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 300000)` (
-      iter(),
-      regex('[a-zA-Z]{6,10}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{2,2}'),
-      regex('[a-zA-Z]{9,9}'),
-      uniform.float(0.0000, 0.2000, 4)
+    iter(),
+    regex('[a-zA-Z]{6,10}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{2,2}'),
+    regex('[a-zA-Z]{9,9}'),
+    uniform.float(0.0000, 0.2000, 4)
   )
 
   fetch_warehouses `SELECT w_id FROM edg.warehouse`
@@ -249,15 +249,15 @@ seed {
   populate_district(type: exec_batch, count: districts, size: 50) `INSERT INTO edg.district (d_w_id, d_id, d_name, d_street_1,
       d_street_2, d_city, d_state, d_zip, d_tax, d_ytd, d_next_o_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 30000, 3001)` (
-      ref('fetch_warehouses').w_id,
-      iter(),
-      regex('[a-zA-Z]{6,10}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{2,2}'),
-      regex('[a-zA-Z]{9,9}'),
-      uniform.float(0.0000, 0.2000, 4)
+    uniform.ref('fetch_warehouses').w_id,
+    iter(),
+    regex('[a-zA-Z]{6,10}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{2,2}'),
+    regex('[a-zA-Z]{9,9}'),
+    uniform.float(0.0000, 0.2000, 4)
   )
 
   populate_customer(type: exec_batch, count: customers, size: 50) `INSERT INTO edg.customer (c_w_id, c_d_id, c_id, c_first, c_middle,
@@ -266,59 +266,59 @@ seed {
       c_ytd_payment, c_payment_cnt, c_delivery_cnt, c_data)
     VALUES ($1, $2, $3, $4, 'OE', $5, $6, $7, $8, $9, $10, $11,
       toTimestamp(now()), 'GC', 50000, $12, -10, 10, 1, 0, $13)` (
-      ref('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      iter(),
-      regex('[a-zA-Z]{6,16}'),
-      regex('[a-zA-Z]{6,16}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{10,20}'),
-      regex('[a-zA-Z]{2,2}'),
-      regex('[a-zA-Z]{9,9}'),
-      regex('[a-zA-Z]{16,16}'),
-      uniform.float(0.0000, 0.5000, 4),
-      regex('[a-zA-Z]{300,500}')
+    uniform.ref('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    iter(),
+    regex('[a-zA-Z]{6,16}'),
+    regex('[a-zA-Z]{6,16}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{10,20}'),
+    regex('[a-zA-Z]{2,2}'),
+    regex('[a-zA-Z]{9,9}'),
+    regex('[a-zA-Z]{16,16}'),
+    uniform.float(0.0000, 0.5000, 4),
+    regex('[a-zA-Z]{300,500}')
   )
 
   populate_history(type: exec_batch, count: customers, size: 50) `INSERT INTO edg.history (h_id, h_c_id, h_c_d_id, h_c_w_id,
       h_d_id, h_w_id, h_date, h_amount, h_data)
     VALUES ($1, $2, $3, $4, $3, $4, toTimestamp(now()), 10, $5)` (
-      gen('uuid'),
-      iter(),
-      gen('number:1,10'),
-      ref('fetch_warehouses').w_id,
-      regex('[a-zA-Z]{12,24}')
+    gen('uuid'),
+    iter(),
+    gen('number:1,10'),
+    uniform.ref('fetch_warehouses').w_id,
+    regex('[a-zA-Z]{12,24}')
   )
 
   populate_oorder(type: exec_batch, count: orders, size: 50) `INSERT INTO edg.oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
       o_carrier_id, o_ol_cnt, o_all_local)
     VALUES ($1, $2, $3, $4, toTimestamp(now()), 1, $5, 1)` (
-      ref('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      iter(),
-      gen('number:1,3000'),
-      gen('number:5,15')
+    uniform.ref('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    iter(),
+    gen('number:1,3000'),
+    gen('number:5,15')
   )
 
   populate_new_order(type: exec_batch, count: districts, size: 50) `INSERT INTO edg.new_order (no_w_id, no_d_id, no_o_id)
     VALUES ($1, $2, $3)` (
-      ref('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      iter()
+    uniform.ref('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    iter()
   )
 
   populate_order_line(type: exec_batch, count: orders, size: 50) `INSERT INTO edg.order_line (ol_w_id, ol_d_id, ol_o_id, ol_number,
       ol_i_id, ol_supply_w_id, ol_delivery_d, ol_quantity, ol_amount,
       ol_dist_info)
     VALUES ($1, $2, $3, $4, $5, $1, toTimestamp(now()), 5, $6, $7)` (
-      ref('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:1,3000'),
-      gen('number:1,15'),
-      gen('number:1,100000'),
-      uniform.float(0.00, 9999.99, 2),
-      regex('[a-zA-Z]{24,24}')
+    uniform.ref('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:1,3000'),
+    gen('number:1,15'),
+    gen('number:1,100000'),
+    uniform.float(0.00, 9999.99, 2),
+    regex('[a-zA-Z]{24,24}')
   )
 
   populate_stock(type: exec_batch, count: stock, size: 50) `INSERT INTO edg.stock (s_w_id, s_i_id, s_quantity,
@@ -327,20 +327,20 @@ seed {
       s_ytd, s_order_cnt, s_remote_cnt, s_data)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
       0, 0, 0, $14)` (
-      ref('fetch_warehouses').w_id,
-      iter(),
-      gen('number:10,100'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{24,24}'),
-      regex('[a-zA-Z]{26,50}')
+    uniform.ref('fetch_warehouses').w_id,
+    iter(),
+    gen('number:10,100'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{24,24}'),
+    regex('[a-zA-Z]{26,50}')
   )
 }
 
@@ -418,41 +418,41 @@ run {
   new_order(type: exec, wait: 18s) `INSERT INTO edg.oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
       o_ol_cnt, o_all_local)
     VALUES ($1, $2, $4, $3, toTimestamp(now()), $5, 1)` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts),
-      gen('number:3001,999999'),
-      gen('number:5,15')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts),
+    gen('number:3001,999999'),
+    gen('number:5,15')
   )
 
   payment(type: exec, wait: 3s) `UPDATE edg.warehouse SET w_ytd = $4 WHERE w_id = $1` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts),
-      gen('number:100,500000')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts),
+    gen('number:100,500000')
   )
 
   order_status(type: query, wait: 2s) `SELECT * FROM edg.oorder
     WHERE o_w_id = $1 AND o_d_id = $2
     LIMIT 1` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   delivery(type: exec, wait: 2s) `DELETE FROM edg.new_order
     WHERE no_w_id = $1 AND no_d_id = $2 AND no_o_id = $3` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:2101,3000')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:2101,3000')
   )
 
   stock_level(type: query, wait: 2s) `SELECT s_i_id FROM edg.stock
     WHERE s_w_id = $1 AND s_quantity < $3
     ALLOW FILTERING` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:10,20')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
   )
 
   q1_pricing_summary(type: query) `SELECT ol_number, ol_quantity, ol_amount

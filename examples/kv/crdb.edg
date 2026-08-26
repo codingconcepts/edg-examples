@@ -1,0 +1,48 @@
+let keys       = int(coalesce(env_nil('KEYS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_kv `CREATE TABLE IF NOT EXISTS kv (
+      k INT8 NOT NULL PRIMARY KEY,
+      v BYTES NOT NULL
+    )`
+}
+
+seed {
+  populate_kv `INSERT INTO kv (k, v)
+    SELECT
+      $1::INT * $2::INT + s,
+      decode(lpad('', $3::INT * 2, md5(random()::FLOAT8::text)), 'hex')
+    FROM generate_series(1, $2::INT) AS s` (
+    batch(keys / batch_size),
+    batch_size,
+    value_size
+  )
+}
+
+deseed {
+  truncate_kv(type: exec) `TRUNCATE TABLE kv`
+}
+
+down {
+  drop_kv(type: exec) `DROP TABLE IF EXISTS kv`
+}
+
+weights {
+  read  = 50
+  write = 50
+}
+
+run {
+  read(type: query) `SELECT k, v FROM kv WHERE k = $1::INT8` (gen('number:1,' + string(keys)))
+
+  write(type: exec) `UPSERT INTO kv (k, v) VALUES ($1::INT8, $2)` (
+    gen('number:1,' + string(keys)),
+    blob(value_size)
+  )
+}

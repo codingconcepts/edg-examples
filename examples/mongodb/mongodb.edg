@@ -9,16 +9,16 @@ up {
 
 seed {
   insert_customer(type: exec_batch, count: customers) `{"insert": "customer", "documents": [{"_id": $1, "email": $2}]}` (
-      gen('uuid'),
-      gen('email')
+    gen('uuid'),
+    gen('email')
   )
 
   fetch_customers `{"find": "customer", "filter": {}}`
 
   insert_account(type: exec_batch, count: customers) `{"insert": "account", "documents": [{"_id": $1, "customer_id": $2, "balance": $3}]}` (
-      gen('uuid'),
-      ref('fetch_customers')._id,
-      initial_balance
+    gen('uuid'),
+    ref('fetch_customers')._id,
+    initial_balance
   )
 }
 

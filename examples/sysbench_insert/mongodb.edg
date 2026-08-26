@@ -11,10 +11,10 @@ up {
 
 seed {
   populate_sbtest1(type: exec_batch, count: records, size: batch_size) `{"insert": "sbtest1", "documents": [{"_id": $1, "k": $2, "c": "$3", "pad": "$4"}]}` (
-      seq(1, 1),
-      gen('number:0,10000'),
-      regex('[a-zA-Z0-9]{120}'),
-      regex('[a-zA-Z0-9]{60}')
+    seq(1, 1),
+    gen('number:0,10000'),
+    regex('[a-zA-Z0-9]{120}'),
+    regex('[a-zA-Z0-9]{60}')
   )
 }
 
@@ -28,9 +28,9 @@ down {
 
 run {
   insert(type: exec) `{"insert": "sbtest1", "documents": [{"_id": $1, "k": $2, "c": "$3", "pad": "$4"}]}` (
-      gen('number:1,2147483647'),
-      gen('number:0,10000'),
-      regex('[a-zA-Z0-9]{120}'),
-      regex('[a-zA-Z0-9]{60}')
+    gen('number:1,2147483647'),
+    gen('number:0,10000'),
+    regex('[a-zA-Z0-9]{120}'),
+    regex('[a-zA-Z0-9]{60}')
   )
 }

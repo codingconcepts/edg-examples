@@ -1,0 +1,65 @@
+let keys       = int(coalesce(env_nil('KEYS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_kv(type: exec) `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE kv (
+          k NUMBER(19) NOT NULL PRIMARY KEY,
+          v RAW(2000) NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  clear_kv(type: exec) `TRUNCATE TABLE kv`
+
+  populate_kv `INSERT INTO kv (k, v)
+    SELECT
+      $1 * $2 + LEVEL,
+      UTL_RAW.CAST_TO_RAW(DBMS_RANDOM.STRING('x', $3))
+    FROM DUAL
+    CONNECT BY LEVEL <= $2` (
+    batch(keys / batch_size),
+    batch_size,
+    value_size
+  )
+}
+
+deseed {
+  truncate_kv(type: exec) `TRUNCATE TABLE kv`
+}
+
+down {
+  drop_kv(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE kv PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+weights {
+  read  = 50
+  write = 50
+}
+
+run {
+  read(type: query) `SELECT k, v FROM kv WHERE k = :1` (gen('number:1,' + string(keys)))
+
+  write(type: exec) `MERGE INTO kv t
+    USING (SELECT :1 AS k, :2 AS v FROM DUAL) s
+    ON (t.k = s.k)
+    WHEN MATCHED THEN UPDATE SET t.v = s.v
+    WHEN NOT MATCHED THEN INSERT (k, v) VALUES (s.k, s.v)` (
+    gen('number:1,' + string(keys)),
+    blob(value_size)
+  )
+}

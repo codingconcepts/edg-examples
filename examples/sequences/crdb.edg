@@ -31,12 +31,12 @@ seed {
       global_alpha_4
     )
     __values__` (
-      seq(1, 1),
-      seq_alpha(3),
-      seq_global('global_num_1'),
-      seq_global('global_num_10'),
-      seq_alpha_global('global_alpha_3'),
-      upper(seq_alpha_global('global_alpha_4'))
+    seq(1, 1),
+    seq_alpha(3),
+    seq_global('global_num_1'),
+    seq_global('global_num_10'),
+    seq_alpha_global('global_alpha_3'),
+    upper(seq_alpha_global('global_alpha_4'))
   )
 }
 

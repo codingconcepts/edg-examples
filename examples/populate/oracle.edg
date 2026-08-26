@@ -41,9 +41,9 @@ seed {
     FROM customer c
     ORDER BY c.id
     OFFSET $1 * $3 ROWS FETCH NEXT $3 ROWS ONLY` (
-      batch(customers / batch_size),
-      initial_balance,
-      batch_size
+    batch(customers / batch_size),
+    initial_balance,
+    batch_size
   )
 }
 

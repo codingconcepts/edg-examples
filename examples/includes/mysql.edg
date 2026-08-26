@@ -12,9 +12,9 @@ seed {
     FROM customer c
     ORDER BY c.id
     LIMIT $3 OFFSET $1` (
-      batch(customers / batch_size, batch_size),
-      initial_balance,
-      batch_size
+    batch(customers / batch_size, batch_size),
+    initial_balance,
+    batch_size
   )
 }
 

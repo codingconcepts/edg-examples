@@ -1,0 +1,66 @@
+let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+      id TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      level TEXT NOT NULL,
+      source TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+
+  create_idx_events_level_created `CREATE INDEX IF NOT EXISTS idx_events_level_created
+    ON events (level, created_at DESC)`
+
+  create_idx_events_created `CREATE INDEX IF NOT EXISTS idx_events_created
+    ON events (created_at DESC)`
+}
+
+deseed {
+  delete_events(type: exec) `DELETE FROM events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+}
+
+weights {
+  delete_expired = 14
+  read_by_level  = 13
+  read_recent    = 13
+  write_log      = 60
+}
+
+run {
+  write_log(type: exec) `INSERT INTO events (level, source, message)
+    VALUES (?, ?, ?)` (
+    uniform.set(['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],[10, 50, 25, 12, 3]),
+    uniform.set(['api', 'worker', 'scheduler', 'auth', 'billing'],[]),
+    regex('[a-zA-Z0-9 ]{64,256}')
+  )
+
+  read_recent(type: query) `SELECT id, level, source, message, created_at
+    FROM events
+    ORDER BY created_at DESC
+    LIMIT 20`
+
+  read_by_level(type: query) `SELECT id, source, message, created_at
+    FROM events
+    WHERE level = ?
+      AND created_at > datetime('now', '-5 minutes')
+    ORDER BY created_at DESC
+    LIMIT 20` (uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]))
+
+  # SQLite only supports DELETE ... LIMIT when built with
+  # SQLITE_ENABLE_UPDATE_DELETE_LIMIT, so bound the delete via rowid.
+  delete_expired(type: exec) `DELETE FROM events
+    WHERE rowid IN (
+      SELECT rowid FROM events
+      WHERE created_at < datetime('now', '-10 minutes')
+      LIMIT 1000
+    )`
+}

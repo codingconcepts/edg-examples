@@ -24,9 +24,9 @@ seed {
       ARRAY[$2],
       ARRAY[$3]
     ) AS t(n, d, e)` (
-      ref_each(product_catalog).name,
-      ref_each(product_catalog).description,
-      embed(ref_each(product_catalog).name, ref_each(product_catalog).description)
+    ref_each(product_catalog).name,
+    ref_each(product_catalog).description,
+    embed(ref_each(product_catalog).name, ref_each(product_catalog).description)
   )
 }
 
@@ -45,9 +45,9 @@ init {
 run {
   insert_product(type: exec) `INSERT INTO product (name, description, embedding)
     VALUES ($1, $2, $3::VECTOR)` (
-      ref_same('product_catalog').name,
-      ref_same('product_catalog').description,
-      embed(ref_same('product_catalog').name, ref_same('product_catalog').description)
+    ref_same('product_catalog').name,
+    ref_same('product_catalog').description,
+    embed(ref_same('product_catalog').name, ref_same('product_catalog').description)
   )
 
   find_similar(type: query) `SELECT id, name, embedding <=> $1::VECTOR AS distance

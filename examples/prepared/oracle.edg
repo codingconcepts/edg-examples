@@ -92,8 +92,8 @@ seed {
       END
     FROM dual
     CONNECT BY LEVEL <= $2` (
-      customers,
-      orders
+    customers,
+    orders
   )
 
   populate_order_item `INSERT INTO order_item (id, order_id, product_id, quantity, unit_price)
@@ -178,7 +178,7 @@ run {
     GROUP BY p.category
     HAVING SUM(oi.quantity * oi.unit_price) > $2
     ORDER BY total_revenue DESC` (
-      set(['pending', 'shipped', 'delivered'],[]),
-      uniform.float(100, 500, 2)
+    set(['pending', 'shipped', 'delivered'],[]),
+    uniform.float(100, 500, 2)
   )
 }

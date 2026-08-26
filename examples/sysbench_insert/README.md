@@ -2,6 +2,15 @@
 
 Pure insert micro-benchmark matching sysbench's `oltp_insert` profile. Every operation inserts a new row with a unique key. Useful for measuring ingestion throughput, index build cost, and storage engine write path.
 
+## Parameters
+
+Sizing is read from the environment, so the defaults can be overridden without editing the config:
+
+| Variable | Default | Description |
+|---|---|---|
+| `RECORDS` | `1000` | Number of rows to seed |
+| `BATCH_SIZE` | `100` | Rows per batch during seeding |
+
 ## CockroachDB
 
 ### Setup
@@ -279,4 +288,41 @@ edg down \
 --driver spanner \
 --config examples/sysbench_insert/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/sysbench"
+```
+
+## SQLite
+
+### Setup
+
+SQLite is embedded, so there's no container to start; the database file is created on first connect.
+
+### Run
+
+```sh
+edg up \
+--driver sqlite \
+--config examples/sysbench_insert/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg seed \
+--driver sqlite \
+--config examples/sysbench_insert/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg run \
+--driver sqlite \
+--config examples/sysbench_insert/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate" \
+-w 10 \
+-d 1m
+
+edg deseed \
+--driver sqlite \
+--config examples/sysbench_insert/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg down \
+--driver sqlite \
+--config examples/sysbench_insert/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
 ```

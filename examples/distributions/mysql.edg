@@ -18,8 +18,8 @@ seed {
     )
     SELECT 'uniform', RAND() * 100
     FROM seq` (
-      batch(rows / batch_size),
-      batch_size
+    batch(rows / batch_size),
+    batch_size
   )
 }
 

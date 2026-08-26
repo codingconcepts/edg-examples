@@ -1,0 +1,39 @@
+let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_ttlbench `CREATE TABLE IF NOT EXISTS ttlbench (
+      id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      payload BYTES NOT NULL,
+      inserted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    ) WITH (
+      ttl_expire_after = '30 minutes',
+      ttl_job_cron = '* * * * *'
+    )`
+}
+
+deseed {
+  truncate_ttlbench(type: exec) `TRUNCATE TABLE ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
+}
+
+weights {
+  insert_row  = 80
+  read_recent = 20
+}
+
+run {
+  insert_row(type: exec) `INSERT INTO ttlbench (payload) VALUES ($1)` (blob(payload_size))
+
+  read_recent(type: query) `SELECT id, inserted_at
+    FROM ttlbench
+    WHERE inserted_at > now() - INTERVAL '5 minutes'
+    ORDER BY inserted_at DESC
+    LIMIT 10`
+}

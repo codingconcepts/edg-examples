@@ -1,4 +1,4 @@
-let num_customers = 10
+let num_customers       = 10
 let orders_per_customer = 3
 
 up {

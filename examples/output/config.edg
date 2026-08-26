@@ -23,17 +23,17 @@ up {
 seed {
   populate_customer(type: exec_batch, count: customers) `INSERT INTO customer (id, name, email)
     __values__` (
-      id: seq_global('customer_id'),
-      name: gen('name'),
-      email: gen('email')
+    id: seq_global('customer_id'),
+    name: gen('name'),
+    email: gen('email')
   )
 
   populate_order(type: exec_batch, count: customers * 3) `INSERT INTO purchase_order (id, customer_id, amount, status)
     __values__` (
-      id: seq_global('order_id'),
-      customer_id: uniform.seq('customer_id'),
-      amount: uniform.float(9.99, 499.99, 2),
-      status: set(['pending', 'shipped', 'delivered'],[])
+    id: seq_global('order_id'),
+    customer_id: uniform.seq('customer_id'),
+    amount: uniform.float(9.99, 499.99, 2),
+    status: set(['pending', 'shipped', 'delivered'],[])
   )
 }
 

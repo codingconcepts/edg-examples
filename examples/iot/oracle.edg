@@ -113,8 +113,8 @@ seed {
       DECODE(LEVEL, 1,35.0, 2,80.0, 3,70.0, 4,3000.0, 5,240.0)
     FROM DUAL
     CONNECT BY LEVEL <= $2` (
-      ref_each('SELECT id FROM device'),
-      sensors_per_device
+    ref_each('SELECT id FROM device'),
+    sensors_per_device
   )
 
   populate_reading `INSERT INTO reading (sensor_id, value, recorded_at)
@@ -124,8 +124,8 @@ seed {
       SYSTIMESTAMP - NUMTODSINTERVAL(LEVEL, 'MINUTE')
     FROM DUAL
     CONNECT BY LEVEL <= $4` (
-      ref_each('SELECT id, min_threshold, max_threshold FROM sensor'),
-      readings_per_sensor
+    ref_each('SELECT id, min_threshold, max_threshold FROM sensor'),
+    readings_per_sensor
   )
 }
 
@@ -183,8 +183,8 @@ weights {
 run {
   ingest_reading(type: exec) `INSERT INTO reading (sensor_id, value)
     VALUES (:1, :2 / 100.0)` (
-      ref('fetch_sensors').id,
-      gen('number:1,10000')
+    ref('fetch_sensors').id,
+    gen('number:1,10000')
   )
 
   check_alerts(type: query) `SELECT r.id, r.value, r.recorded_at, s.metric_name
@@ -195,8 +195,8 @@ run {
       AND r.value > :2
     ORDER BY r.recorded_at DESC
     FETCH FIRST 20 ROWS ONLY` (
-      ref('fetch_sensors').id,
-      ref('fetch_sensors').max_threshold
+    ref('fetch_sensors').id,
+    ref('fetch_sensors').max_threshold
   )
 
   hourly_rollup(type: query) `SELECT
@@ -218,15 +218,15 @@ run {
     WHERE s.device_id = :1
     ORDER BY r.recorded_at DESC
     OFFSET :2 * :3 ROWS FETCH NEXT :3 ROWS ONLY` (
-      ref('fetch_devices').id,
-      gen('number:0,19'),
-      page_size
+    ref('fetch_devices').id,
+    gen('number:0,19'),
+    page_size
   )
 
   update_threshold(type: exec) `UPDATE sensor SET max_threshold = :2
     WHERE id = :1` (
-      ref('fetch_sensors').id,
-      gen('number:50,300')
+    ref('fetch_sensors').id,
+    gen('number:50,300')
   )
 
   detect_anomaly(type: query) `SELECT sensor_id, value, recorded_at,

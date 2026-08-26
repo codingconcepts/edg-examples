@@ -2,6 +2,21 @@
 
 Airline reservation system benchmark. Models flights, customers, and seat reservations with contention on seat availability. Transactions include finding flights, checking open seats, booking, updating, and cancelling reservations.
 
+## Parameters
+
+Sizing is read from the environment, so the defaults can be overridden without editing the config:
+
+| Variable | Default | Description |
+|---|---|---|
+| `COUNTRIES` | `50` | Number of countries to seed |
+| `AIRPORTS` | `200` | Number of airports to seed |
+| `AIRLINES` | `20` | Number of airlines to seed |
+| `CUSTOMERS` | `1000` | Number of customers to seed |
+| `FLIGHTS` | `500` | Number of flights to seed |
+| `SEATS_PER_FLIGHT` | `150` | Seats on each flight |
+| `RESERVATIONS_PER_FLIGHT` | `120` | Reservations booked per flight during seeding |
+| `BATCH_SIZE` | `100` | Rows per batch during seeding |
+
 ## CockroachDB
 
 ### Setup
@@ -279,4 +294,41 @@ edg down \
 --driver spanner \
 --config examples/seats/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/seats"
+```
+
+## SQLite
+
+### Setup
+
+SQLite is embedded, so there's no container to start; the database file is created on first connect.
+
+### Run
+
+```sh
+edg up \
+--driver sqlite \
+--config examples/seats/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg seed \
+--driver sqlite \
+--config examples/seats/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg run \
+--driver sqlite \
+--config examples/seats/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate" \
+-w 10 \
+-d 1m
+
+edg deseed \
+--driver sqlite \
+--config examples/seats/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg down \
+--driver sqlite \
+--config examples/seats/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
 ```

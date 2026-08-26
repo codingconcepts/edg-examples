@@ -276,8 +276,8 @@ run {
 
   create_post(type: exec) `INSERT INTO post (author_id, body)
     VALUES (HEXTORAW(:1), :2)` (
-      ref('fetch_users').id,
-      gen('sentence:10')
+    ref('fetch_users').id,
+    gen('sentence:10')
   )
 
   like_post(type: exec) `MERGE INTO post_like pl
@@ -285,16 +285,16 @@ run {
     ON (pl.post_id = src.post_id AND pl.user_id = src.user_id)
     WHEN NOT MATCHED THEN
       INSERT (post_id, user_id) VALUES (src.post_id, src.user_id)` (
-      ref('fetch_posts').id,
-      ref('fetch_users').id
+    ref('fetch_posts').id,
+    ref('fetch_users').id
   )
 
   add_comment(type: exec) `INSERT INTO comment_ (post_id, author_id, body)
     VALUES (HEXTORAW(:2), HEXTORAW(:1), :4 || ': ' || :3)` (
-      ref_same('fetch_users').id,
-      ref('fetch_posts').id,
-      gen('sentence:8'),
-      ref_same('fetch_users').display_name
+    ref_same('fetch_users').id,
+    ref('fetch_posts').id,
+    gen('sentence:8'),
+    ref_same('fetch_users').display_name
   )
 
   follow_user(type: exec) `MERGE INTO follow f
@@ -302,8 +302,8 @@ run {
     ON (f.follower_id = src.follower_id AND f.following_id = src.following_id)
     WHEN NOT MATCHED THEN
       INSERT (follower_id, following_id) VALUES (src.follower_id, src.following_id)` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 
   trending(type: query) `SELECT p.id, p.body, p.like_count, u.username
@@ -319,7 +319,7 @@ run {
     WHERE f1.follower_id = HEXTORAW(:1)
       AND f2.follower_id = HEXTORAW(:2)
     FETCH FIRST 20 ROWS ONLY` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 }

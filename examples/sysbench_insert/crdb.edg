@@ -24,8 +24,8 @@ seed {
       lpad('', 120, md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text)),
       lpad('', 60, md5(random()::FLOAT8::text) || md5(random()::FLOAT8::text))
     FROM generate_series(1, $2::INT) AS s` (
-      batch(records / batch_size),
-      batch_size
+    batch(records / batch_size),
+    batch_size
   )
 }
 
@@ -41,9 +41,9 @@ run {
   insert(type: exec) `INSERT INTO sbtest1 (id, k, c, pad)
     VALUES ($1::INT, $2::INT, $3, $4)
     ON CONFLICT (id) DO NOTHING` (
-      gen('number:1,2147483647'),
-      gen('number:0,10000'),
-      regex('[a-zA-Z0-9]{120}'),
-      regex('[a-zA-Z0-9]{60}')
+    gen('number:1,2147483647'),
+    gen('number:0,10000'),
+    regex('[a-zA-Z0-9]{120}'),
+    regex('[a-zA-Z0-9]{60}')
   )
 }

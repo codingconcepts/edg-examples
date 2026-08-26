@@ -1,0 +1,172 @@
+let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
+let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
+
+expect {
+  error_rate < 25
+  lost_update `SELECT CAST(COALESCE(SUM(value), 0) AS INTEGER) AS counter_total FROM counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM account` n == accounts
+  dirty_write `SELECT CAST(COALESCE(SUM(balance), 0) AS INTEGER) AS total FROM account` total == accounts * initial_balance
+  write_skew `SELECT CAST(COALESCE(SUM(version), 0) AS INTEGER) AS total_versions FROM cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n == accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = 1` on_duty >= 1
+}
+
+up {
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id INTEGER PRIMARY KEY,
+      balance INTEGER NOT NULL,
+      version INTEGER NOT NULL DEFAULT 0
+    )`
+
+  create_ledger `CREATE TABLE IF NOT EXISTS ledger (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL REFERENCES account(id),
+      amount INTEGER NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+
+  create_counter `CREATE TABLE IF NOT EXISTS counter (
+      id INTEGER PRIMARY KEY,
+      value INTEGER NOT NULL DEFAULT 0
+    )`
+
+  create_oncall `CREATE TABLE IF NOT EXISTS oncall (
+      doctor_id INTEGER PRIMARY KEY,
+      on_duty INTEGER NOT NULL DEFAULT 1
+    )`
+
+  create_blind_write `CREATE TABLE IF NOT EXISTS blind_write (
+      id INTEGER PRIMARY KEY,
+      value INTEGER NOT NULL DEFAULT 0
+    )`
+
+  create_cas `CREATE TABLE IF NOT EXISTS cas (
+      id INTEGER PRIMARY KEY,
+      value INTEGER NOT NULL DEFAULT 0,
+      version INTEGER NOT NULL DEFAULT 0
+    )`
+}
+
+seed {
+  populate_accounts `INSERT OR IGNORE INTO account (id, balance)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < ?
+    )
+    SELECT s, ?
+    FROM seq` (
+    accounts,
+    initial_balance
+  )
+
+  populate_counters `INSERT OR IGNORE INTO counter (id, value)
+    VALUES (1, 0), (2, 0)`
+
+  populate_oncall `INSERT OR IGNORE INTO oncall (doctor_id, on_duty)
+    VALUES (1, 1), (2, 1), (3, 1)`
+
+  populate_blind_write `INSERT OR IGNORE INTO blind_write (id, value)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < ?
+    )
+    SELECT s, 0
+    FROM seq` (accounts)
+
+  populate_cas `INSERT OR IGNORE INTO cas (id, value)
+    WITH RECURSIVE seq AS (
+      SELECT 1 AS s
+      UNION ALL
+      SELECT s + 1 FROM seq WHERE s < ?
+    )
+    SELECT s, 0
+    FROM seq` (accounts)
+}
+
+deseed {
+  delete_ledger(type: exec) `DELETE FROM ledger`
+
+  reset_accounts(type: exec) `UPDATE account SET balance = ?, version = 0` (initial_balance)
+
+  reset_counters(type: exec) `UPDATE counter SET value = 0`
+
+  reset_oncall(type: exec) `UPDATE oncall SET on_duty = 1`
+
+  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0`
+
+  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0`
+}
+
+down {
+  drop_ledger(type: exec) `DROP TABLE IF EXISTS ledger`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_oncall(type: exec) `DROP TABLE IF EXISTS oncall`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
+
+  drop_blind_write(type: exec) `DROP TABLE IF EXISTS blind_write`
+
+  drop_cas(type: exec) `DROP TABLE IF EXISTS cas`
+}
+
+weights {
+  blind_write         = 10
+  cas_update          = 10
+  check_total_balance = 10
+  count_ledger        = 10
+  go_off_duty         = 10
+  increment_counter   = 10
+  insert_ledger       = 10
+  transfer            = 10
+}
+
+run {
+  count_ledger(type: query) `SELECT COUNT(*) AS entries, COALESCE(SUM(amount), 0) AS total
+    FROM ledger
+    WHERE account_id = ?` (gen('number:1,' + string(accounts)))
+
+  insert_ledger(type: exec) `INSERT INTO ledger (account_id, amount)
+    VALUES (?, ?)` (
+    gen('number:1,' + string(accounts)),
+    gen('number:1,500')
+  )
+
+  increment_counter(type: exec) `UPDATE counter SET value = value + 1 WHERE id = ?` (gen('number:1,2'))
+
+  transfer(type: exec) `UPDATE account SET
+      balance = CASE
+                  WHEN id = $2 THEN balance + $3
+                  WHEN id = $1 THEN balance - $3
+                END
+    WHERE id IN ($1, $2)
+      AND $1 != $2` (
+    gen('number:1,' + string(accounts)),
+    gen('number:1,' + string(accounts)),
+    gen('number:1,100')
+  )
+
+  blind_write(type: exec) `UPDATE blind_write SET value = ? WHERE id = ?` (
+    gen('number:100,900'),
+    gen('number:1,' + string(accounts))
+  )
+
+  cas_update(type: exec) `UPDATE cas SET
+      value = value + $2,
+      version = version + 1
+    WHERE id = $1
+      AND version = (SELECT version FROM cas WHERE id = $1)` (
+    gen('number:1,' + string(accounts)),
+    gen('number:1,100')
+  )
+
+  check_total_balance(type: query) `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts
+    FROM account`
+
+  go_off_duty(type: exec) `UPDATE oncall SET on_duty = 0
+    WHERE doctor_id = ?
+      AND (SELECT COUNT(*) FROM oncall WHERE on_duty = 1) > 1` (gen('number:1,3'))
+}

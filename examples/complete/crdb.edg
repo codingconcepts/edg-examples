@@ -35,16 +35,16 @@ up {
 seed {
   populate_product(type: exec_batch, count: products, size: batch_size) `INSERT INTO product (name, description)
     __values__` (
-      ref_each(product_catalog).name,
-      ref_each(product_catalog).description
+    ref_each(product_catalog).name,
+    ref_each(product_catalog).description
   )
 
   populate_review(type: exec_batch, count: products, size: batch_size) `INSERT INTO review (product_name, review_text, sentiment, rating)
     __values__` (
-      ref_each(product_catalog).name,
-      local('review').review_text,
-      local('review').sentiment,
-      local('review').rating
+    ref_each(product_catalog).name,
+    local('review').review_text,
+    local('review').sentiment,
+    local('review').rating
   )
 }
 
@@ -63,9 +63,9 @@ down {
 run {
   insert_review(type: exec) `INSERT INTO review (product_name, review_text, sentiment, rating)
     VALUES ($1, $2, $3, $4)` (
-      ref('product_catalog').name,
-      local('review').review_text,
-      local('review').sentiment,
-      local('review').rating
+    ref('product_catalog').name,
+    local('review').review_text,
+    local('review').sentiment,
+    local('review').rating
   )
 }

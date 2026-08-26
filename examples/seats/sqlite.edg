@@ -1,0 +1,262 @@
+let countries               = int(coalesce(env_nil('COUNTRIES'), 50))
+let airports                = int(coalesce(env_nil('AIRPORTS'), 200))
+let airlines                = int(coalesce(env_nil('AIRLINES'), 20))
+let customers               = int(coalesce(env_nil('CUSTOMERS'), 1000))
+let flights                 = int(coalesce(env_nil('FLIGHTS'), 500))
+let seats_per_flight        = int(coalesce(env_nil('SEATS_PER_FLIGHT'), 150))
+let reservations_per_flight = int(coalesce(env_nil('RESERVATIONS_PER_FLIGHT'), 120))
+let batch_size              = int(coalesce(env_nil('BATCH_SIZE'), 100))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_country `CREATE TABLE IF NOT EXISTS country (
+      co_id INTEGER NOT NULL PRIMARY KEY,
+      co_name TEXT NOT NULL
+    )`
+
+  create_airport `CREATE TABLE IF NOT EXISTS airport (
+      ap_id INTEGER NOT NULL PRIMARY KEY,
+      ap_code TEXT NOT NULL,
+      ap_name TEXT NOT NULL,
+      ap_city TEXT NOT NULL,
+      ap_co_id INTEGER NOT NULL REFERENCES country(co_id),
+      UNIQUE (ap_code)
+    )`
+
+  create_airline `CREATE TABLE IF NOT EXISTS airline (
+      al_id INTEGER NOT NULL PRIMARY KEY,
+      al_iata_code TEXT NOT NULL,
+      al_name TEXT NOT NULL,
+      UNIQUE (al_iata_code)
+    )`
+
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      c_id INTEGER NOT NULL PRIMARY KEY,
+      c_base_ap_id INTEGER NOT NULL REFERENCES airport(ap_id),
+      c_balance REAL NOT NULL,
+      c_sattr00 TEXT NOT NULL,
+      c_sattr01 TEXT NOT NULL,
+      c_iattr00 INTEGER NOT NULL,
+      c_iattr01 INTEGER NOT NULL
+    )`
+
+  create_flight `CREATE TABLE IF NOT EXISTS flight (
+      f_id INTEGER NOT NULL PRIMARY KEY,
+      f_al_id INTEGER NOT NULL REFERENCES airline(al_id),
+      f_depart_ap_id INTEGER NOT NULL REFERENCES airport(ap_id),
+      f_arrive_ap_id INTEGER NOT NULL REFERENCES airport(ap_id),
+      f_depart_time TIMESTAMP NOT NULL,
+      f_arrive_time TIMESTAMP NOT NULL,
+      f_seats_total INTEGER NOT NULL,
+      f_seats_left INTEGER NOT NULL,
+      f_base_price REAL NOT NULL
+    )`
+
+  create_reservation `CREATE TABLE IF NOT EXISTS reservation (
+      r_id TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      r_c_id INTEGER NOT NULL REFERENCES customer(c_id),
+      r_f_id INTEGER NOT NULL REFERENCES flight(f_id),
+      r_seat INTEGER NOT NULL,
+      r_price REAL NOT NULL,
+      r_iattr00 INTEGER NOT NULL,
+      r_iattr01 INTEGER NOT NULL
+    )`
+
+  create_idx_reservation_flight `CREATE INDEX IF NOT EXISTS idx_reservation_flight
+    ON reservation (r_f_id)`
+
+  create_idx_reservation_customer `CREATE INDEX IF NOT EXISTS idx_reservation_customer
+    ON reservation (r_c_id)`
+
+  create_idx_flight_depart `CREATE INDEX IF NOT EXISTS idx_flight_depart
+    ON flight (f_depart_ap_id, f_depart_time)`
+}
+
+seed {
+  populate_country(type: exec_batch, count: countries, size: batch_size) `INSERT INTO country (co_id, co_name)
+    VALUES ($1, 'Country_' || substr('000' || $1, -3))` (iter())
+
+  populate_airport(type: exec_batch, count: airports, size: batch_size) `INSERT INTO airport (ap_id, ap_code, ap_name, ap_city, ap_co_id)
+    VALUES ($1,
+      char(65 + ($1 - 1) / 676) || char(65 + (($1 - 1) / 26) % 26) || char(65 + ($1 - 1) % 26),
+      'Airport_' || substr('0000' || $1, -4),
+      'City_' || substr('0000' || $1, -4),
+      (($1 - 1) % $2) + 1)` (
+    iter(),
+    countries
+  )
+
+  populate_airline(type: exec_batch, count: airlines, size: batch_size) `INSERT INTO airline (al_id, al_iata_code, al_name)
+    VALUES ($1,
+      char(65 + ($1 - 1) / 26) || char(65 + ($1 - 1) % 26),
+      'Airline_' || substr('000' || $1, -3))` (iter())
+
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (c_id, c_base_ap_id, c_balance,
+      c_sattr00, c_sattr01, c_iattr00, c_iattr01)
+    VALUES ($1,
+      (abs(random()) % $2) + 1,
+      0,
+      substr(hex(randomblob(16)), 1, 16),
+      substr(hex(randomblob(16)), 1, 16),
+      abs(random()) % 1000,
+      abs(random()) % 1000)` (
+    iter(),
+    airports
+  )
+
+  populate_flight(type: exec_batch, count: flights, size: batch_size) `INSERT INTO flight (f_id, f_al_id, f_depart_ap_id, f_arrive_ap_id,
+      f_depart_time, f_arrive_time, f_seats_total, f_seats_left,
+      f_base_price)
+    VALUES ($1,
+      (abs(random()) % $3) + 1,
+      (abs(random()) % $2) + 1,
+      (abs(random()) % $2) + 1,
+      datetime('now', '+' || (abs(random()) % 30) || ' days'),
+      datetime('now', '+' || (abs(random()) % 30) || ' days', '+2 hours'),
+      $4,
+      $4,
+      round(abs(random()) % 1000000 / 1000000.0 * 900 + 100, 2))` (
+    iter(),
+    airports,
+    airlines,
+    seats_per_flight
+  )
+
+  populate_reservation `WITH RECURSIVE
+    flight_batch AS (
+      SELECT f_id FROM flight
+      ORDER BY f_id
+      LIMIT $2 OFFSET $1 * $2
+    ),
+    seats(seq) AS (
+      SELECT 1
+      UNION ALL
+      SELECT seq + 1 FROM seats WHERE seq < $3
+    )
+    INSERT INTO reservation (r_c_id, r_f_id, r_seat, r_price,
+      r_iattr00, r_iattr01)
+    SELECT
+      (abs(random()) % $4) + 1,
+      fb.f_id,
+      s.seq,
+      round(abs(random()) % 1000000 / 1000000.0 * 500 + 50, 2),
+      abs(random()) % 100,
+      abs(random()) % 100
+    FROM flight_batch fb
+    CROSS JOIN seats s` (
+    batch(flights / batch_size),
+    batch_size,
+    reservations_per_flight,
+    customers
+  )
+
+  update_seats_left(type: exec) `UPDATE flight SET f_seats_left = f_seats_total - (
+      SELECT COUNT(*) FROM reservation WHERE r_f_id = flight.f_id
+    )`
+}
+
+deseed {
+  delete_reservation(type: exec) `DELETE FROM reservation`
+
+  delete_flight(type: exec) `DELETE FROM flight`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+
+  delete_airline(type: exec) `DELETE FROM airline`
+
+  delete_airport(type: exec) `DELETE FROM airport`
+
+  delete_country(type: exec) `DELETE FROM country`
+}
+
+down {
+  drop_reservation(type: exec) `DROP TABLE IF EXISTS reservation`
+
+  drop_flight(type: exec) `DROP TABLE IF EXISTS flight`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_airline(type: exec) `DROP TABLE IF EXISTS airline`
+
+  drop_airport(type: exec) `DROP TABLE IF EXISTS airport`
+
+  drop_country(type: exec) `DROP TABLE IF EXISTS country`
+}
+
+init {
+  fetch_flights(type: query) `SELECT f_id, f_depart_ap_id, f_seats_left FROM flight ORDER BY random()`
+
+  fetch_customers(type: query) `SELECT c_id FROM customer ORDER BY random()`
+
+  fetch_reservations(type: query) `SELECT r_id, r_c_id, r_f_id FROM reservation ORDER BY random()`
+
+  fetch_airports(type: query) `SELECT ap_id FROM airport`
+}
+
+weights {
+  delete_reservation = 20
+  find_flights       = 10
+  find_open_seats    = 35
+  new_reservation    = 15
+  update_customer    = 10
+  update_reservation = 10
+}
+
+run {
+  find_flights(type: query) `SELECT f_id, f_al_id, f_depart_ap_id, f_arrive_ap_id,
+      f_depart_time, f_arrive_time, f_seats_left, f_base_price
+    FROM flight
+    WHERE f_depart_ap_id = ?
+      AND f_depart_time > datetime('now')
+    ORDER BY f_depart_time
+    LIMIT 10` (uniform.ref('fetch_airports').ap_id)
+
+  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = ?` (uniform.ref('fetch_flights').f_id)
+
+  transaction new_reservation {
+    let c_id = uniform.ref('fetch_customers').c_id
+    let f_id = uniform.ref('fetch_flights').f_id
+    let price = gen('number:50,1000')
+    let seat = gen('number:1,150')
+    decr_seats(type: exec) `UPDATE flight SET f_seats_left = f_seats_left - 1
+      WHERE f_id = ? AND f_seats_left > 0` (local('f_id'))
+    insert_reservation(type: exec) `INSERT INTO reservation (r_c_id, r_f_id, r_seat, r_price,
+        r_iattr00, r_iattr01)
+      VALUES (?, ?, ?, (SELECT f_base_price FROM flight WHERE f_id = ?) + ?, 0, 0)` (
+      local('c_id'),
+      local('f_id'),
+      local('seat'),
+      local('f_id'),
+      local('price')
+    )
+    charge_customer(type: exec) `UPDATE customer SET c_balance = c_balance + ?
+      WHERE c_id = ?` (
+      local('price'),
+      local('c_id')
+    )
+  }
+
+  update_customer(type: exec) `UPDATE customer SET c_iattr00 = ?, c_iattr01 = ?
+    WHERE c_id = ?` (
+    gen('number:0,1000'),
+    gen('number:0,1000'),
+    uniform.ref('fetch_customers').c_id
+  )
+
+  update_reservation(type: exec) `UPDATE reservation SET r_iattr00 = ?
+    WHERE r_id = ?` (
+    gen('number:0,100'),
+    uniform.ref('fetch_reservations').r_id
+  )
+
+  transaction delete_reservation {
+    let f_id = uniform.ref('fetch_reservations').r_f_id
+    let r_id = uniform.ref('fetch_reservations').r_id
+    del_reservation(type: exec) `DELETE FROM reservation WHERE r_id = ?` (local('r_id'))
+    incr_seats(type: exec) `UPDATE flight SET f_seats_left = f_seats_left + 1
+      WHERE f_id = ?` (local('f_id'))
+  }
+}

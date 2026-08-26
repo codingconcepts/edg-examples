@@ -19,10 +19,10 @@ up {
 seed {
   populate_sbtest1(type: exec_batch, count: records, size: batch_size) `INSERT INTO sbtest1 (id, k, c, pad)
     VALUES ($1, $2, $3, $4)` (
-      seq(1, 1),
-      gen('number:0,10000'),
-      regex('[a-zA-Z0-9]{120}'),
-      regex('[a-zA-Z0-9]{60}')
+    seq(1, 1),
+    gen('number:0,10000'),
+    regex('[a-zA-Z0-9]{120}'),
+    regex('[a-zA-Z0-9]{60}')
   )
 }
 

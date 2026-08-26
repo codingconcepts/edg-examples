@@ -1,0 +1,59 @@
+let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_events `IF OBJECT_ID('events', 'U') IS NULL
+    CREATE TABLE events (
+      id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,
+      level VARCHAR(10) NOT NULL,
+      source VARCHAR(50) NOT NULL,
+      message NVARCHAR(MAX) NOT NULL,
+      created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    )`
+
+  create_idx_events_level_created `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_events_level_created')
+    CREATE INDEX idx_events_level_created ON events (level, created_at DESC)`
+
+  create_idx_events_created `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_events_created')
+    CREATE INDEX idx_events_created ON events (created_at DESC)`
+}
+
+deseed {
+  delete_events(type: exec) `DELETE FROM events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+}
+
+weights {
+  delete_expired = 14
+  read_by_level  = 13
+  read_recent    = 13
+  write_log      = 60
+}
+
+run {
+  write_log(type: exec) `INSERT INTO events (level, source, message)
+    VALUES (@p1, @p2, @p3)` (
+    uniform.set(['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],[10, 50, 25, 12, 3]),
+    uniform.set(['api', 'worker', 'scheduler', 'auth', 'billing'],[]),
+    regex('[a-zA-Z0-9 ]{64,256}')
+  )
+
+  read_recent(type: query) `SELECT TOP 20 id, level, source, message, created_at
+    FROM events
+    ORDER BY created_at DESC`
+
+  read_by_level(type: query) `SELECT TOP 20 id, source, message, created_at
+    FROM events
+    WHERE level = @p1
+      AND created_at > DATEADD(MINUTE, -5, SYSUTCDATETIME())
+    ORDER BY created_at DESC` (uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]))
+
+  delete_expired(type: exec) `DELETE TOP(1000) FROM events
+    WHERE created_at < DATEADD(MINUTE, -10, SYSUTCDATETIME())`
+}

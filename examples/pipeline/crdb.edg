@@ -31,8 +31,8 @@ seed {
     FROM a
     ORDER BY random()
     LIMIT $2::INT` (
-      batch(b_rows / batch_size),
-      batch_size
+    batch(b_rows / batch_size),
+    batch_size
   )
 
   populate_c `INSERT INTO c (b_id)
@@ -40,8 +40,8 @@ seed {
     FROM b
     ORDER BY random()
     LIMIT $2::INT` (
-      batch(c_rows / batch_size),
-      batch_size
+    batch(c_rows / batch_size),
+    batch_size
   )
 }
 

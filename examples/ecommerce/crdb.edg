@@ -77,8 +77,8 @@ seed {
       (random()::FLOAT8 * 499 + 1)::DECIMAL(10,2),
       floor(random()::FLOAT8 * 200 + 10)::INT
     FROM generate_series(1, $1) AS s` (
-      products,
-      categories
+    products,
+    categories
   )
 
   populate_customer `INSERT INTO customer (email, name)
@@ -162,9 +162,9 @@ run {
     ON CONFLICT (customer_id, product_id)
     DO UPDATE SET quantity = cart_item.quantity + $3::INT,
       added_at = now()` (
-      ref('fetch_customers').id,
-      ref('fetch_products').id,
-      norm.set([1, 2, 3, 4, 5], 2, 0.8)
+    ref('fetch_customers').id,
+    ref('fetch_products').id,
+    norm.set([1, 2, 3, 4, 5], 2, 0.8)
   )
 
   checkout(type: exec) `WITH
@@ -201,23 +201,23 @@ run {
         RETURNING 1
       )
     DELETE FROM cart_item WHERE customer_id = $2::UUID` (
-      ref_same('fetch_customers').id,
-      ref_same('fetch_customers').id
+    ref_same('fetch_customers').id,
+    ref_same('fetch_customers').id
   )
 
   write_review(type: exec) `INSERT INTO review (product_id, customer_id, rating, body)
     VALUES ($2::INT, $1::UUID, $3::INT, $4::STRING)
     ON CONFLICT DO NOTHING` (
-      ref('fetch_customers').id,
-      ref('fetch_products').id,
-      set(['1', '2', '3', '4', '5'],[5, 10, 20, 35, 30]),
-      gen('sentence:8')
+    ref('fetch_customers').id,
+    ref('fetch_products').id,
+    set(['1', '2', '3', '4', '5'],[5, 10, 20, 35, 30]),
+    gen('sentence:8')
   )
 
   remove_from_cart(type: exec) `DELETE FROM cart_item
     WHERE customer_id = $1::UUID AND product_id = $2::INT` (
-      ref('fetch_customers').id,
-      ref('fetch_products').id
+    ref('fetch_customers').id,
+    ref('fetch_products').id
   )
 
   search_products(type: query) `SELECT p.id, p.name, p.price, p.stock_qty,

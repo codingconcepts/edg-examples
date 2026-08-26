@@ -22,19 +22,19 @@ up {
 seed {
   seed_users(type: exec_batch, count: user_count, size: batch_size) `INSERT INTO users (id, email, name)
     __values__` (
-      seq(1, 1),
-      gen('email'),
-      gen('name')
+    seq(1, 1),
+    gen('email'),
+    gen('name')
   )
 
   fetch_users(type: query) `SELECT id FROM users`
 
   seed_orders(type: exec_batch, count: order_count, size: batch_size) `INSERT INTO orders (id, user_id, amount, status)
     __values__` (
-      seq(1, 1),
-      ref('fetch_users').id,
-      uniform.int(10.0, 500.0),
-      set(['pending', 'shipped', 'delivered', 'cancelled'],[40, 35, 20, 5])
+    seq(1, 1),
+    ref('fetch_users').id,
+    uniform.int(10.0, 500.0),
+    set(['pending', 'shipped', 'delivered', 'cancelled'],[40, 35, 20, 5])
   )
 }
 

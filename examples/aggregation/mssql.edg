@@ -69,17 +69,17 @@ run {
     VALUES (@p1, @p2, @p3, @p4, @p5,
       @p6, @p7, @p8, @p9, @p10,
       @p11, @p12)` (
-      count('fetch_products'),
-      sum('fetch_products', 'price'),
-      avg('fetch_products', 'price'),
-      min('fetch_products', 'price'),
-      max('fetch_products', 'price'),
-      median('fetch_products', 'price'),
-      percentile('fetch_products', 'price', 95),
-      stddev('fetch_products', 'price'),
-      variance('fetch_products', 'price'),
-      distinct('fetch_products', 'category'),
-      median(list_prices),
-      percentile(list_prices, 95)
+    count('fetch_products'),
+    sum('fetch_products', 'price'),
+    avg('fetch_products', 'price'),
+    min('fetch_products', 'price'),
+    max('fetch_products', 'price'),
+    median('fetch_products', 'price'),
+    percentile('fetch_products', 'price', 95),
+    stddev('fetch_products', 'price'),
+    variance('fetch_products', 'price'),
+    distinct('fetch_products', 'category'),
+    median(list_prices),
+    percentile(list_prices, 95)
   )
 }

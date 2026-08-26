@@ -42,14 +42,14 @@ seed {
       ROW($3::DECIMAL, $4::STRING)::amount,
       ROW($5::DECIMAL, $6::DECIMAL, $7::DECIMAL, $8::STRING)::dimensions
     )` (
-      seq_global('product_id'),
-      gen('sentence:3'),
-      norm.float(100, 60, 1, 500, 2),
-      set(['USD', 'EUR', 'GBP'],[]),
-      norm.float(40, 15, 1, 100, 1),
-      norm.float(20, 8, 1, 50, 1),
-      norm.float(12, 5, 1, 30, 1),
-      set(['cm', 'in'],[])
+    seq_global('product_id'),
+    gen('sentence:3'),
+    norm.float(100, 60, 1, 500, 2),
+    set(['USD', 'EUR', 'GBP'],[]),
+    norm.float(40, 15, 1, 100, 1),
+    norm.float(20, 8, 1, 50, 1),
+    norm.float(12, 5, 1, 30, 1),
+    set(['cm', 'in'],[])
   )
 
   populate_order(type: exec, count: orders) `INSERT INTO "order" (product_id, quantity, total)
@@ -58,10 +58,10 @@ seed {
       $4::INT,
       ROW($2::DECIMAL * $4::INT, $3::STRING)::amount
     )` (
-      uniform.seq('product_id'),
-      norm.float(100, 60, 1, 500, 2),
-      set(['USD', 'EUR', 'GBP'],[]),
-      norm.set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2, 0.7)
+    uniform.seq('product_id'),
+    norm.float(100, 60, 1, 500, 2),
+    set(['USD', 'EUR', 'GBP'],[]),
+    norm.set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2, 0.7)
   )
 }
 
@@ -116,9 +116,9 @@ run {
         ($2::amount).currency
       )::amount
     )` (
-      ref('fetch_products').id,
-      ref('fetch_products').price,
-      norm.set([1, 2, 3, 4, 5], 2, 0.8)
+    ref('fetch_products').id,
+    ref('fetch_products').price,
+    norm.set([1, 2, 3, 4, 5], 2, 0.8)
   )
 
   order_summary(type: query) `SELECT

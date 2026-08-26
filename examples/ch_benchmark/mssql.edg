@@ -304,8 +304,8 @@ seed {
       3001
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts
   )
 
   populate_customer `WITH d_seq AS (
@@ -365,9 +365,9 @@ seed {
     FROM d_seq
     CROSS JOIN c_seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      customers / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    customers / districts
   )
 
   populate_history `INSERT INTO history (h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
@@ -404,9 +404,9 @@ seed {
     FROM d_seq
     CROSS JOIN o_seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_new_order `WITH d_seq AS (
@@ -424,9 +424,9 @@ seed {
     FROM d_seq
     CROSS JOIN o_seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_order_line `WITH n_seq AS (
@@ -483,8 +483,8 @@ seed {
       END
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      ref_each('SELECT w_id FROM warehouse'),
-      stock
+    ref_each('SELECT w_id FROM warehouse'),
+    stock
   )
 }
 
@@ -564,22 +564,22 @@ run {
     let w_id = ref_perm('fetch_warehouses').w_id
     get_next_o_id(type: query) `SELECT d_next_o_id FROM district WITH (UPDLOCK, HOLDLOCK)
       WHERE d_w_id = @p1 AND d_id = @p2` (
-        local('w_id'),
-        local('d_id')
+      local('w_id'),
+      local('d_id')
     )
     incr_next_o_id(type: exec) `UPDATE district SET d_next_o_id = d_next_o_id + 1
       WHERE d_w_id = @p1 AND d_id = @p2` (
-        local('w_id'),
-        local('d_id')
+      local('w_id'),
+      local('d_id')
     )
     insert_oorder(type: exec) `INSERT INTO oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
         o_ol_cnt, o_all_local)
       VALUES (@p1, @p2, @p3, @p4, GETDATE(), @p5, 1)` (
-        local('w_id'),
-        local('d_id'),
-        ref_same('get_next_o_id').d_next_o_id,
-        local('c_id'),
-        local('ol_cnt')
+      local('w_id'),
+      local('d_id'),
+      ref_same('get_next_o_id').d_next_o_id,
+      local('c_id'),
+      local('ol_cnt')
     )
   }
 
@@ -591,10 +591,10 @@ run {
     FROM customer c
     JOIN (SELECT @p1 AS amount, @p2 AS w_id, @p3 AS d_id, @p4 AS c_id) p ON 1=1
     WHERE c.c_w_id = p.w_id AND c.c_d_id = p.d_id AND c.c_id = p.c_id` (
-      gen('number:100,500000'),
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    gen('number:100,500000'),
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   order_status(type: query, wait: 2s) `SELECT o.o_id, o.o_entry_d, o.o_carrier_id,
@@ -611,9 +611,9 @@ run {
         WHERE o2.o_w_id = p.w_id AND o2.o_d_id = p.d_id
           AND o2.o_c_id = p.c_id
       )` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   delivery(type: exec, wait: 2s) `DELETE n FROM new_order n
@@ -623,8 +623,8 @@ run {
         SELECT MIN(no_o_id) FROM new_order
         WHERE no_w_id = p.w_id AND no_d_id = p.d_id
       )` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10')
   )
 
   stock_level(type: query, wait: 2s) `SELECT COUNT(DISTINCT s.s_i_id) AS low_stock
@@ -636,9 +636,9 @@ run {
       ON s.s_i_id = ol.ol_i_id AND s.s_w_id = d.d_w_id
     WHERE d.d_w_id = @p1 AND d.d_id = @p2
       AND s.s_quantity < @p3` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:10,20')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
   )
 
   q1_pricing_summary(type: query) `SELECT

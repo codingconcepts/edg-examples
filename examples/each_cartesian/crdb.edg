@@ -27,8 +27,8 @@ seed {
     __values__` (gen('email'))
 
   populate_c `INSERT INTO c (a_id, b_id) VALUES ($1, $2)` (
-      ref_each('SELECT id FROM a ORDER BY id'),
-      ref_each('SELECT id FROM b ORDER BY id')
+    ref_each('SELECT id FROM a ORDER BY id'),
+    ref_each('SELECT id FROM b ORDER BY id')
   )
 }
 

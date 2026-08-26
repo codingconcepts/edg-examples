@@ -102,8 +102,8 @@ seed {
       CONCAT('Airport_', RIGHT('0000' + CAST($1 AS VARCHAR), 4)),
       CONCAT('City_', RIGHT('0000' + CAST($1 AS VARCHAR), 4)),
       (($1 - 1) % $2) + 1)` (
-      iter(),
-      countries
+    iter(),
+    countries
   )
 
   populate_airline(type: exec_batch, count: airlines, size: batch_size) `INSERT INTO airline (al_id, al_iata_code, al_name)
@@ -120,8 +120,8 @@ seed {
       LEFT(CONVERT(VARCHAR(32), HASHBYTES('MD5', CAST(RAND(CHECKSUM(NEWID())) AS VARCHAR)), 2), 16),
       FLOOR(RAND(CHECKSUM(NEWID())) * 1000),
       FLOOR(RAND(CHECKSUM(NEWID())) * 1000))` (
-      iter(),
-      airports
+    iter(),
+    airports
   )
 
   populate_flight(type: exec_batch, count: flights, size: batch_size) `INSERT INTO flight (f_id, f_al_id, f_depart_ap_id, f_arrive_ap_id,
@@ -136,10 +136,10 @@ seed {
       $4,
       $4,
       ROUND(RAND(CHECKSUM(NEWID())) * 900 + 100, 2))` (
-      iter(),
-      airports,
-      airlines,
-      seats_per_flight
+    iter(),
+    airports,
+    airlines,
+    seats_per_flight
   )
 
   populate_reservation `INSERT INTO reservation (r_c_id, r_f_id, r_seat, r_price,
@@ -160,10 +160,10 @@ seed {
       SELECT TOP ($3) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
       FROM sys.objects a CROSS JOIN sys.objects b
     ) s` (
-      batch(flights / batch_size),
-      batch_size,
-      reservations_per_flight,
-      customers
+    batch(flights / batch_size),
+    batch_size,
+    reservations_per_flight,
+    customers
   )
 
   update_seats_left(type: exec) `UPDATE flight SET f_seats_left = f_seats_total - (
@@ -224,9 +224,9 @@ run {
     FROM flight
     WHERE f_depart_ap_id = @p1
       AND f_depart_time > GETDATE()
-    ORDER BY f_depart_time` (ref('fetch_airports').ap_id)
+    ORDER BY f_depart_time` (uniform.ref('fetch_airports').ap_id)
 
-  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = @p1` (ref('fetch_flights').f_id)
+  find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = @p1` (uniform.ref('fetch_flights').f_id)
 
   new_reservation(type: exec) `DECLARE @rows INT;
     UPDATE flight SET f_seats_left = f_seats_left - 1
@@ -243,23 +243,23 @@ run {
         (SELECT f_base_price FROM flight WHERE f_id = @p2) + CAST(@p4 AS DECIMAL(12,2))
       WHERE c_id = @p1;
     END` (
-      ref('fetch_customers').c_id,
-      ref('fetch_flights').f_id,
-      gen('number:1,150'),
-      gen('number:50,1000')
+    uniform.ref('fetch_customers').c_id,
+    uniform.ref('fetch_flights').f_id,
+    gen('number:1,150'),
+    gen('number:50,1000')
   )
 
   update_customer(type: exec) `UPDATE customer SET c_iattr00 = @p2, c_iattr01 = @p3
     WHERE c_id = @p1` (
-      ref('fetch_customers').c_id,
-      gen('number:0,1000'),
-      gen('number:0,1000')
+    uniform.ref('fetch_customers').c_id,
+    gen('number:0,1000'),
+    gen('number:0,1000')
   )
 
   update_reservation(type: exec) `UPDATE reservation SET r_iattr00 = @p2
     WHERE r_id = @p1` (
-      ref('fetch_reservations').r_id,
-      gen('number:0,100')
+    uniform.ref('fetch_reservations').r_id,
+    gen('number:0,100')
   )
 
   delete_reservation(type: exec) `DECLARE @deleted INT;
@@ -268,7 +268,7 @@ run {
     IF @deleted > 0
       UPDATE flight SET f_seats_left = f_seats_left + 1
       WHERE f_id = @p2` (
-      ref('fetch_reservations').r_id,
-      ref('fetch_reservations').r_f_id
+    uniform.ref('fetch_reservations').r_id,
+    uniform.ref('fetch_reservations').r_f_id
   )
 }

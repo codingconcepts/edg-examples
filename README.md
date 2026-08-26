@@ -79,6 +79,7 @@ edg all \
 | [Bank](examples/bank/) | Bank account operations for contention and correctness testing |
 | [E-Commerce](examples/ecommerce/) | Categories, products, customers, and orders |
 | [IoT](examples/iot/) | Devices, sensors, and time-series readings |
+| [MovR](examples/movr/) | City-keyed vehicle sharing with users, vehicles, rides, and promo codes |
 | [SaaS](examples/saas/) | Multi-tenant with tenants, users, projects, and tasks |
 | [Social](examples/social/) | Users, posts, follows, and tags |
 
@@ -88,8 +89,12 @@ edg all \
 |---|---|
 | [Anomalies](examples/anomalies/) | Read/write anomaly patterns for isolation level testing |
 | [Index Comparison](examples/index_comparison/) | Indexed vs unindexed lookup comparison with expectations |
+| [KV](examples/kv/) | Single-table key/value point reads and upserts |
 | [Populate](examples/populate/) | Billion-row data population benchmark |
 | [TPC-C](examples/tpcc/) | Full TPC-C benchmark with all 5 transaction profiles |
+| [TPC-H](examples/tpch/) | TPC-H analytical schema with Q1, Q3, Q6, and Q14 |
+| [TTL Bench](examples/ttlbench/) | Ingest against a 30 minute row expiry, native or emulated per database |
+| [TTL Logger](examples/ttllogger/) | Log ingest and reads against a 10 minute row expiry |
 | [YCSB](examples/ycsb/) | Yahoo! Cloud Serving Benchmark |
 
 ## Execution Control

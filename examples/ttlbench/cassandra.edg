@@ -1,0 +1,42 @@
+let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
+
+  create_ttlbench(type: exec) `CREATE TABLE IF NOT EXISTS edg.ttlbench (
+      id UUID PRIMARY KEY,
+      payload BLOB,
+      inserted_at TIMESTAMP
+    )`
+}
+
+deseed {
+  truncate_ttlbench(type: exec) `TRUNCATE edg.ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS edg.ttlbench`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+weights {
+  insert_row  = 80
+  read_recent = 20
+}
+
+run {
+  insert_row(type: exec) `INSERT INTO edg.ttlbench (id, payload, inserted_at)
+    VALUES ($1, $2, toTimestamp(now()))
+    USING TTL 1800` (
+    gen('uuid'),
+    blob(payload_size)
+  )
+
+  read_recent(type: query) `SELECT id, inserted_at FROM edg.ttlbench LIMIT 10`
+}

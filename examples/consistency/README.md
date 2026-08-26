@@ -6,6 +6,15 @@ Under SERIALIZABLE isolation, these manifest as transaction retry errors rather 
 
 Set `EDG_NO_ATOMIC_TX=true` to disable automatic transaction wrapping and observe anomalies more easily.
 
+## Parameters
+
+Sizing is read from the environment, so the defaults can be overridden without editing the config:
+
+| Variable | Default | Description |
+|---|---|---|
+| `ACCOUNTS` | `10` | Number of accounts contended over |
+| `INITIAL_BALANCE` | `1000` | Starting balance on every account |
+
 ## CockroachDB
 
 ### Setup
@@ -283,4 +292,41 @@ edg down \
 --driver spanner \
 --config examples/consistency/spanner.edg \
 --url "projects/test-project/instances/test-instance/databases/consistency"
+```
+
+## SQLite
+
+### Setup
+
+SQLite is embedded, so there's no container to start; the database file is created on first connect.
+
+### Run
+
+```sh
+edg up \
+--driver sqlite \
+--config examples/consistency/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg seed \
+--driver sqlite \
+--config examples/consistency/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg run \
+--driver sqlite \
+--config examples/consistency/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate" \
+-w 10 \
+-d 1m
+
+edg deseed \
+--driver sqlite \
+--config examples/consistency/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
+
+edg down \
+--driver sqlite \
+--config examples/consistency/sqlite.edg \
+--url "file:edg.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_txlock=immediate"
 ```

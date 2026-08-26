@@ -107,8 +107,8 @@ seed {
       ABS(CHECKSUM(NEWID()) % 200) + 10
     FROM seq
     OPTION (MAXRECURSION 0)` (
-      products,
-      categories
+    products,
+    categories
   )
 
   populate_customer `INSERT INTO customer (email, name)
@@ -195,9 +195,9 @@ run {
     WHEN NOT MATCHED THEN
       INSERT (customer_id, product_id, quantity)
       VALUES (src.cust_id, src.prod_id, src.qty);` (
-      ref('fetch_customers').id,
-      ref('fetch_products').id,
-      gen('number:1,3')
+    ref('fetch_customers').id,
+    ref('fetch_products').id,
+    gen('number:1,3')
   )
 
   checkout(type: exec) `DELETE FROM cart_item WHERE customer_id = @p1` (ref_same('fetch_customers').id)
@@ -208,16 +208,16 @@ run {
     WHEN NOT MATCHED THEN
       INSERT (product_id, customer_id, rating, body)
       VALUES (src.prod_id, src.cust_id, src.rating, src.body);` (
-      ref('fetch_products').id,
-      ref('fetch_customers').id,
-      star_rating(gen('number:1,100')),
-      gen('sentence:8')
+    ref('fetch_products').id,
+    ref('fetch_customers').id,
+    star_rating(gen('number:1,100')),
+    gen('sentence:8')
   )
 
   remove_from_cart(type: exec) `DELETE FROM cart_item
     WHERE customer_id = @p1 AND product_id = @p2` (
-      ref('fetch_customers').id,
-      ref('fetch_products').id
+    ref('fetch_customers').id,
+    ref('fetch_products').id
   )
 
   search_products(type: query) `SELECT p.id, p.name, p.price, p.stock_qty,

@@ -1,0 +1,49 @@
+let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_ttlbench `CREATE TABLE IF NOT EXISTS ttlbench (
+      id TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      payload BLOB NOT NULL,
+      inserted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+
+  create_idx_ttlbench_inserted `CREATE INDEX IF NOT EXISTS idx_ttlbench_inserted
+    ON ttlbench (inserted_at)`
+}
+
+deseed {
+  delete_ttlbench(type: exec) `DELETE FROM ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
+}
+
+weights {
+  delete_expired = 10
+  insert_row     = 70
+  read_recent    = 20
+}
+
+run {
+  insert_row(type: exec) `INSERT INTO ttlbench (payload) VALUES (?)` (blob(payload_size))
+
+  read_recent(type: query) `SELECT id, inserted_at
+    FROM ttlbench
+    WHERE inserted_at > datetime('now', '-5 minutes')
+    ORDER BY inserted_at DESC
+    LIMIT 10`
+
+  # SQLite only supports DELETE ... LIMIT when built with
+  # SQLITE_ENABLE_UPDATE_DELETE_LIMIT, so bound the delete via rowid.
+  delete_expired(type: exec) `DELETE FROM ttlbench
+    WHERE rowid IN (
+      SELECT rowid FROM ttlbench
+      WHERE inserted_at < datetime('now', '-30 minutes')
+      LIMIT 1000
+    )`
+}

@@ -1,4 +1,4 @@
-let customers = 100000
+let customers  = 100000
 let batch_size = 5000
 
 up {

@@ -1,0 +1,97 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let zipf_s     = float(coalesce(env_nil('ZIPF_S'), 1.2))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_usertable `CREATE TABLE IF NOT EXISTS usertable (
+      ycsb_key STRING(255) NOT NULL,
+      field0 STRING(100) NOT NULL,
+      field1 STRING(100) NOT NULL,
+      field2 STRING(100) NOT NULL,
+      field3 STRING(100) NOT NULL,
+      field4 STRING(100) NOT NULL,
+      field5 STRING(100) NOT NULL,
+      field6 STRING(100) NOT NULL,
+      field7 STRING(100) NOT NULL,
+      field8 STRING(100) NOT NULL,
+      field9 STRING(100) NOT NULL
+    ) PRIMARY KEY (ycsb_key)`
+}
+
+seed {
+  populate_usertable `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    SELECT
+      CONCAT('user', LPAD(CAST($1 * $2 + s - 1 AS STRING), 10, '0')),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28),
+      SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 36) || SUBSTR(GENERATE_UUID(), 1, 28)
+    FROM UNNEST(GENERATE_ARRAY(1, $2)) AS s` (
+    batch(records / batch_size),
+    batch_size
+  )
+}
+
+deseed {
+  delete_usertable(type: exec) `DELETE FROM usertable WHERE TRUE`
+}
+
+down {
+  drop_usertable(type: exec) `DROP TABLE IF EXISTS usertable`
+}
+
+weights {
+  read   = 50
+  update = 50
+}
+
+run {
+  read(type: query) `SELECT * FROM usertable WHERE ycsb_key = @p1` (template('user%010d', zipf.int(zipf_s, 1, records - 1)))
+
+  update(type: exec) `UPDATE usertable SET field0 = @p2
+    WHERE ycsb_key = @p1` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  insert(type: exec) `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11)` (
+    uuid_v7(),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  scan(type: query) `SELECT * FROM usertable
+    WHERE ycsb_key >= @p1
+    ORDER BY ycsb_key
+    LIMIT @p2` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    gen('number:1,100')
+  )
+
+  read_modify_write(type: exec) `UPDATE usertable SET field0 = @p2
+    WHERE ycsb_key = @p1` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}

@@ -273,8 +273,8 @@ seed {
       30000,
       3001
     FROM seq` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts
   )
 
   populate_customer `INSERT INTO customer (c_w_id, c_d_id, c_id, c_first, c_middle, c_last,
@@ -325,9 +325,9 @@ seed {
       SUBSTRING(REPEAT(MD5(RAND()), 16), 1, FLOOR(RAND() * 200 + 300))
     FROM d_seq
     CROSS JOIN c_seq` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      customers / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    customers / districts
   )
 
   populate_history `INSERT INTO history (h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
@@ -362,9 +362,9 @@ seed {
       1
     FROM d_seq
     CROSS JOIN o_seq` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_new_order `INSERT INTO new_order (no_w_id, no_d_id, no_o_id)
@@ -381,9 +381,9 @@ seed {
     SELECT $1, d, o
     FROM d_seq
     CROSS JOIN o_seq` (
-      ref_each('SELECT w_id FROM warehouse'),
-      districts,
-      orders / districts
+    ref_each('SELECT w_id FROM warehouse'),
+    districts,
+    orders / districts
   )
 
   populate_order_line `INSERT INTO order_line (ol_w_id, ol_d_id, ol_o_id, ol_number,
@@ -435,8 +435,8 @@ seed {
         SUBSTRING(CONCAT(MD5(RAND()), MD5(RAND())), 1, FLOOR(RAND() * 24 + 26))
       )
     FROM seq` (
-      ref_each('SELECT w_id FROM warehouse'),
-      stock
+    ref_each('SELECT w_id FROM warehouse'),
+    stock
   )
 }
 
@@ -517,22 +517,22 @@ run {
     get_next_o_id(type: query) `SELECT d_next_o_id FROM district
       WHERE d_w_id = ? AND d_id = ?
       FOR UPDATE` (
-        local('w_id'),
-        local('d_id')
+      local('w_id'),
+      local('d_id')
     )
     incr_next_o_id(type: exec) `UPDATE district SET d_next_o_id = d_next_o_id + 1
       WHERE d_w_id = ? AND d_id = ?` (
-        local('w_id'),
-        local('d_id')
+      local('w_id'),
+      local('d_id')
     )
     insert_oorder(type: exec) `INSERT INTO oorder (o_w_id, o_d_id, o_id, o_c_id, o_entry_d,
         o_ol_cnt, o_all_local)
       VALUES (?, ?, ?, ?, NOW(), ?, 1)` (
-        local('w_id'),
-        local('d_id'),
-        ref_same('get_next_o_id').d_next_o_id,
-        local('c_id'),
-        local('ol_cnt')
+      local('w_id'),
+      local('d_id'),
+      ref_same('get_next_o_id').d_next_o_id,
+      local('c_id'),
+      local('ol_cnt')
     )
   }
 
@@ -543,10 +543,10 @@ run {
       c.c_ytd_payment = c.c_ytd_payment + p.amount / 100,
       c.c_payment_cnt = c.c_payment_cnt + 1
     WHERE c.c_w_id = p.w_id AND c.c_d_id = p.d_id AND c.c_id = p.c_id` (
-      gen('number:100,500000'),
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    gen('number:100,500000'),
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   order_status(type: query, wait: 2s) `SELECT o.o_id, o.o_entry_d, o.o_carrier_id,
@@ -563,9 +563,9 @@ run {
         WHERE o2.o_w_id = p.w_id AND o2.o_d_id = p.d_id
           AND o2.o_c_id = p.c_id
       )` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      nurand(1023, 1, customers / districts)
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
   )
 
   delivery(type: exec, wait: 2s) `DELETE n FROM new_order n
@@ -576,8 +576,8 @@ run {
       GROUP BY no_w_id, no_d_id
     ) m ON n.no_w_id = m.no_w_id AND n.no_d_id = m.no_d_id
       AND n.no_o_id = m.min_o_id` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10')
   )
 
   stock_level(type: query, wait: 2s) `SELECT COUNT(DISTINCT s.s_i_id) AS low_stock
@@ -589,9 +589,9 @@ run {
       ON s.s_i_id = ol.ol_i_id AND s.s_w_id = d.d_w_id
     WHERE d.d_w_id = ? AND d.d_id = ?
       AND s.s_quantity < ?` (
-      ref_perm('fetch_warehouses').w_id,
-      gen('number:1,10'),
-      gen('number:10,20')
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
   )
 
   q1_pricing_summary(type: query) `SELECT
@@ -623,8 +623,8 @@ run {
       WHERE s_w_id = ?
     )
     ORDER BY total_qty DESC` (
-      ref_perm('fetch_warehouses').w_id,
-      ref_perm('fetch_warehouses').w_id
+    ref_perm('fetch_warehouses').w_id,
+    ref_perm('fetch_warehouses').w_id
   )
 
   q12_shipping_modes(type: query) `SELECT

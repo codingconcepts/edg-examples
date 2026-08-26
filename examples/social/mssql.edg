@@ -202,8 +202,8 @@ run {
 
   create_post(type: exec) `INSERT INTO post (author_id, body)
     VALUES (@p1, @p2)` (
-      ref('fetch_users').id,
-      gen('sentence:10')
+    ref('fetch_users').id,
+    gen('sentence:10')
   )
 
   like_post(type: exec) `MERGE INTO post_like pl
@@ -211,16 +211,16 @@ run {
     ON (pl.post_id = src.post_id AND pl.user_id = src.user_id)
     WHEN NOT MATCHED THEN
       INSERT (post_id, user_id) VALUES (src.post_id, src.user_id);` (
-      ref('fetch_posts').id,
-      ref('fetch_users').id
+    ref('fetch_posts').id,
+    ref('fetch_users').id
   )
 
   add_comment(type: exec) `INSERT INTO comment (post_id, author_id, body)
     VALUES (@p1, @p2, CONCAT(@p3, ': ', @p4))` (
-      ref('fetch_posts').id,
-      ref_same('fetch_users').id,
-      ref_same('fetch_users').display_name,
-      gen('sentence:8')
+    ref('fetch_posts').id,
+    ref_same('fetch_users').id,
+    ref_same('fetch_users').display_name,
+    gen('sentence:8')
   )
 
   follow_user(type: exec) `MERGE INTO follow f
@@ -228,8 +228,8 @@ run {
     ON (f.follower_id = src.follower_id AND f.following_id = src.following_id)
     WHEN NOT MATCHED THEN
       INSERT (follower_id, following_id) VALUES (src.follower_id, src.following_id);` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 
   trending(type: query) `SELECT TOP 10 p.id, p.body, p.like_count, u.username
@@ -243,7 +243,7 @@ run {
     JOIN user_profile u ON u.id = f1.following_id
     WHERE f1.follower_id = @p1
       AND f2.follower_id = @p2` (
-      ref_diff('fetch_users').id,
-      ref_diff('fetch_users').id
+    ref_diff('fetch_users').id,
+    ref_diff('fetch_users').id
   )
 }

@@ -1,0 +1,94 @@
+let records    = int(coalesce(env_nil('RECORDS'), 1000))
+let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
+let zipf_s     = float(coalesce(env_nil('ZIPF_S'), 1.2))
+
+expect {
+  error_rate < 1
+}
+
+up {
+  create_usertable `CREATE TABLE IF NOT EXISTS usertable (
+      ycsb_key TEXT PRIMARY KEY,
+      field0 TEXT NOT NULL,
+      field1 TEXT NOT NULL,
+      field2 TEXT NOT NULL,
+      field3 TEXT NOT NULL,
+      field4 TEXT NOT NULL,
+      field5 TEXT NOT NULL,
+      field6 TEXT NOT NULL,
+      field7 TEXT NOT NULL,
+      field8 TEXT NOT NULL,
+      field9 TEXT NOT NULL
+    )`
+}
+
+seed {
+  populate_usertable(type: exec_batch, count: records, size: batch_size) `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    __values__` (
+    template('user%010d', seq(1, 1)),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+}
+
+deseed {
+  delete_usertable(type: exec) `DELETE FROM usertable`
+}
+
+down {
+  drop_usertable(type: exec) `DROP TABLE IF EXISTS usertable`
+}
+
+weights {
+  read   = 50
+  update = 50
+}
+
+run {
+  read(type: query) `SELECT * FROM usertable WHERE ycsb_key = ?` (template('user%010d', zipf.int(zipf_s, 1, records - 1)))
+
+  update(type: exec) `UPDATE usertable SET field0 = ?
+    WHERE ycsb_key = ?` (
+    regex('[a-zA-Z0-9]{100}'),
+    template('user%010d', zipf.int(zipf_s, 1, records - 1))
+  )
+
+  insert(type: exec) `INSERT INTO usertable (ycsb_key, field0, field1, field2, field3,
+      field4, field5, field6, field7, field8, field9)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` (
+    uuid_v7(),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}'),
+    regex('[a-zA-Z0-9]{100}')
+  )
+
+  scan(type: query) `SELECT * FROM usertable
+    WHERE ycsb_key >= ?
+    ORDER BY ycsb_key
+    LIMIT ?` (
+    template('user%010d', zipf.int(zipf_s, 1, records - 1)),
+    gen('number:1,100')
+  )
+
+  read_modify_write(type: exec) `UPDATE usertable SET field0 = ?
+    WHERE ycsb_key = ?` (
+    regex('[a-zA-Z0-9]{100}'),
+    template('user%010d', zipf.int(zipf_s, 1, records - 1))
+  )
+}

@@ -1,4 +1,4 @@
-csv "data/"
+csv 'data/'
 
 let customers = 10
 
@@ -17,10 +17,10 @@ up {
 seed {
   populate_customer(type: exec_batch, count: customers, size: 10) `INSERT INTO customer (email, region, currency, greeting)
     __values__` (
-      gen('email'),
-      ref_same('regions').code,
-      ref_same('regions').currency,
-      ref('translations').greeting
+    gen('email'),
+    ref_same('regions').code,
+    ref_same('regions').currency,
+    ref('translations').greeting
   )
 }
 

@@ -10,16 +10,16 @@ up {
 
 seed {
   populate_customer(type: exec_batch, count: customers, size: batch_size) `{"insert": "customer", "documents": [{"_id": {"$oid": "$1"}, "email": "$2"}]}` (
-      objectid(),
-      gen('email')
+    objectid(),
+    gen('email')
   )
 
   fetch_customers(type: query) `{"find": "customer", "filter": {}}`
 
   populate_account(type: exec_batch, count: customers, size: batch_size) `{"insert": "account", "documents": [{"_id": {"$oid": "$1"}, "customer_id": {"$oid": "$2"}, "balance": $3}]}` (
-      objectid(),
-      ref('fetch_customers')._id,
-      initial_balance
+    objectid(),
+    ref('fetch_customers')._id,
+    initial_balance
   )
 }
 
@@ -28,17 +28,17 @@ init {
 }
 
 weights {
-  check_balance = 50
+  check_balance  = 50
   credit_account = 5
-  make_transfer = 45
+  make_transfer  = 45
 }
 
 run {
   check_balance(type: query) `{"find": "account", "filter": {"_id": {"$oid": "$1"}}}` (ref('fetch_accounts')._id)
 
   credit_account(type: exec) `{"update": "account", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$inc": {"balance": $2}}}]}` (
-      ref('fetch_accounts')._id,
-      gen('number:1,1000')
+    ref('fetch_accounts')._id,
+    gen('number:1,1000')
   )
 
   transaction make_transfer {
@@ -47,12 +47,12 @@ run {
     rollback_if ref_same('read_source').balance < local('amount')
     read_target(type: query) `{"find": "account", "filter": {"_id": {"$oid": "$1"}}}` (ref_diff('fetch_accounts')._id)
     debit_source(type: exec) `{"update": "account", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$inc": {"balance": -$2}}}]}` (
-        ref_same('read_source')._id,
-        local('amount')
+      ref_same('read_source')._id,
+      local('amount')
     )
     credit_target(type: exec) `{"update": "account", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$inc": {"balance": $2}}}]}` (
-        ref_same('read_target')._id,
-        local('amount')
+      ref_same('read_target')._id,
+      local('amount')
     )
   }
 }
