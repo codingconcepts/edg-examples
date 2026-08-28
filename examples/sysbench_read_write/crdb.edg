@@ -1,10 +1,6 @@
 let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_sbtest1 `CREATE TABLE IF NOT EXISTS sbtest1 (
       id INT NOT NULL PRIMARY KEY,
@@ -27,14 +23,6 @@ seed {
     batch(records / batch_size),
     batch_size
   )
-}
-
-deseed {
-  truncate_sbtest1(type: exec) `TRUNCATE TABLE sbtest1`
-}
-
-down {
-  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS sbtest1`
 }
 
 weights {
@@ -88,4 +76,16 @@ run {
       local('new_pad')
     )
   }
+}
+
+deseed {
+  truncate_sbtest1(type: exec) `TRUNCATE TABLE sbtest1`
+}
+
+down {
+  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS sbtest1`
+}
+
+expect {
+  error_rate < 1
 }

@@ -31,18 +31,6 @@ seed {
     FROM seq` (products)
 }
 
-deseed {
-  delete_review(type: exec) `DELETE FROM review`
-
-  delete_product(type: exec) `DELETE FROM product`
-}
-
-down {
-  drop_review(type: exec) `DROP TABLE IF EXISTS review`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-}
-
 init {
   fetch_products(type: query) `SELECT id FROM product`
 }
@@ -63,4 +51,16 @@ run {
     norm.int(4, 1, 1, 5),
     norm.n(50, 15, 1, 100, 3, 8)
   )
+}
+
+deseed {
+  delete_review(type: exec) `DELETE FROM review`
+
+  delete_product(type: exec) `DELETE FROM product`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE IF EXISTS review`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
 }

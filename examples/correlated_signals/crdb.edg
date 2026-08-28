@@ -1,3 +1,11 @@
+signal traffic(from: '2024-01-01T00:00:00Z', to: '2024-01-08T00:00:00Z', interval: '5m') {
+  1000 + 400 * sin ( 2 * 3.14159265 * i / 288 ) + 200 * sin ( 2 * 3.14159265 * i / 2016 )
+}
+
+signal promo_boost(length: 2016) {
+  floor ( 50 * pow ( cos ( 3.14159265 * mod ( i , 500 ) / 500 ) , 20 ) )
+}
+
 up {
   create_page_views `CREATE TABLE IF NOT EXISTS page_views (
     ts TIMESTAMPTZ NOT NULL,
@@ -26,12 +34,11 @@ up {
   )`
 }
 
-signal traffic(from: '2024-01-01T00:00:00Z', to: '2024-01-08T00:00:00Z', interval: '5m') {
-  1000 + 400 * sin ( 2 * 3.14159265 * i / 288 ) + 200 * sin ( 2 * 3.14159265 * i / 2016 )
-}
-
-signal promo_boost(length: 2016) {
-  floor ( 50 * pow ( cos ( 3.14159265 * mod ( i , 500 ) / 500 ) , 20 ) )
+weights {
+  insert_page_views = 25
+  insert_orders     = 25
+  insert_tickets    = 25
+  insert_errors     = 25
 }
 
 run {
@@ -82,13 +89,6 @@ run {
       floor(abs(signal_at('promo_boost', int(global_iter()) - 6) * 0.5 + norm.int(0, 10, -25, 25) * 0.5)),
       set(['timeout', '500', 'oom', 'connection_reset'],[35, 30, 20, 15])
     )
-}
-
-weights {
-  insert_page_views = 25
-  insert_orders     = 25
-  insert_tickets    = 25
-  insert_errors     = 25
 }
 
 deseed {

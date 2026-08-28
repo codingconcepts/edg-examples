@@ -7,10 +7,6 @@ let customers    = int(coalesce(env_nil('CUSTOMERS'), 150))
 let orders       = int(coalesce(env_nil('ORDERS'), 1000))
 let batch_size   = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_region `CREATE TABLE IF NOT EXISTS region (
       r_regionkey INT64 NOT NULL,
@@ -246,42 +242,6 @@ seed {
   )
 }
 
-deseed {
-  delete_lineitem(type: exec) `DELETE FROM lineitem WHERE TRUE`
-
-  delete_orders(type: exec) `DELETE FROM orders WHERE TRUE`
-
-  delete_partsupp(type: exec) `DELETE FROM partsupp WHERE TRUE`
-
-  delete_customer(type: exec) `DELETE FROM customer WHERE TRUE`
-
-  delete_part(type: exec) `DELETE FROM part WHERE TRUE`
-
-  delete_supplier(type: exec) `DELETE FROM supplier WHERE TRUE`
-
-  delete_nation(type: exec) `DELETE FROM nation WHERE TRUE`
-
-  delete_region(type: exec) `DELETE FROM region WHERE TRUE`
-}
-
-down {
-  drop_lineitem(type: exec) `DROP TABLE IF EXISTS lineitem`
-
-  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
-
-  drop_partsupp(type: exec) `DROP TABLE IF EXISTS partsupp`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-
-  drop_part(type: exec) `DROP TABLE IF EXISTS part`
-
-  drop_supplier(type: exec) `DROP TABLE IF EXISTS supplier`
-
-  drop_nation(type: exec) `DROP TABLE IF EXISTS nation`
-
-  drop_region(type: exec) `DROP TABLE IF EXISTS region`
-}
-
 weights {
   q14_promotion_effect   = 25
   q1_pricing_summary     = 25
@@ -348,4 +308,44 @@ run {
     gen('number:1993,1997'),
     gen('number:1,12')
   )
+}
+
+deseed {
+  delete_lineitem(type: exec) `DELETE FROM lineitem WHERE TRUE`
+
+  delete_orders(type: exec) `DELETE FROM orders WHERE TRUE`
+
+  delete_partsupp(type: exec) `DELETE FROM partsupp WHERE TRUE`
+
+  delete_customer(type: exec) `DELETE FROM customer WHERE TRUE`
+
+  delete_part(type: exec) `DELETE FROM part WHERE TRUE`
+
+  delete_supplier(type: exec) `DELETE FROM supplier WHERE TRUE`
+
+  delete_nation(type: exec) `DELETE FROM nation WHERE TRUE`
+
+  delete_region(type: exec) `DELETE FROM region WHERE TRUE`
+}
+
+down {
+  drop_lineitem(type: exec) `DROP TABLE IF EXISTS lineitem`
+
+  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
+
+  drop_partsupp(type: exec) `DROP TABLE IF EXISTS partsupp`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_part(type: exec) `DROP TABLE IF EXISTS part`
+
+  drop_supplier(type: exec) `DROP TABLE IF EXISTS supplier`
+
+  drop_nation(type: exec) `DROP TABLE IF EXISTS nation`
+
+  drop_region(type: exec) `DROP TABLE IF EXISTS region`
+}
+
+expect {
+  error_rate < 1
 }

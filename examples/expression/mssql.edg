@@ -19,14 +19,6 @@ up {
     )`
 }
 
-deseed {
-  truncate(type: exec) `DELETE FROM expr_demo`
-}
-
-down {
-  drop(type: exec) `DROP TABLE IF EXISTS expr_demo`
-}
-
 run {
   array_predicates(type: exec) `INSERT INTO expr_demo (label, result) VALUES
       ('all(# > 0)', @p1),
@@ -180,4 +172,12 @@ run {
     string(len('hello')),
     get({ a: 1, b: 2 }, 'c') ?? 'missing'
   )
+}
+
+deseed {
+  truncate(type: exec) `DELETE FROM expr_demo`
+}
+
+down {
+  drop(type: exec) `DROP TABLE IF EXISTS expr_demo`
 }

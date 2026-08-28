@@ -18,17 +18,17 @@ seed {
   )
 }
 
-deseed {
-  delete_account(type: exec) `DELETE FROM account`
-
-  delete_customer(type: exec) `DELETE FROM customer`
+weights {
+  check_balance  = 50
+  credit_account = 50
 }
 
 init {
   fetch_accounts(type: query) `SELECT id FROM account ORDER BY NEWID()`
 }
 
-weights {
-  check_balance  = 50
-  credit_account = 50
+deseed {
+  delete_account(type: exec) `DELETE FROM account`
+
+  delete_customer(type: exec) `DELETE FROM customer`
 }

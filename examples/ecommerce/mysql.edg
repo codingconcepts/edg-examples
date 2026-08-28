@@ -109,46 +109,6 @@ seed {
     ) j` (gen_batch(customers, batch_size, 'email'))
 }
 
-deseed {
-  delete_review(type: exec) `DELETE FROM review`
-
-  delete_order_item(type: exec) `DELETE FROM order_item`
-
-  delete_purchase_order(type: exec) `DELETE FROM purchase_order`
-
-  delete_cart_item(type: exec) `DELETE FROM cart_item`
-
-  delete_customer(type: exec) `DELETE FROM customer`
-
-  delete_product(type: exec) `DELETE FROM product`
-
-  delete_category(type: exec) `DELETE FROM category`
-}
-
-down {
-  drop_review(type: exec) `DROP TABLE IF EXISTS review`
-
-  drop_order_item(type: exec) `DROP TABLE IF EXISTS order_item`
-
-  drop_purchase_order(type: exec) `DROP TABLE IF EXISTS purchase_order`
-
-  drop_cart_item(type: exec) `DROP TABLE IF EXISTS cart_item`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-
-  drop_category(type: exec) `DROP TABLE IF EXISTS category`
-}
-
-init {
-  fetch_products(type: query) `SELECT id, category_id, price FROM product ORDER BY RAND()`
-
-  fetch_customers(type: query) `SELECT id FROM customer ORDER BY RAND()`
-
-  fetch_categories(type: query) `SELECT id FROM category`
-}
-
 weights {
   add_to_cart      = 15
   browse_category  = 30
@@ -157,6 +117,14 @@ weights {
   search_products  = 10
   view_product     = 20
   write_review     = 10
+}
+
+init {
+  fetch_products(type: query) `SELECT id, category_id, price FROM product ORDER BY RAND()`
+
+  fetch_customers(type: query) `SELECT id FROM customer ORDER BY RAND()`
+
+  fetch_categories(type: query) `SELECT id FROM category`
 }
 
 run {
@@ -221,4 +189,36 @@ run {
       ) j
     )
     GROUP BY p.id, p.name, p.price, p.stock_qty` (ref_n('fetch_products', 'id', 3, 8))
+}
+
+deseed {
+  delete_review(type: exec) `DELETE FROM review`
+
+  delete_order_item(type: exec) `DELETE FROM order_item`
+
+  delete_purchase_order(type: exec) `DELETE FROM purchase_order`
+
+  delete_cart_item(type: exec) `DELETE FROM cart_item`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+
+  delete_product(type: exec) `DELETE FROM product`
+
+  delete_category(type: exec) `DELETE FROM category`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE IF EXISTS review`
+
+  drop_order_item(type: exec) `DROP TABLE IF EXISTS order_item`
+
+  drop_purchase_order(type: exec) `DROP TABLE IF EXISTS purchase_order`
+
+  drop_cart_item(type: exec) `DROP TABLE IF EXISTS cart_item`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+
+  drop_category(type: exec) `DROP TABLE IF EXISTS category`
 }

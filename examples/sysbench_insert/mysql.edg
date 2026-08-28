@@ -1,10 +1,6 @@
 let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_sbtest1 `CREATE TABLE IF NOT EXISTS sbtest1 (
       id INT NOT NULL PRIMARY KEY,
@@ -26,14 +22,6 @@ seed {
   )
 }
 
-deseed {
-  delete_sbtest1(type: exec) `DELETE FROM sbtest1`
-}
-
-down {
-  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS sbtest1`
-}
-
 run {
   insert(type: exec) `INSERT IGNORE INTO sbtest1 (id, k, c, pad)
     VALUES (?, ?, ?, ?)` (
@@ -42,4 +30,16 @@ run {
     regex('[a-zA-Z0-9]{120}'),
     regex('[a-zA-Z0-9]{60}')
   )
+}
+
+deseed {
+  delete_sbtest1(type: exec) `DELETE FROM sbtest1`
+}
+
+down {
+  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS sbtest1`
+}
+
+expect {
+  error_rate < 1
 }

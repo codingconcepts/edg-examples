@@ -7,10 +7,6 @@ let customers    = int(coalesce(env_nil('CUSTOMERS'), 150))
 let orders       = int(coalesce(env_nil('ORDERS'), 1000))
 let batch_size   = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_region(type: exec) `{"create": "region"}`
 
@@ -148,6 +144,33 @@ seed {
   )
 }
 
+weights {
+  q14_promotion_effect   = 25
+  q1_pricing_summary     = 25
+  q3_shipping_priority   = 25
+  q6_forecasting_revenue = 25
+}
+
+run {
+  q1_pricing_summary(type: query) `{"aggregate": "lineitem", "pipeline": [{"$match": {"l_shipdate": {"$lte": "1998-09-01"}}}, {"$group": {"_id": {"l_returnflag": "$l_returnflag", "l_linestatus": "$l_linestatus"}, "sum_qty": {"$sum": "$l_quantity"}, "sum_base_price": {"$sum": "$l_extendedprice"}, "sum_disc_price": {"$sum": {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}]}}, "sum_charge": {"$sum": {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}, {"$add": [1, "$l_tax"]}]}}, "avg_qty": {"$avg": "$l_quantity"}, "avg_price": {"$avg": "$l_extendedprice"}, "avg_disc": {"$avg": "$l_discount"}, "count_order": {"$sum": 1}}}, {"$sort": {"_id.l_returnflag": 1, "_id.l_linestatus": 1}}], "cursor": {}}` (gen('number:60,120'))
+
+  q3_shipping_priority(type: query) `{"aggregate": "customer", "pipeline": [{"$match": {"c_mktsegment": "$1"}}, {"$lookup": {"from": "orders", "localField": "c_custkey", "foreignField": "o_custkey", "as": "order_docs"}}, {"$unwind": "$order_docs"}, {"$match": {"order_docs.o_orderdate": {"$lt": "1995-03-15"}}}, {"$lookup": {"from": "lineitem", "localField": "order_docs.o_orderkey", "foreignField": "l_orderkey", "as": "line_docs"}}, {"$unwind": "$line_docs"}, {"$match": {"line_docs.l_shipdate": {"$gt": "1995-03-15"}}}, {"$group": {"_id": {"l_orderkey": "$line_docs.l_orderkey", "o_orderdate": "$order_docs.o_orderdate", "o_shippriority": "$order_docs.o_shippriority"}, "revenue": {"$sum": {"$multiply": ["$line_docs.l_extendedprice", {"$subtract": [1, "$line_docs.l_discount"]}]}}}}, {"$sort": {"revenue": -1, "_id.o_orderdate": 1}}, {"$limit": 10}], "cursor": {}}` (
+    uniform.set(['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'MACHINERY', 'HOUSEHOLD'],[]),
+    gen('number:1,31')
+  )
+
+  q6_forecasting_revenue(type: query) `{"aggregate": "lineitem", "pipeline": [{"$match": {"l_shipdate": {"$gte": "$1-01-01", "$lt": "$1-12-31"}, "l_discount": {"$gte": $2, "$lte": $2}, "l_quantity": {"$lt": $3}}}, {"$group": {"_id": null, "revenue": {"$sum": {"$multiply": ["$l_extendedprice", "$l_discount"]}}}}], "cursor": {}}` (
+    gen('number:1993,1997'),
+    uniform.float(0.02, 0.09, 2),
+    gen('number:24,25')
+  )
+
+  q14_promotion_effect(type: query) `{"aggregate": "lineitem", "pipeline": [{"$match": {"l_shipdate": {"$gte": "$1-01-01", "$lte": "$1-12-31"}}}, {"$lookup": {"from": "part", "localField": "l_partkey", "foreignField": "p_partkey", "as": "part_doc"}}, {"$unwind": "$part_doc"}, {"$group": {"_id": null, "promo_revenue": {"$sum": {"$cond": [{"$regexMatch": {"input": "$part_doc.p_type", "regex": "^PROMO"}}, {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}]}, 0]}}, "total_revenue": {"$sum": {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}]}}}}, {"$project": {"promo_revenue": {"$multiply": [100, {"$divide": ["$promo_revenue", "$total_revenue"]}]}}}], "cursor": {}}` (
+    gen('number:1993,1997'),
+    gen('number:1,12')
+  )
+}
+
 deseed {
   delete_lineitem(type: exec) `{"delete": "lineitem", "deletes": [{"q": {}, "limit": 0}]}`
 
@@ -184,29 +207,6 @@ down {
   drop_region(type: exec) `{"drop": "region"}`
 }
 
-weights {
-  q14_promotion_effect   = 25
-  q1_pricing_summary     = 25
-  q3_shipping_priority   = 25
-  q6_forecasting_revenue = 25
-}
-
-run {
-  q1_pricing_summary(type: query) `{"aggregate": "lineitem", "pipeline": [{"$match": {"l_shipdate": {"$lte": "1998-09-01"}}}, {"$group": {"_id": {"l_returnflag": "$l_returnflag", "l_linestatus": "$l_linestatus"}, "sum_qty": {"$sum": "$l_quantity"}, "sum_base_price": {"$sum": "$l_extendedprice"}, "sum_disc_price": {"$sum": {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}]}}, "sum_charge": {"$sum": {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}, {"$add": [1, "$l_tax"]}]}}, "avg_qty": {"$avg": "$l_quantity"}, "avg_price": {"$avg": "$l_extendedprice"}, "avg_disc": {"$avg": "$l_discount"}, "count_order": {"$sum": 1}}}, {"$sort": {"_id.l_returnflag": 1, "_id.l_linestatus": 1}}], "cursor": {}}` (gen('number:60,120'))
-
-  q3_shipping_priority(type: query) `{"aggregate": "customer", "pipeline": [{"$match": {"c_mktsegment": "$1"}}, {"$lookup": {"from": "orders", "localField": "c_custkey", "foreignField": "o_custkey", "as": "order_docs"}}, {"$unwind": "$order_docs"}, {"$match": {"order_docs.o_orderdate": {"$lt": "1995-03-15"}}}, {"$lookup": {"from": "lineitem", "localField": "order_docs.o_orderkey", "foreignField": "l_orderkey", "as": "line_docs"}}, {"$unwind": "$line_docs"}, {"$match": {"line_docs.l_shipdate": {"$gt": "1995-03-15"}}}, {"$group": {"_id": {"l_orderkey": "$line_docs.l_orderkey", "o_orderdate": "$order_docs.o_orderdate", "o_shippriority": "$order_docs.o_shippriority"}, "revenue": {"$sum": {"$multiply": ["$line_docs.l_extendedprice", {"$subtract": [1, "$line_docs.l_discount"]}]}}}}, {"$sort": {"revenue": -1, "_id.o_orderdate": 1}}, {"$limit": 10}], "cursor": {}}` (
-    uniform.set(['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'MACHINERY', 'HOUSEHOLD'],[]),
-    gen('number:1,31')
-  )
-
-  q6_forecasting_revenue(type: query) `{"aggregate": "lineitem", "pipeline": [{"$match": {"l_shipdate": {"$gte": "$1-01-01", "$lt": "$1-12-31"}, "l_discount": {"$gte": $2, "$lte": $2}, "l_quantity": {"$lt": $3}}}, {"$group": {"_id": null, "revenue": {"$sum": {"$multiply": ["$l_extendedprice", "$l_discount"]}}}}], "cursor": {}}` (
-    gen('number:1993,1997'),
-    uniform.float(0.02, 0.09, 2),
-    gen('number:24,25')
-  )
-
-  q14_promotion_effect(type: query) `{"aggregate": "lineitem", "pipeline": [{"$match": {"l_shipdate": {"$gte": "$1-01-01", "$lte": "$1-12-31"}}}, {"$lookup": {"from": "part", "localField": "l_partkey", "foreignField": "p_partkey", "as": "part_doc"}}, {"$unwind": "$part_doc"}, {"$group": {"_id": null, "promo_revenue": {"$sum": {"$cond": [{"$regexMatch": {"input": "$part_doc.p_type", "regex": "^PROMO"}}, {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}]}, 0]}}, "total_revenue": {"$sum": {"$multiply": ["$l_extendedprice", {"$subtract": [1, "$l_discount"]}]}}}}, {"$project": {"promo_revenue": {"$multiply": [100, {"$divide": ["$promo_revenue", "$total_revenue"]}]}}}], "cursor": {}}` (
-    gen('number:1993,1997'),
-    gen('number:1,12')
-  )
+expect {
+  error_rate < 1
 }

@@ -7,10 +7,6 @@ let items      = int(coalesce(env_nil('ITEMS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -344,64 +340,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_order_line(type: exec) `TRUNCATE edg.order_line`
-
-  truncate_new_order(type: exec) `TRUNCATE edg.new_order`
-
-  truncate_oorder(type: exec) `TRUNCATE edg.oorder`
-
-  truncate_history(type: exec) `TRUNCATE edg.history`
-
-  truncate_stock(type: exec) `TRUNCATE edg.stock`
-
-  truncate_customer(type: exec) `TRUNCATE edg.customer`
-
-  truncate_district(type: exec) `TRUNCATE edg.district`
-
-  truncate_warehouse(type: exec) `TRUNCATE edg.warehouse`
-
-  truncate_item(type: exec) `TRUNCATE edg.item`
-
-  truncate_supplier(type: exec) `TRUNCATE edg.supplier`
-
-  truncate_nation(type: exec) `TRUNCATE edg.nation`
-
-  truncate_region(type: exec) `TRUNCATE edg.region`
-}
-
-down {
-  drop_order_line(type: exec) `DROP TABLE IF EXISTS edg.order_line`
-
-  drop_new_order(type: exec) `DROP TABLE IF EXISTS edg.new_order`
-
-  drop_oorder(type: exec) `DROP TABLE IF EXISTS edg.oorder`
-
-  drop_history(type: exec) `DROP TABLE IF EXISTS edg.history`
-
-  drop_stock(type: exec) `DROP TABLE IF EXISTS edg.stock`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
-
-  drop_district(type: exec) `DROP TABLE IF EXISTS edg.district`
-
-  drop_warehouse(type: exec) `DROP TABLE IF EXISTS edg.warehouse`
-
-  drop_item(type: exec) `DROP TABLE IF EXISTS edg.item`
-
-  drop_supplier(type: exec) `DROP TABLE IF EXISTS edg.supplier`
-
-  drop_nation(type: exec) `DROP TABLE IF EXISTS edg.nation`
-
-  drop_region(type: exec) `DROP TABLE IF EXISTS edg.region`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
-}
-
-init {
-  fetch_warehouses(type: query) `SELECT w_id FROM edg.warehouse`
-}
-
 weights {
   delivery               = 4
   new_order              = 36
@@ -412,6 +350,10 @@ weights {
   q1_pricing_summary     = 5
   q6_forecasting_revenue = 5
   stock_level            = 2
+}
+
+init {
+  fetch_warehouses(type: query) `SELECT w_id FROM edg.warehouse`
 }
 
 run {
@@ -470,4 +412,62 @@ run {
   q12_shipping_modes(type: query) `SELECT o_ol_cnt, o_carrier_id
     FROM edg.oorder
     ALLOW FILTERING`
+}
+
+deseed {
+  truncate_order_line(type: exec) `TRUNCATE edg.order_line`
+
+  truncate_new_order(type: exec) `TRUNCATE edg.new_order`
+
+  truncate_oorder(type: exec) `TRUNCATE edg.oorder`
+
+  truncate_history(type: exec) `TRUNCATE edg.history`
+
+  truncate_stock(type: exec) `TRUNCATE edg.stock`
+
+  truncate_customer(type: exec) `TRUNCATE edg.customer`
+
+  truncate_district(type: exec) `TRUNCATE edg.district`
+
+  truncate_warehouse(type: exec) `TRUNCATE edg.warehouse`
+
+  truncate_item(type: exec) `TRUNCATE edg.item`
+
+  truncate_supplier(type: exec) `TRUNCATE edg.supplier`
+
+  truncate_nation(type: exec) `TRUNCATE edg.nation`
+
+  truncate_region(type: exec) `TRUNCATE edg.region`
+}
+
+down {
+  drop_order_line(type: exec) `DROP TABLE IF EXISTS edg.order_line`
+
+  drop_new_order(type: exec) `DROP TABLE IF EXISTS edg.new_order`
+
+  drop_oorder(type: exec) `DROP TABLE IF EXISTS edg.oorder`
+
+  drop_history(type: exec) `DROP TABLE IF EXISTS edg.history`
+
+  drop_stock(type: exec) `DROP TABLE IF EXISTS edg.stock`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
+
+  drop_district(type: exec) `DROP TABLE IF EXISTS edg.district`
+
+  drop_warehouse(type: exec) `DROP TABLE IF EXISTS edg.warehouse`
+
+  drop_item(type: exec) `DROP TABLE IF EXISTS edg.item`
+
+  drop_supplier(type: exec) `DROP TABLE IF EXISTS edg.supplier`
+
+  drop_nation(type: exec) `DROP TABLE IF EXISTS edg.nation`
+
+  drop_region(type: exec) `DROP TABLE IF EXISTS edg.region`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+expect {
+  error_rate < 1
 }

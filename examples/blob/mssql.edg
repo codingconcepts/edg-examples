@@ -8,10 +8,6 @@ up {
     )`
 }
 
-down {
-  drop_blob_test(type: exec) `DROP TABLE IF EXISTS blob_test`
-}
-
 init {
   fetch_blobs(type: query) `SELECT TOP 100 id, label FROM blob_test`
 }
@@ -26,4 +22,8 @@ run {
   read_blob(type: query) `SELECT id, label, DATALENGTH(data_blob) AS blob_len
     FROM blob_test
     WHERE id = $1` (ref('fetch_blobs').id)
+}
+
+down {
+  drop_blob_test(type: exec) `DROP TABLE IF EXISTS blob_test`
 }

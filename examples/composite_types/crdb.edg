@@ -65,31 +65,15 @@ seed {
   )
 }
 
-deseed {
-  truncate_order(type: exec) `TRUNCATE TABLE "order"`
-
-  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
-}
-
-down {
-  drop_order(type: exec) `DROP TABLE IF EXISTS "order"`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-
-  drop_dimensions_type(type: exec) `DROP TYPE IF EXISTS dimensions`
-
-  drop_amount_type(type: exec) `DROP TYPE IF EXISTS amount`
-}
-
-init {
-  fetch_products(type: query) `SELECT id, price FROM product ORDER BY random()`
-}
-
 weights {
   browse_products     = 40
   order_summary       = 20
   place_order         = 20
   revenue_by_currency = 20
+}
+
+init {
+  fetch_products(type: query) `SELECT id, price FROM product ORDER BY random()`
 }
 
 run {
@@ -139,4 +123,20 @@ run {
     FROM "order"
     GROUP BY (total).currency
     ORDER BY revenue DESC`
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE "order"`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS "order"`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+
+  drop_dimensions_type(type: exec) `DROP TYPE IF EXISTS dimensions`
+
+  drop_amount_type(type: exec) `DROP TYPE IF EXISTS amount`
 }

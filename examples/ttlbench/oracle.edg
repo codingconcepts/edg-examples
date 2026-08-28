@@ -1,9 +1,5 @@
 let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_ttlbench(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -26,15 +22,6 @@ up {
     END;`
 }
 
-deseed {
-  truncate_ttlbench(type: exec) `TRUNCATE TABLE ttlbench`
-}
-
-down {
-  drop_ttlbench(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE ttlbench PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-}
-
 weights {
   delete_expired = 10
   insert_row     = 70
@@ -53,4 +40,17 @@ run {
   delete_expired(type: exec) `DELETE FROM ttlbench
     WHERE inserted_at < SYSTIMESTAMP - INTERVAL '30' MINUTE
       AND ROWNUM <= 1000`
+}
+
+deseed {
+  truncate_ttlbench(type: exec) `TRUNCATE TABLE ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE ttlbench PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+}
+
+expect {
+  error_rate < 1
 }

@@ -2,14 +2,6 @@ let customers       = 100000
 let initial_balance = 10000
 let batch_size      = 10000
 
-stages {
-  start(workers: 1, duration: 10s)
-  ramp_up(workers: 5, duration: 30s)
-  steady(workers: 10, duration: 1m0s)
-  ramp_down(workers: 5, duration: 30s)
-  end(workers: 1, duration: 10s)
-}
-
 up {
   create_customer `CREATE TABLE IF NOT EXISTS customer (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -39,28 +31,24 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-}
-
-init {
-  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
-
-  fetch_customers(type: query) `SELECT id, email FROM customer ORDER BY random()`
+stages {
+  start(workers: 1, duration: 10s)
+  ramp_up(workers: 5, duration: 30s)
+  steady(workers: 10, duration: 1m0s)
+  ramp_down(workers: 5, duration: 30s)
+  end(workers: 1, duration: 10s)
 }
 
 weights {
   check_balance  = 30
   credit_account = 10
   make_transfer  = 40
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+
+  fetch_customers(type: query) `SELECT id, email FROM customer ORDER BY random()`
 }
 
 run {
@@ -88,4 +76,16 @@ run {
       local('amount')
     )
   }
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }

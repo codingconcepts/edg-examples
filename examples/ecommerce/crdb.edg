@@ -86,46 +86,6 @@ seed {
     FROM unnest(string_to_array('$1', __sep__)) AS e` (gen_batch(customers, batch_size, 'email'))
 }
 
-deseed {
-  truncate_review(type: exec) `TRUNCATE TABLE review`
-
-  truncate_order_item(type: exec) `TRUNCATE TABLE order_item`
-
-  truncate_purchase_order(type: exec) `TRUNCATE TABLE purchase_order`
-
-  truncate_cart_item(type: exec) `TRUNCATE TABLE cart_item`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
-
-  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
-
-  truncate_category(type: exec) `TRUNCATE TABLE category CASCADE`
-}
-
-down {
-  drop_review(type: exec) `DROP TABLE IF EXISTS review`
-
-  drop_order_item(type: exec) `DROP TABLE IF EXISTS order_item`
-
-  drop_purchase_order(type: exec) `DROP TABLE IF EXISTS purchase_order`
-
-  drop_cart_item(type: exec) `DROP TABLE IF EXISTS cart_item`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-
-  drop_category(type: exec) `DROP TABLE IF EXISTS category`
-}
-
-init {
-  fetch_products(type: query) `SELECT id, category_id, price FROM product ORDER BY random()`
-
-  fetch_customers(type: query) `SELECT id FROM customer ORDER BY random()`
-
-  fetch_categories(type: query) `SELECT id FROM category`
-}
-
 weights {
   add_to_cart      = 15
   browse_category  = 30
@@ -134,6 +94,14 @@ weights {
   search_products  = 10
   view_product     = 20
   write_review     = 10
+}
+
+init {
+  fetch_products(type: query) `SELECT id, category_id, price FROM product ORDER BY random()`
+
+  fetch_customers(type: query) `SELECT id FROM customer ORDER BY random()`
+
+  fetch_categories(type: query) `SELECT id FROM category`
 }
 
 run {
@@ -226,4 +194,36 @@ run {
     LEFT JOIN review r ON r.product_id = p.id
     WHERE p.id IN (SELECT unnest(string_to_array($1, ','))::INT)
     GROUP BY p.id, p.name, p.price, p.stock_qty` (ref_n('fetch_products', 'id', 3, 8))
+}
+
+deseed {
+  truncate_review(type: exec) `TRUNCATE TABLE review`
+
+  truncate_order_item(type: exec) `TRUNCATE TABLE order_item`
+
+  truncate_purchase_order(type: exec) `TRUNCATE TABLE purchase_order`
+
+  truncate_cart_item(type: exec) `TRUNCATE TABLE cart_item`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
+
+  truncate_category(type: exec) `TRUNCATE TABLE category CASCADE`
+}
+
+down {
+  drop_review(type: exec) `DROP TABLE IF EXISTS review`
+
+  drop_order_item(type: exec) `DROP TABLE IF EXISTS order_item`
+
+  drop_purchase_order(type: exec) `DROP TABLE IF EXISTS purchase_order`
+
+  drop_cart_item(type: exec) `DROP TABLE IF EXISTS cart_item`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+
+  drop_category(type: exec) `DROP TABLE IF EXISTS category`
 }

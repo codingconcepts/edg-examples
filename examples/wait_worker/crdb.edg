@@ -1,6 +1,10 @@
 let customers  = 100000
 let batch_size = 5000
 
+workers {
+  add_email_index(delay: 10s, request_timeout: 10m, type: exec, ignore: true) `CREATE INDEX idx_customer_email ON customer (email)`
+}
+
 up {
   create_customer `CREATE TABLE IF NOT EXISTS customer (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,10 +27,6 @@ init {
 
 run {
   lookup_by_email(type: query) `SELECT id FROM customer WHERE email = $1` (ref('fetch_emails').email)
-}
-
-workers {
-  add_email_index(delay: 10s, request_timeout: 10m, type: exec, ignore: true) `CREATE INDEX idx_customer_email ON customer (email)`
 }
 
 deseed {

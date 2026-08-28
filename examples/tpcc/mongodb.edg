@@ -7,10 +7,6 @@ let items      = int(coalesce(env_nil('ITEMS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_warehouse(type: exec) `{"create": "warehouse"}`
 
@@ -141,56 +137,16 @@ seed {
   )
 }
 
-deseed {
-  delete_order_line(type: exec) `{"delete": "order_line", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_new_order(type: exec) `{"delete": "new_order", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_oorder(type: exec) `{"delete": "oorder", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_history(type: exec) `{"delete": "history", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_stock(type: exec) `{"delete": "stock", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_customer(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_district(type: exec) `{"delete": "district", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_warehouse(type: exec) `{"delete": "warehouse", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_item(type: exec) `{"delete": "item", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_order_line(type: exec) `{"drop": "order_line"}`
-
-  drop_new_order(type: exec) `{"drop": "new_order"}`
-
-  drop_oorder(type: exec) `{"drop": "oorder"}`
-
-  drop_history(type: exec) `{"drop": "history"}`
-
-  drop_stock(type: exec) `{"drop": "stock"}`
-
-  drop_customer(type: exec) `{"drop": "customer"}`
-
-  drop_district(type: exec) `{"drop": "district"}`
-
-  drop_warehouse(type: exec) `{"drop": "warehouse"}`
-
-  drop_item(type: exec) `{"drop": "item"}`
-}
-
-init {
-  fetch_warehouses(type: query) `{"find": "warehouse", "filter": {}, "projection": {"w_id": 1}}`
-}
-
 weights {
   delivery     = 4
   new_order    = 45
   order_status = 4
   payment      = 43
   stock_level  = 4
+}
+
+init {
+  fetch_warehouses(type: query) `{"find": "warehouse", "filter": {}, "projection": {"w_id": 1}}`
 }
 
 run {
@@ -258,4 +214,48 @@ run {
     gen('number:1,10'),
     gen('number:10,20')
   )
+}
+
+deseed {
+  delete_order_line(type: exec) `{"delete": "order_line", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_new_order(type: exec) `{"delete": "new_order", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_oorder(type: exec) `{"delete": "oorder", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_history(type: exec) `{"delete": "history", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_stock(type: exec) `{"delete": "stock", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_customer(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_district(type: exec) `{"delete": "district", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_warehouse(type: exec) `{"delete": "warehouse", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_item(type: exec) `{"delete": "item", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_order_line(type: exec) `{"drop": "order_line"}`
+
+  drop_new_order(type: exec) `{"drop": "new_order"}`
+
+  drop_oorder(type: exec) `{"drop": "oorder"}`
+
+  drop_history(type: exec) `{"drop": "history"}`
+
+  drop_stock(type: exec) `{"drop": "stock"}`
+
+  drop_customer(type: exec) `{"drop": "customer"}`
+
+  drop_district(type: exec) `{"drop": "district"}`
+
+  drop_warehouse(type: exec) `{"drop": "warehouse"}`
+
+  drop_item(type: exec) `{"drop": "item"}`
+}
+
+expect {
+  error_rate < 1
 }

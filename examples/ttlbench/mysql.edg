@@ -1,9 +1,5 @@
 let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_ttlbench `CREATE TABLE IF NOT EXISTS ttlbench (
       id CHAR(36) NOT NULL DEFAULT (UUID()) PRIMARY KEY,
@@ -13,14 +9,6 @@ up {
 
   create_idx_ttlbench_inserted `CREATE INDEX idx_ttlbench_inserted
     ON ttlbench (inserted_at)`
-}
-
-deseed {
-  delete_ttlbench(type: exec) `DELETE FROM ttlbench`
-}
-
-down {
-  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
 }
 
 weights {
@@ -41,4 +29,16 @@ run {
   delete_expired(type: exec) `DELETE FROM ttlbench
     WHERE inserted_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
     LIMIT 1000`
+}
+
+deseed {
+  delete_ttlbench(type: exec) `DELETE FROM ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
+}
+
+expect {
+  error_rate < 1
 }

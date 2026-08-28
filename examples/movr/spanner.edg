@@ -4,10 +4,6 @@ let num_rides       = int(coalesce(env_nil('NUM_RIDES'), 200))
 let num_promo_codes = int(coalesce(env_nil('NUM_PROMO_CODES'), 10))
 let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_users `CREATE TABLE IF NOT EXISTS users (
       id STRING(36) NOT NULL DEFAULT (GENERATE_UUID()),
@@ -119,32 +115,13 @@ seed {
     FROM UNNEST(GENERATE_ARRAY(1, $1)) AS s` (num_promo_codes)
 }
 
-deseed {
-  delete_user_promo_codes(type: exec) `DELETE FROM user_promo_codes WHERE TRUE`
-
-  delete_vehicle_location_histories(type: exec) `DELETE FROM vehicle_location_histories WHERE TRUE`
-
-  delete_rides(type: exec) `DELETE FROM rides WHERE TRUE`
-
-  delete_vehicles(type: exec) `DELETE FROM vehicles WHERE TRUE`
-
-  delete_promo_codes(type: exec) `DELETE FROM promo_codes WHERE TRUE`
-
-  delete_users(type: exec) `DELETE FROM users WHERE TRUE`
-}
-
-down {
-  drop_user_promo_codes(type: exec) `DROP TABLE IF EXISTS user_promo_codes`
-
-  drop_vehicle_location_histories(type: exec) `DROP TABLE IF EXISTS vehicle_location_histories`
-
-  drop_rides(type: exec) `DROP TABLE IF EXISTS rides`
-
-  drop_vehicles(type: exec) `DROP TABLE IF EXISTS vehicles`
-
-  drop_promo_codes(type: exec) `DROP TABLE IF EXISTS promo_codes`
-
-  drop_users(type: exec) `DROP TABLE IF EXISTS users`
+weights {
+  add_vehicle_location = 15
+  apply_promo_code     = 10
+  create_ride          = 20
+  read_rides           = 20
+  read_vehicles        = 20
+  update_ride          = 15
 }
 
 init {
@@ -155,15 +132,6 @@ init {
   fetch_rides(type: query) `SELECT id, city FROM rides TABLESAMPLE RESERVOIR (1000 ROWS)`
 
   fetch_promo_codes(type: query) `SELECT code FROM promo_codes TABLESAMPLE RESERVOIR (100 ROWS)`
-}
-
-weights {
-  add_vehicle_location = 15
-  apply_promo_code     = 10
-  create_ride          = 20
-  read_rides           = 20
-  read_vehicles        = 20
-  update_ride          = 15
 }
 
 run {
@@ -216,4 +184,36 @@ run {
     uniform.ref('fetch_users').id,
     uniform.ref('fetch_promo_codes').code
   )
+}
+
+deseed {
+  delete_user_promo_codes(type: exec) `DELETE FROM user_promo_codes WHERE TRUE`
+
+  delete_vehicle_location_histories(type: exec) `DELETE FROM vehicle_location_histories WHERE TRUE`
+
+  delete_rides(type: exec) `DELETE FROM rides WHERE TRUE`
+
+  delete_vehicles(type: exec) `DELETE FROM vehicles WHERE TRUE`
+
+  delete_promo_codes(type: exec) `DELETE FROM promo_codes WHERE TRUE`
+
+  delete_users(type: exec) `DELETE FROM users WHERE TRUE`
+}
+
+down {
+  drop_user_promo_codes(type: exec) `DROP TABLE IF EXISTS user_promo_codes`
+
+  drop_vehicle_location_histories(type: exec) `DROP TABLE IF EXISTS vehicle_location_histories`
+
+  drop_rides(type: exec) `DROP TABLE IF EXISTS rides`
+
+  drop_vehicles(type: exec) `DROP TABLE IF EXISTS vehicles`
+
+  drop_promo_codes(type: exec) `DROP TABLE IF EXISTS promo_codes`
+
+  drop_users(type: exec) `DROP TABLE IF EXISTS users`
+}
+
+expect {
+  error_rate < 1
 }

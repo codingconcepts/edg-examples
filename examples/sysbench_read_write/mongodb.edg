@@ -1,10 +1,6 @@
 let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_sbtest1(type: exec) `{"create": "sbtest1"}`
 
@@ -18,14 +14,6 @@ seed {
     regex('[a-zA-Z0-9]{120}'),
     regex('[a-zA-Z0-9]{60}')
   )
-}
-
-deseed {
-  delete_sbtest1(type: exec) `{"delete": "sbtest1", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_sbtest1(type: exec) `{"drop": "sbtest1"}`
 }
 
 weights {
@@ -74,4 +62,16 @@ run {
     regex('[a-zA-Z0-9]{120}'),
     regex('[a-zA-Z0-9]{60}')
   )
+}
+
+deseed {
+  delete_sbtest1(type: exec) `{"delete": "sbtest1", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_sbtest1(type: exec) `{"drop": "sbtest1"}`
+}
+
+expect {
+  error_rate < 1
 }

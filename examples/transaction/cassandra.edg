@@ -32,27 +32,13 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE edg.account`
-
-  truncate_customer(type: exec) `TRUNCATE edg.customer`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+weights {
+  check_balance = 50
+  make_transfer = 50
 }
 
 init {
   fetch_accounts(type: query) `SELECT id, balance FROM edg.account`
-}
-
-weights {
-  check_balance = 50
-  make_transfer = 50
 }
 
 run {
@@ -72,4 +58,18 @@ run {
       local('amount')
     )
   }
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE edg.account`
+
+  truncate_customer(type: exec) `TRUNCATE edg.customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
 }

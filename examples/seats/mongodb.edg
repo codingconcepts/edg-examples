@@ -7,10 +7,6 @@ let seats_per_flight        = int(coalesce(env_nil('SEATS_PER_FLIGHT'), 150))
 let reservations_per_flight = int(coalesce(env_nil('RESERVATIONS_PER_FLIGHT'), 120))
 let batch_size              = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_country(type: exec) `{"create": "country"}`
 
@@ -87,6 +83,49 @@ seed {
   )
 }
 
+weights {
+  delete_reservation = 20
+  find_flights       = 10
+  find_open_seats    = 35
+  new_reservation    = 15
+  update_customer    = 10
+  update_reservation = 10
+}
+
+init {
+  fetch_flights(type: query) `{"find": "flight", "filter": {}, "projection": {"_id": 1, "f_depart_ap_id": 1, "f_seats_left": 1}}`
+
+  fetch_customers(type: query) `{"find": "customer", "filter": {}, "projection": {"_id": 1}}`
+
+  fetch_reservations(type: query) `{"find": "reservation", "filter": {}, "projection": {"_id": 1, "r_c_id": 1, "r_f_id": 1}}`
+
+  fetch_airports(type: query) `{"find": "airport", "filter": {}, "projection": {"_id": 1}}`
+}
+
+run {
+  find_flights(type: query) `{"find": "flight", "filter": {"f_depart_ap_id": $1}, "sort": {"f_depart_time": 1}, "limit": 10}` (uniform.ref('fetch_airports')._id)
+
+  find_open_seats(type: query) `{"find": "flight", "filter": {"_id": $1}, "projection": {"f_seats_left": 1}, "limit": 1}` (uniform.ref('fetch_flights')._id)
+
+  new_reservation(type: exec) `{"findAndModify": "flight", "query": {"_id": $1, "f_seats_left": {"$gt": 0}}, "update": {"$inc": {"f_seats_left": -1}}, "new": true}` (uniform.ref('fetch_flights')._id)
+
+  update_customer(type: exec) `{"update": "customer", "updates": [{"q": {"_id": $1}, "u": {"$set": {"c_iattr00": $2, "c_iattr01": $3}}}]}` (
+    uniform.ref('fetch_customers')._id,
+    gen('number:0,1000'),
+    gen('number:0,1000')
+  )
+
+  update_reservation(type: exec) `{"update": "reservation", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$set": {"r_iattr00": $2}}}]}` (
+    uniform.ref('fetch_reservations')._id,
+    gen('number:0,100')
+  )
+
+  delete_reservation(type: exec) `{"delete": "reservation", "deletes": [{"q": {"_id": {"$oid": "$1"}}, "limit": 1}]}` (
+    uniform.ref('fetch_reservations')._id,
+    uniform.ref('fetch_reservations').r_f_id
+  )
+}
+
 deseed {
   delete_reservation(type: exec) `{"delete": "reservation", "deletes": [{"q": {}, "limit": 0}]}`
 
@@ -115,45 +154,6 @@ down {
   drop_country(type: exec) `{"drop": "country"}`
 }
 
-init {
-  fetch_flights(type: query) `{"find": "flight", "filter": {}, "projection": {"_id": 1, "f_depart_ap_id": 1, "f_seats_left": 1}}`
-
-  fetch_customers(type: query) `{"find": "customer", "filter": {}, "projection": {"_id": 1}}`
-
-  fetch_reservations(type: query) `{"find": "reservation", "filter": {}, "projection": {"_id": 1, "r_c_id": 1, "r_f_id": 1}}`
-
-  fetch_airports(type: query) `{"find": "airport", "filter": {}, "projection": {"_id": 1}}`
-}
-
-weights {
-  delete_reservation = 20
-  find_flights       = 10
-  find_open_seats    = 35
-  new_reservation    = 15
-  update_customer    = 10
-  update_reservation = 10
-}
-
-run {
-  find_flights(type: query) `{"find": "flight", "filter": {"f_depart_ap_id": $1}, "sort": {"f_depart_time": 1}, "limit": 10}` (uniform.ref('fetch_airports')._id)
-
-  find_open_seats(type: query) `{"find": "flight", "filter": {"_id": $1}, "projection": {"f_seats_left": 1}, "limit": 1}` (uniform.ref('fetch_flights')._id)
-
-  new_reservation(type: exec) `{"findAndModify": "flight", "query": {"_id": $1, "f_seats_left": {"$gt": 0}}, "update": {"$inc": {"f_seats_left": -1}}, "new": true}` (uniform.ref('fetch_flights')._id)
-
-  update_customer(type: exec) `{"update": "customer", "updates": [{"q": {"_id": $1}, "u": {"$set": {"c_iattr00": $2, "c_iattr01": $3}}}]}` (
-    uniform.ref('fetch_customers')._id,
-    gen('number:0,1000'),
-    gen('number:0,1000')
-  )
-
-  update_reservation(type: exec) `{"update": "reservation", "updates": [{"q": {"_id": {"$oid": "$1"}}, "u": {"$set": {"r_iattr00": $2}}}]}` (
-    uniform.ref('fetch_reservations')._id,
-    gen('number:0,100')
-  )
-
-  delete_reservation(type: exec) `{"delete": "reservation", "deletes": [{"q": {"_id": {"$oid": "$1"}}, "limit": 1}]}` (
-    uniform.ref('fetch_reservations')._id,
-    uniform.ref('fetch_reservations').r_f_id
-  )
+expect {
+  error_rate < 1
 }

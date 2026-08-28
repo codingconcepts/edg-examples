@@ -71,6 +71,23 @@ seed {
   )
 }
 
+run {
+  find_a(type: query) `SELECT id AS a_id, name
+    FROM a
+    ORDER BY DBMS_RANDOM.VALUE
+    FETCH FIRST 1 ROW ONLY`
+
+  find_b(type: query) `SELECT id AS b_id, value
+    FROM b
+    WHERE a_id = :1
+    FETCH FIRST 1 ROW ONLY` (ref('find_a').a_id)
+
+  update_c(type: exec) `UPDATE c SET status = 'processed'
+    WHERE b_id = :1
+      AND status = 'new'
+      AND ROWNUM = 1` (ref('find_b').b_id)
+}
+
 deseed {
   truncate_c(type: exec) `TRUNCATE TABLE c`
 
@@ -97,21 +114,4 @@ down {
     EXCEPTION WHEN OTHERS THEN
       IF SQLCODE != -942 THEN RAISE; END IF;
     END;`
-}
-
-run {
-  find_a(type: query) `SELECT id AS a_id, name
-    FROM a
-    ORDER BY DBMS_RANDOM.VALUE
-    FETCH FIRST 1 ROW ONLY`
-
-  find_b(type: query) `SELECT id AS b_id, value
-    FROM b
-    WHERE a_id = :1
-    FETCH FIRST 1 ROW ONLY` (ref('find_a').a_id)
-
-  update_c(type: exec) `UPDATE c SET status = 'processed'
-    WHERE b_id = :1
-      AND status = 'new'
-      AND ROWNUM = 1` (ref('find_b').b_id)
 }

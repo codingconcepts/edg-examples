@@ -186,74 +186,6 @@ seed {
       INSERT (follower_id, following_id) VALUES (src.follower_id, src.following_id)` (follows_per_user)
 }
 
-deseed {
-  truncate_post_tag(type: exec) `TRUNCATE TABLE post_tag`
-
-  truncate_comment(type: exec) `TRUNCATE TABLE comment_`
-
-  truncate_post_like(type: exec) `TRUNCATE TABLE post_like`
-
-  truncate_follow(type: exec) `TRUNCATE TABLE follow`
-
-  truncate_post(type: exec) `TRUNCATE TABLE post`
-
-  truncate_tag(type: exec) `TRUNCATE TABLE tag`
-
-  truncate_user_profile(type: exec) `TRUNCATE TABLE user_profile`
-}
-
-down {
-  drop_post_tag(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE post_tag CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_comment(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE comment_ CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_post_like(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE post_like CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_follow(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE follow CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_post(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE post CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_tag(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE tag CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_user_profile(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE user_profile CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
-init {
-  fetch_users(type: query) `SELECT RAWTOHEX(id) AS id, username, display_name FROM user_profile`
-
-  fetch_posts(type: query) `SELECT RAWTOHEX(id) AS id FROM post`
-
-  fetch_tags(type: query) `SELECT RAWTOHEX(id) AS id, name FROM tag`
-}
-
 weights {
   add_comment    = 10
   create_post    = 10
@@ -262,6 +194,14 @@ weights {
   like_post      = 25
   mutual_friends = 10
   trending       = 10
+}
+
+init {
+  fetch_users(type: query) `SELECT RAWTOHEX(id) AS id, username, display_name FROM user_profile`
+
+  fetch_posts(type: query) `SELECT RAWTOHEX(id) AS id FROM post`
+
+  fetch_tags(type: query) `SELECT RAWTOHEX(id) AS id, name FROM tag`
 }
 
 run {
@@ -322,4 +262,64 @@ run {
     ref_diff('fetch_users').id,
     ref_diff('fetch_users').id
   )
+}
+
+deseed {
+  truncate_post_tag(type: exec) `TRUNCATE TABLE post_tag`
+
+  truncate_comment(type: exec) `TRUNCATE TABLE comment_`
+
+  truncate_post_like(type: exec) `TRUNCATE TABLE post_like`
+
+  truncate_follow(type: exec) `TRUNCATE TABLE follow`
+
+  truncate_post(type: exec) `TRUNCATE TABLE post`
+
+  truncate_tag(type: exec) `TRUNCATE TABLE tag`
+
+  truncate_user_profile(type: exec) `TRUNCATE TABLE user_profile`
+}
+
+down {
+  drop_post_tag(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE post_tag CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_comment(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE comment_ CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_post_like(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE post_like CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_follow(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE follow CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_post(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE post CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_tag(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE tag CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_user_profile(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE user_profile CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

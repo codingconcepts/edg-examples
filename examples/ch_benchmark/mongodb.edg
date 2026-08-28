@@ -7,10 +7,6 @@ let items      = int(coalesce(env_nil('ITEMS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_warehouse(type: exec) `{"create": "warehouse"}`
 
@@ -197,6 +193,63 @@ seed {
   )
 }
 
+weights {
+  delivery               = 4
+  new_order              = 36
+  order_status           = 4
+  payment                = 34
+  q11_important_stock    = 5
+  q12_shipping_modes     = 5
+  q1_pricing_summary     = 5
+  q6_forecasting_revenue = 5
+  stock_level            = 2
+}
+
+init {
+  fetch_warehouses(type: query) `{"find": "warehouse", "filter": {}, "projection": {"w_id": 1}}`
+}
+
+run {
+  new_order(type: query, wait: 18s) `{"findAndModify": "district", "query": {"d_w_id": $1, "d_id": $2}, "update": {"$inc": {"d_next_o_id": 1}}, "new": true}` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts),
+    nurand_n(8191, 1, items, 5, 15)
+  )
+
+  payment(type: query, wait: 3s) `{"findAndModify": "customer", "query": {"c_w_id": $1, "c_d_id": $2, "c_id": $3}, "update": {"$inc": {"c_balance": $4, "c_ytd_payment": $4, "c_payment_cnt": 1}}, "new": true}` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts),
+    gen('number:100,500000')
+  )
+
+  order_status(type: query, wait: 2s) `{"find": "oorder", "filter": {"o_w_id": $1, "o_d_id": $2, "o_c_id": $3}, "sort": {"o_id": -1}, "limit": 1}` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    nurand(1023, 1, customers / districts)
+  )
+
+  delivery(type: exec, wait: 2s) `{"findAndModify": "new_order", "query": {"no_w_id": $1}, "sort": {"no_d_id": 1, "no_o_id": 1}, "remove": true}` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10')
+  )
+
+  stock_level(type: query, wait: 2s) `{"aggregate": "stock", "pipeline": [{"$match": {"s_w_id": $1, "s_quantity": {"$lt": $3}}}, {"$count": "low_stock"}], "cursor": {}}` (
+    ref_perm('fetch_warehouses').w_id,
+    gen('number:1,10'),
+    gen('number:10,20')
+  )
+
+  q1_pricing_summary(type: query) `{"aggregate": "order_line", "pipeline": [{"$match": {"ol_delivery_d": {"$ne": null}}}, {"$group": {"_id": "$ol_number", "sum_qty": {"$sum": "$ol_quantity"}, "sum_amount": {"$sum": "$ol_amount"}, "avg_qty": {"$avg": "$ol_quantity"}, "avg_amount": {"$avg": "$ol_amount"}, "count_order": {"$sum": 1}}}, {"$sort": {"_id": 1}}], "cursor": {}}`
+
+  q6_forecasting_revenue(type: query) `{"aggregate": "order_line", "pipeline": [{"$match": {"ol_delivery_d": {"$ne": null}, "ol_quantity": {"$gte": 1, "$lte": 100000}}}, {"$group": {"_id": null, "revenue": {"$sum": "$ol_amount"}}}], "cursor": {}}`
+
+  q11_important_stock(type: query) `{"aggregate": "stock", "pipeline": [{"$match": {"s_w_id": $1}}, {"$group": {"_id": "$s_i_id", "total_qty": {"$sum": "$s_quantity"}}}, {"$sort": {"total_qty": -1}}, {"$limit": 100}], "cursor": {}}` (ref_perm('fetch_warehouses').w_id)
+
+  q12_shipping_modes(type: query) `{"aggregate": "oorder", "pipeline": [{"$group": {"_id": "$o_ol_cnt", "high_line_count": {"$sum": {"$cond": [{"$and": [{"$gte": ["$o_carrier_id", 1]}, {"$lte": ["$o_carrier_id", 5]}]}, 1, 0]}}, "low_line_count": {"$sum": {"$cond": [{"$or": [{"$gt": ["$o_carrier_id", 5]}, {"$eq": ["$o_carrier_id", null]}]}, 1, 0]}}}}, {"$sort": {"_id": 1}}], "cursor": {}}`
+}
+
 deseed {
   delete_order_line(type: exec) `{"delete": "order_line", "deletes": [{"q": {}, "limit": 0}]}`
 
@@ -249,59 +302,6 @@ down {
   drop_region(type: exec) `{"drop": "region"}`
 }
 
-init {
-  fetch_warehouses(type: query) `{"find": "warehouse", "filter": {}, "projection": {"w_id": 1}}`
-}
-
-weights {
-  delivery               = 4
-  new_order              = 36
-  order_status           = 4
-  payment                = 34
-  q11_important_stock    = 5
-  q12_shipping_modes     = 5
-  q1_pricing_summary     = 5
-  q6_forecasting_revenue = 5
-  stock_level            = 2
-}
-
-run {
-  new_order(type: query, wait: 18s) `{"findAndModify": "district", "query": {"d_w_id": $1, "d_id": $2}, "update": {"$inc": {"d_next_o_id": 1}}, "new": true}` (
-    ref_perm('fetch_warehouses').w_id,
-    gen('number:1,10'),
-    nurand(1023, 1, customers / districts),
-    nurand_n(8191, 1, items, 5, 15)
-  )
-
-  payment(type: query, wait: 3s) `{"findAndModify": "customer", "query": {"c_w_id": $1, "c_d_id": $2, "c_id": $3}, "update": {"$inc": {"c_balance": $4, "c_ytd_payment": $4, "c_payment_cnt": 1}}, "new": true}` (
-    ref_perm('fetch_warehouses').w_id,
-    gen('number:1,10'),
-    nurand(1023, 1, customers / districts),
-    gen('number:100,500000')
-  )
-
-  order_status(type: query, wait: 2s) `{"find": "oorder", "filter": {"o_w_id": $1, "o_d_id": $2, "o_c_id": $3}, "sort": {"o_id": -1}, "limit": 1}` (
-    ref_perm('fetch_warehouses').w_id,
-    gen('number:1,10'),
-    nurand(1023, 1, customers / districts)
-  )
-
-  delivery(type: exec, wait: 2s) `{"findAndModify": "new_order", "query": {"no_w_id": $1}, "sort": {"no_d_id": 1, "no_o_id": 1}, "remove": true}` (
-    ref_perm('fetch_warehouses').w_id,
-    gen('number:1,10')
-  )
-
-  stock_level(type: query, wait: 2s) `{"aggregate": "stock", "pipeline": [{"$match": {"s_w_id": $1, "s_quantity": {"$lt": $3}}}, {"$count": "low_stock"}], "cursor": {}}` (
-    ref_perm('fetch_warehouses').w_id,
-    gen('number:1,10'),
-    gen('number:10,20')
-  )
-
-  q1_pricing_summary(type: query) `{"aggregate": "order_line", "pipeline": [{"$match": {"ol_delivery_d": {"$ne": null}}}, {"$group": {"_id": "$ol_number", "sum_qty": {"$sum": "$ol_quantity"}, "sum_amount": {"$sum": "$ol_amount"}, "avg_qty": {"$avg": "$ol_quantity"}, "avg_amount": {"$avg": "$ol_amount"}, "count_order": {"$sum": 1}}}, {"$sort": {"_id": 1}}], "cursor": {}}`
-
-  q6_forecasting_revenue(type: query) `{"aggregate": "order_line", "pipeline": [{"$match": {"ol_delivery_d": {"$ne": null}, "ol_quantity": {"$gte": 1, "$lte": 100000}}}, {"$group": {"_id": null, "revenue": {"$sum": "$ol_amount"}}}], "cursor": {}}`
-
-  q11_important_stock(type: query) `{"aggregate": "stock", "pipeline": [{"$match": {"s_w_id": $1}}, {"$group": {"_id": "$s_i_id", "total_qty": {"$sum": "$s_quantity"}}}, {"$sort": {"total_qty": -1}}, {"$limit": 100}], "cursor": {}}` (ref_perm('fetch_warehouses').w_id)
-
-  q12_shipping_modes(type: query) `{"aggregate": "oorder", "pipeline": [{"$group": {"_id": "$o_ol_cnt", "high_line_count": {"$sum": {"$cond": [{"$and": [{"$gte": ["$o_carrier_id", 1]}, {"$lte": ["$o_carrier_id", 5]}]}, 1, 0]}}, "low_line_count": {"$sum": {"$cond": [{"$or": [{"$gt": ["$o_carrier_id", 5]}, {"$eq": ["$o_carrier_id", null]}]}, 1, 0]}}}}, {"$sort": {"_id": 1}}], "cursor": {}}`
+expect {
+  error_rate < 1
 }

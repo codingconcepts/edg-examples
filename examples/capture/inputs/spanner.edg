@@ -32,14 +32,14 @@ seed {
   )
 }
 
-init {
-  fetch_accounts(type: query) `SELECT id FROM account TABLESAMPLE RESERVOIR (10000 ROWS)`
-}
-
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account TABLESAMPLE RESERVOIR (10000 ROWS)`
 }
 
 run {

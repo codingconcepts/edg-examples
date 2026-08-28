@@ -30,6 +30,17 @@ seed {
   )
 }
 
+init {
+  fetch_events(type: query) `SELECT id, event_type, occurred_at FROM events LIMIT 1000`
+}
+
+run {
+  get_events_by_hour(type: query) `SELECT id, event_type, occurred_at
+    FROM events
+    WHERE occurred_at >= $1::TIMESTAMPTZ
+      AND occurred_at < $1::TIMESTAMPTZ + INTERVAL '1 hour'` (ref('fetch_events').occurred_at)
+}
+
 deseed {
   truncate_events(type: exec) `TRUNCATE TABLE events`
 
@@ -40,15 +51,4 @@ down {
   drop_events(type: exec) `DROP TABLE IF EXISTS events`
 
   drop_metrics(type: exec) `DROP TABLE IF EXISTS metrics`
-}
-
-init {
-  fetch_events(type: query) `SELECT id, event_type, occurred_at FROM events LIMIT 1000`
-}
-
-run {
-  get_events_by_hour(type: query) `SELECT id, event_type, occurred_at
-    FROM events
-    WHERE occurred_at >= $1::TIMESTAMPTZ
-      AND occurred_at < $1::TIMESTAMPTZ + INTERVAL '1 hour'` (ref('fetch_events').occurred_at)
 }

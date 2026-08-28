@@ -1,16 +1,6 @@
 let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
 let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 
-expect {
-  error_rate < 25
-  lost_update `SELECT CAST(COALESCE(SUM(value), 0) AS NUMBER(19)) AS counter_total FROM counter` counter_total >= increment_counter.success_count
-  phantom_row `SELECT COUNT(*) AS n FROM account` n == accounts
-  dirty_write `SELECT CAST(COALESCE(SUM(balance), 0) AS NUMBER(19)) AS total FROM account` total == accounts * initial_balance
-  write_skew `SELECT CAST(COALESCE(SUM(version), 0) AS NUMBER(19)) AS total_versions FROM cas` total_versions <= cas_update.success_count
-  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n == accounts
-  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = 1` on_duty >= 1
-}
-
 up {
   create_account(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -116,58 +106,6 @@ seed {
     WHEN NOT MATCHED THEN INSERT (id, value) VALUES (src.id, src.value)` (accounts)
 }
 
-deseed {
-  truncate_ledger(type: exec) `TRUNCATE TABLE ledger`
-
-  reset_accounts(type: exec) `UPDATE account SET balance = $1, version = 0` (initial_balance)
-
-  reset_counters(type: exec) `UPDATE counter SET value = 0`
-
-  reset_oncall(type: exec) `UPDATE oncall SET on_duty = 1`
-
-  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0`
-
-  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0`
-}
-
-down {
-  drop_ledger(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE ledger CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_account(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE account CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_oncall(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE oncall CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_counter(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE counter CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_blind_write(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE blind_write CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_cas(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE cas CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
 weights {
   blind_write         = 10
   cas_update          = 10
@@ -229,4 +167,66 @@ run {
   go_off_duty(type: exec) `UPDATE oncall SET on_duty = 0
     WHERE doctor_id = :1
       AND (SELECT COUNT(*) FROM oncall WHERE on_duty = 1) > 1` (gen('number:1,3'))
+}
+
+deseed {
+  truncate_ledger(type: exec) `TRUNCATE TABLE ledger`
+
+  reset_accounts(type: exec) `UPDATE account SET balance = $1, version = 0` (initial_balance)
+
+  reset_counters(type: exec) `UPDATE counter SET value = 0`
+
+  reset_oncall(type: exec) `UPDATE oncall SET on_duty = 1`
+
+  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0`
+
+  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0`
+}
+
+down {
+  drop_ledger(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE ledger CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_account(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE account CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_oncall(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE oncall CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_counter(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE counter CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_blind_write(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE blind_write CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_cas(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE cas CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+expect {
+  error_rate < 25
+  lost_update `SELECT CAST(COALESCE(SUM(value), 0) AS NUMBER(19)) AS counter_total FROM counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM account` n == accounts
+  dirty_write `SELECT CAST(COALESCE(SUM(balance), 0) AS NUMBER(19)) AS total FROM account` total == accounts * initial_balance
+  write_skew `SELECT CAST(COALESCE(SUM(version), 0) AS NUMBER(19)) AS total_versions FROM cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n == accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = 1` on_duty >= 1
 }

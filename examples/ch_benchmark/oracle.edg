@@ -7,10 +7,6 @@ let items      = int(coalesce(env_nil('ITEMS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_warehouse(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -507,110 +503,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_order_line(type: exec) `TRUNCATE TABLE order_line`
-
-  truncate_new_order(type: exec) `TRUNCATE TABLE new_order`
-
-  truncate_oorder(type: exec) `TRUNCATE TABLE oorder`
-
-  truncate_history(type: exec) `TRUNCATE TABLE history`
-
-  truncate_stock(type: exec) `TRUNCATE TABLE stock`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-
-  truncate_district(type: exec) `TRUNCATE TABLE district`
-
-  truncate_warehouse(type: exec) `TRUNCATE TABLE warehouse`
-
-  truncate_item(type: exec) `TRUNCATE TABLE item`
-
-  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
-
-  truncate_nation(type: exec) `TRUNCATE TABLE nation`
-
-  truncate_region(type: exec) `TRUNCATE TABLE region`
-}
-
-down {
-  drop_order_line(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE order_line CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_new_order(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE new_order CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_oorder(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE oorder CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_history(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE history CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_stock(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE stock CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_customer(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_district(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE district CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_warehouse(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE warehouse CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_item(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE item CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_supplier(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE supplier CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_nation(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE nation CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_region(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE region CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
-init {
-  fetch_warehouses(type: query) `SELECT w_id FROM warehouse`
-}
-
 weights {
   delivery               = 4
   new_order              = 36
@@ -621,6 +513,10 @@ weights {
   q1_pricing_summary     = 5
   q6_forecasting_revenue = 5
   stock_level            = 2
+}
+
+init {
+  fetch_warehouses(type: query) `SELECT w_id FROM warehouse`
 }
 
 run {
@@ -892,4 +788,108 @@ run {
     WHERE ol.ol_delivery_d IS NOT NULL
     GROUP BY o.o_ol_cnt
     ORDER BY o.o_ol_cnt`
+}
+
+deseed {
+  truncate_order_line(type: exec) `TRUNCATE TABLE order_line`
+
+  truncate_new_order(type: exec) `TRUNCATE TABLE new_order`
+
+  truncate_oorder(type: exec) `TRUNCATE TABLE oorder`
+
+  truncate_history(type: exec) `TRUNCATE TABLE history`
+
+  truncate_stock(type: exec) `TRUNCATE TABLE stock`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+
+  truncate_district(type: exec) `TRUNCATE TABLE district`
+
+  truncate_warehouse(type: exec) `TRUNCATE TABLE warehouse`
+
+  truncate_item(type: exec) `TRUNCATE TABLE item`
+
+  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
+
+  truncate_nation(type: exec) `TRUNCATE TABLE nation`
+
+  truncate_region(type: exec) `TRUNCATE TABLE region`
+}
+
+down {
+  drop_order_line(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE order_line CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_new_order(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE new_order CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_oorder(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE oorder CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_history(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE history CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_stock(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE stock CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_customer(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_district(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE district CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_warehouse(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE warehouse CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_item(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE item CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_supplier(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE supplier CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_nation(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE nation CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_region(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE region CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+expect {
+  error_rate < 1
 }

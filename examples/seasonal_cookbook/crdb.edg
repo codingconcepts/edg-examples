@@ -1,23 +1,6 @@
 let rows       = 20000
 let batch_size = 1000
 
-up {
-  create_events `CREATE TABLE IF NOT EXISTS events (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      shape STRING NOT NULL,
-      ts TIMESTAMPTZ NOT NULL,
-      w FLOAT NOT NULL,
-      INDEX (shape, ts)
-    )`
-
-  create_regional_events `CREATE TABLE IF NOT EXISTS regional_events (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      region STRING NOT NULL,
-      ts TIMESTAMPTZ NOT NULL,
-      INDEX (region, ts)
-    )`
-}
-
 # ---------------------------------------------------------------------
 # One term at a time
 # ---------------------------------------------------------------------
@@ -136,6 +119,23 @@ season us(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z', bucket: '1h'
 # needs the hours array.
 season apac(from: '2024-01-01T00:00:00Z', to: '2024-02-01T00:00:00Z', bucket: '1h') {
   hours = [1, 1, 1, 1, 1, 1, 1, 1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 1]
+}
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      shape STRING NOT NULL,
+      ts TIMESTAMPTZ NOT NULL,
+      w FLOAT NOT NULL,
+      INDEX (shape, ts)
+    )`
+
+  create_regional_events `CREATE TABLE IF NOT EXISTS regional_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      region STRING NOT NULL,
+      ts TIMESTAMPTZ NOT NULL,
+      INDEX (region, ts)
+    )`
 }
 
 seed {

@@ -119,32 +119,15 @@ seed {
     ON CONFLICT DO NOTHING`
 }
 
-deseed {
-  truncate_message(type: exec) `TRUNCATE TABLE message`
-
-  truncate_match(type: exec) `TRUNCATE TABLE match`
-
-  truncate_swipe(type: exec) `TRUNCATE TABLE swipe`
-
-  truncate_encounter(type: exec) `TRUNCATE TABLE encounter`
-
-  truncate_zone(type: exec) `TRUNCATE TABLE zone`
-
-  truncate_profile(type: exec) `TRUNCATE TABLE profile CASCADE`
-}
-
-down {
-  drop_message(type: exec) `DROP TABLE IF EXISTS message`
-
-  drop_match(type: exec) `DROP TABLE IF EXISTS match`
-
-  drop_swipe(type: exec) `DROP TABLE IF EXISTS swipe`
-
-  drop_encounter(type: exec) `DROP TABLE IF EXISTS encounter`
-
-  drop_zone(type: exec) `DROP TABLE IF EXISTS zone`
-
-  drop_profile(type: exec) `DROP TABLE IF EXISTS profile`
+weights {
+  check_match       = 10
+  discover_in_zone  = 10
+  discover_nearby   = 25
+  log_encounter     = 10
+  read_conversation = 5
+  send_message      = 15
+  swipe_left        = 20
+  swipe_right       = 15
 }
 
 init {
@@ -157,17 +140,6 @@ init {
   fetch_matches(type: query) `SELECT m.id, m.user_a, m.user_b
     FROM match m
     ORDER BY random()`
-}
-
-weights {
-  check_match       = 10
-  discover_in_zone  = 10
-  discover_nearby   = 25
-  log_encounter     = 10
-  read_conversation = 5
-  send_message      = 15
-  swipe_left        = 20
-  swipe_right       = 15
 }
 
 run {
@@ -245,4 +217,32 @@ run {
     WHERE m.match_id = $1::UUID
     ORDER BY m.created_at DESC
     LIMIT 50` (ref('fetch_matches').id)
+}
+
+deseed {
+  truncate_message(type: exec) `TRUNCATE TABLE message`
+
+  truncate_match(type: exec) `TRUNCATE TABLE match`
+
+  truncate_swipe(type: exec) `TRUNCATE TABLE swipe`
+
+  truncate_encounter(type: exec) `TRUNCATE TABLE encounter`
+
+  truncate_zone(type: exec) `TRUNCATE TABLE zone`
+
+  truncate_profile(type: exec) `TRUNCATE TABLE profile CASCADE`
+}
+
+down {
+  drop_message(type: exec) `DROP TABLE IF EXISTS message`
+
+  drop_match(type: exec) `DROP TABLE IF EXISTS match`
+
+  drop_swipe(type: exec) `DROP TABLE IF EXISTS swipe`
+
+  drop_encounter(type: exec) `DROP TABLE IF EXISTS encounter`
+
+  drop_zone(type: exec) `DROP TABLE IF EXISTS zone`
+
+  drop_profile(type: exec) `DROP TABLE IF EXISTS profile`
 }

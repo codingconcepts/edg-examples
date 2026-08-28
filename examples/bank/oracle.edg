@@ -2,10 +2,6 @@ let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
 let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_customer(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -53,34 +49,14 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE TABLE account`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-}
-
-down {
-  drop_account(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE account CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_customer(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
-init {
-  fetch_accounts(type: query) `SELECT id FROM account`
-}
-
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account`
 }
 
 run {
@@ -108,4 +84,28 @@ run {
     ref_diff('fetch_accounts').id,
     gen('number:1,100')
   )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+}
+
+down {
+  drop_account(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE account CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_customer(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+expect {
+  error_rate < 1
 }

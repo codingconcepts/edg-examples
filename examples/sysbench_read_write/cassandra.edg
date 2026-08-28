@@ -1,10 +1,6 @@
 let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -24,16 +20,6 @@ seed {
     regex('[a-zA-Z0-9]{120}'),
     regex('[a-zA-Z0-9]{60}')
   )
-}
-
-deseed {
-  truncate_sbtest1(type: exec) `TRUNCATE edg.sbtest1`
-}
-
-down {
-  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS edg.sbtest1`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
 }
 
 weights {
@@ -74,4 +60,18 @@ run {
     regex('[a-zA-Z0-9]{120}'),
     regex('[a-zA-Z0-9]{60}')
   )
+}
+
+deseed {
+  truncate_sbtest1(type: exec) `TRUNCATE edg.sbtest1`
+}
+
+down {
+  drop_sbtest1(type: exec) `DROP TABLE IF EXISTS edg.sbtest1`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+expect {
+  error_rate < 1
 }

@@ -26,14 +26,6 @@ seed {
     __values__`
 }
 
-deseed {
-  truncate_order(type: exec) `TRUNCATE TABLE "order" CASCADE`
-}
-
-down {
-  drop_order(type: exec) `DROP TABLE IF EXISTS "order"`
-}
-
 init {
   fetch_orders(type: query) `SELECT id FROM "order"`
 }
@@ -65,4 +57,12 @@ run {
     obj('order').quantity,
     obj('order').ordered_at
   )
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE "order" CASCADE`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS "order"`
 }

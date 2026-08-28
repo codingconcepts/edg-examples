@@ -38,18 +38,6 @@ seed {
     FROM generate_series(1, $1) AS s` (products)
 }
 
-deseed {
-  truncate_agg_snapshot(type: exec) `TRUNCATE TABLE agg_snapshot`
-
-  truncate_product(type: exec) `TRUNCATE TABLE product`
-}
-
-down {
-  drop_agg_snapshot(type: exec) `DROP TABLE IF EXISTS agg_snapshot`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-}
-
 run {
   fetch_products(type: query) `SELECT id, category, price, stock_qty
     FROM product
@@ -75,4 +63,16 @@ run {
     median(list_prices),
     percentile(list_prices, 95)
   )
+}
+
+deseed {
+  truncate_agg_snapshot(type: exec) `TRUNCATE TABLE agg_snapshot`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product`
+}
+
+down {
+  drop_agg_snapshot(type: exec) `DROP TABLE IF EXISTS agg_snapshot`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
 }

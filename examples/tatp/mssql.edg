@@ -1,10 +1,6 @@
 let subscribers = int(coalesce(env_nil('SUBSCRIBERS'), 1000))
 let batch_size  = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_subscriber `IF OBJECT_ID('subscriber', 'U') IS NULL
     CREATE TABLE subscriber (
@@ -156,30 +152,6 @@ seed {
   )
 }
 
-deseed {
-  delete_call_forwarding(type: exec) `DELETE FROM call_forwarding`
-
-  delete_special_facility(type: exec) `DELETE FROM special_facility`
-
-  delete_access_info(type: exec) `DELETE FROM access_info`
-
-  delete_subscriber(type: exec) `DELETE FROM subscriber`
-}
-
-down {
-  drop_call_forwarding(type: exec) `DROP TABLE IF EXISTS call_forwarding`
-
-  drop_special_facility(type: exec) `DROP TABLE IF EXISTS special_facility`
-
-  drop_access_info(type: exec) `DROP TABLE IF EXISTS access_info`
-
-  drop_subscriber(type: exec) `DROP TABLE IF EXISTS subscriber`
-}
-
-init {
-  fetch_subscribers(type: query) `SELECT s_id, sub_nbr FROM subscriber ORDER BY NEWID()`
-}
-
 weights {
   delete_call_forwarding = 2
   get_access_data        = 35
@@ -188,6 +160,10 @@ weights {
   insert_call_forwarding = 2
   update_location        = 14
   update_subscriber_data = 2
+}
+
+init {
+  fetch_subscribers(type: query) `SELECT s_id, sub_nbr FROM subscriber ORDER BY NEWID()`
 }
 
 run {
@@ -248,4 +224,28 @@ run {
     gen('number:1,4'),
     gen('number:0,23')
   )
+}
+
+deseed {
+  delete_call_forwarding(type: exec) `DELETE FROM call_forwarding`
+
+  delete_special_facility(type: exec) `DELETE FROM special_facility`
+
+  delete_access_info(type: exec) `DELETE FROM access_info`
+
+  delete_subscriber(type: exec) `DELETE FROM subscriber`
+}
+
+down {
+  drop_call_forwarding(type: exec) `DROP TABLE IF EXISTS call_forwarding`
+
+  drop_special_facility(type: exec) `DROP TABLE IF EXISTS special_facility`
+
+  drop_access_info(type: exec) `DROP TABLE IF EXISTS access_info`
+
+  drop_subscriber(type: exec) `DROP TABLE IF EXISTS subscriber`
+}
+
+expect {
+  error_rate < 1
 }

@@ -2,10 +2,6 @@ let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
 let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_customer `IF OBJECT_ID('customer', 'U') IS NULL
     CREATE TABLE customer (
@@ -37,26 +33,14 @@ seed {
   )
 }
 
-deseed {
-  delete_account(type: exec) `DELETE FROM account`
-
-  delete_customer(type: exec) `DELETE FROM customer`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-}
-
-init {
-  fetch_accounts(type: query) `SELECT id FROM account ORDER BY NEWID()`
-}
-
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY NEWID()`
 }
 
 run {
@@ -78,4 +62,20 @@ run {
     ref_diff('fetch_accounts').id,
     gen('number:1,100')
   )
+}
+
+deseed {
+  delete_account(type: exec) `DELETE FROM account`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+expect {
+  error_rate < 1
 }

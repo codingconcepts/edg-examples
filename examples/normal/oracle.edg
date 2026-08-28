@@ -42,6 +42,25 @@ seed {
     CONNECT BY LEVEL <= $1` (products)
 }
 
+init {
+  fetch_products(type: query) `SELECT id FROM product`
+}
+
+run {
+  add_review(type: exec) `INSERT INTO review (product_id, rating)
+    VALUES (:1, :2)` (
+    ref('fetch_products').id,
+    norm.int(4, 1, 1, 5)
+  )
+
+  add_batch_reviews(type: exec) `INSERT INTO review (product_id, rating)
+    SELECT TO_NUMBER(column_value), $2
+    FROM XMLTABLE(('"' || REPLACE('$1', ',', '","') || '"'))` (
+    norm.n(50, 15, 1, 100, 3, 8),
+    norm.int(4, 1, 1, 5)
+  )
+}
+
 deseed {
   truncate_review(type: exec) `TRUNCATE TABLE review`
 
@@ -60,23 +79,4 @@ down {
     EXCEPTION WHEN OTHERS THEN
       IF SQLCODE != -942 THEN RAISE; END IF;
     END;`
-}
-
-init {
-  fetch_products(type: query) `SELECT id FROM product`
-}
-
-run {
-  add_review(type: exec) `INSERT INTO review (product_id, rating)
-    VALUES (:1, :2)` (
-    ref('fetch_products').id,
-    norm.int(4, 1, 1, 5)
-  )
-
-  add_batch_reviews(type: exec) `INSERT INTO review (product_id, rating)
-    SELECT TO_NUMBER(column_value), $2
-    FROM XMLTABLE(('"' || REPLACE('$1', ',', '","') || '"'))` (
-    norm.n(50, 15, 1, 100, 3, 8),
-    norm.int(4, 1, 1, 5)
-  )
 }

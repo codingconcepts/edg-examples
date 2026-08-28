@@ -77,32 +77,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_alert(type: exec) `TRUNCATE TABLE alert`
-
-  truncate_reading(type: exec) `TRUNCATE TABLE reading`
-
-  truncate_sensor(type: exec) `TRUNCATE TABLE sensor CASCADE`
-
-  truncate_device(type: exec) `TRUNCATE TABLE device CASCADE`
-}
-
-down {
-  drop_alert(type: exec) `DROP TABLE IF EXISTS alert`
-
-  drop_reading(type: exec) `DROP TABLE IF EXISTS reading`
-
-  drop_sensor(type: exec) `DROP TABLE IF EXISTS sensor`
-
-  drop_device(type: exec) `DROP TABLE IF EXISTS device`
-}
-
-init {
-  fetch_sensors(type: query) `SELECT id, device_id, min_threshold, max_threshold FROM sensor`
-
-  fetch_devices(type: query) `SELECT id FROM device`
-}
-
 weights {
   check_alerts     = 15
   detect_anomaly   = 5
@@ -110,6 +84,12 @@ weights {
   hourly_rollup    = 5
   ingest_reading   = 60
   update_threshold = 5
+}
+
+init {
+  fetch_sensors(type: query) `SELECT id, device_id, min_threshold, max_threshold FROM sensor`
+
+  fetch_devices(type: query) `SELECT id FROM device`
 }
 
 run {
@@ -170,4 +150,24 @@ run {
     WINDOW w AS (ORDER BY recorded_at ROWS BETWEEN 10 PRECEDING AND CURRENT ROW)
     ORDER BY recorded_at DESC
     LIMIT 50` (ref('fetch_sensors').id)
+}
+
+deseed {
+  truncate_alert(type: exec) `TRUNCATE TABLE alert`
+
+  truncate_reading(type: exec) `TRUNCATE TABLE reading`
+
+  truncate_sensor(type: exec) `TRUNCATE TABLE sensor CASCADE`
+
+  truncate_device(type: exec) `TRUNCATE TABLE device CASCADE`
+}
+
+down {
+  drop_alert(type: exec) `DROP TABLE IF EXISTS alert`
+
+  drop_reading(type: exec) `DROP TABLE IF EXISTS reading`
+
+  drop_sensor(type: exec) `DROP TABLE IF EXISTS sensor`
+
+  drop_device(type: exec) `DROP TABLE IF EXISTS device`
 }

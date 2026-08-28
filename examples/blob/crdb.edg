@@ -8,10 +8,6 @@ up {
     )`
 }
 
-down {
-  drop_blob_test(type: exec) `DROP TABLE IF EXISTS blob_test`
-}
-
 init {
   fetch_blobs(type: query) `SELECT id, label FROM blob_test ORDER BY random() LIMIT 100`
 }
@@ -27,4 +23,8 @@ run {
   read_blob(type: query) `SELECT id, label, length(data_blob) AS blob_len, length(data_bytes) AS bytes_len
     FROM blob_test
     WHERE id = $1::UUID` (ref('fetch_blobs').id)
+}
+
+down {
+  drop_blob_test(type: exec) `DROP TABLE IF EXISTS blob_test`
 }

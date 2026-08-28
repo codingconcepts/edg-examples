@@ -102,32 +102,6 @@ seed {
   )
 }
 
-deseed {
-  delete_alert(type: exec) `DELETE FROM alert`
-
-  delete_reading(type: exec) `DELETE FROM reading`
-
-  delete_sensor(type: exec) `DELETE FROM sensor`
-
-  delete_device(type: exec) `DELETE FROM device`
-}
-
-down {
-  drop_alert(type: exec) `DROP TABLE IF EXISTS alert`
-
-  drop_reading(type: exec) `DROP TABLE IF EXISTS reading`
-
-  drop_sensor(type: exec) `DROP TABLE IF EXISTS sensor`
-
-  drop_device(type: exec) `DROP TABLE IF EXISTS device`
-}
-
-init {
-  fetch_sensors(type: query) `SELECT id, device_id, min_threshold, max_threshold FROM sensor`
-
-  fetch_devices(type: query) `SELECT id FROM device`
-}
-
 weights {
   check_alerts     = 15
   detect_anomaly   = 5
@@ -135,6 +109,12 @@ weights {
   hourly_rollup    = 5
   ingest_reading   = 60
   update_threshold = 5
+}
+
+init {
+  fetch_sensors(type: query) `SELECT id, device_id, min_threshold, max_threshold FROM sensor`
+
+  fetch_devices(type: query) `SELECT id FROM device`
 }
 
 run {
@@ -192,4 +172,24 @@ run {
     WHERE sensor_id = @p1
       AND recorded_at >= DATEADD(HOUR, -1, GETDATE())
     ORDER BY recorded_at DESC` (ref('fetch_sensors').id)
+}
+
+deseed {
+  delete_alert(type: exec) `DELETE FROM alert`
+
+  delete_reading(type: exec) `DELETE FROM reading`
+
+  delete_sensor(type: exec) `DELETE FROM sensor`
+
+  delete_device(type: exec) `DELETE FROM device`
+}
+
+down {
+  drop_alert(type: exec) `DROP TABLE IF EXISTS alert`
+
+  drop_reading(type: exec) `DROP TABLE IF EXISTS reading`
+
+  drop_sensor(type: exec) `DROP TABLE IF EXISTS sensor`
+
+  drop_device(type: exec) `DROP TABLE IF EXISTS device`
 }

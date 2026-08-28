@@ -1,9 +1,5 @@
 let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_ttlbench `IF OBJECT_ID('ttlbench', 'U') IS NULL
     CREATE TABLE ttlbench (
@@ -14,14 +10,6 @@ up {
 
   create_idx_ttlbench_inserted `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_ttlbench_inserted')
     CREATE INDEX idx_ttlbench_inserted ON ttlbench (inserted_at)`
-}
-
-deseed {
-  delete_ttlbench(type: exec) `DELETE FROM ttlbench`
-}
-
-down {
-  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
 }
 
 weights {
@@ -40,4 +28,16 @@ run {
 
   delete_expired(type: exec) `DELETE TOP(1000) FROM ttlbench
     WHERE inserted_at < DATEADD(MINUTE, -30, SYSUTCDATETIME())`
+}
+
+deseed {
+  delete_ttlbench(type: exec) `DELETE FROM ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
+}
+
+expect {
+  error_rate < 1
 }

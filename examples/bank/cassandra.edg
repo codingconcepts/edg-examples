@@ -2,10 +2,6 @@ let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
 let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -37,28 +33,14 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE edg.account`
-
-  truncate_customer(type: exec) `TRUNCATE edg.customer`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
-}
-
-init {
-  fetch_accounts(type: query) `SELECT id, balance FROM edg.account`
-}
-
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id, balance FROM edg.account`
 }
 
 run {
@@ -87,4 +69,22 @@ run {
       ref_same('read_target').balance + local('amount')
     )
   }
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE edg.account`
+
+  truncate_customer(type: exec) `TRUNCATE edg.customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS edg.customer`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+expect {
+  error_rate < 1
 }

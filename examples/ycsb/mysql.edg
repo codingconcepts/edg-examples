@@ -2,10 +2,6 @@ let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let zipf_s     = float(coalesce(env_nil('ZIPF_S'), 1.2))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_usertable `CREATE TABLE IF NOT EXISTS usertable (
       ycsb_key VARCHAR(255) PRIMARY KEY,
@@ -46,14 +42,6 @@ seed {
     batch(records / batch_size),
     batch_size
   )
-}
-
-deseed {
-  delete_usertable(type: exec) `DELETE FROM usertable`
-}
-
-down {
-  drop_usertable(type: exec) `DROP TABLE IF EXISTS usertable`
 }
 
 weights {
@@ -99,4 +87,16 @@ run {
     regex('[a-zA-Z0-9]{100}'),
     template('user%010d', zipf.int(zipf_s, 1, records - 1))
   )
+}
+
+deseed {
+  delete_usertable(type: exec) `DELETE FROM usertable`
+}
+
+down {
+  drop_usertable(type: exec) `DROP TABLE IF EXISTS usertable`
+}
+
+expect {
+  error_rate < 1
 }

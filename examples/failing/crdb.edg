@@ -6,18 +6,18 @@ up {
     )`
 }
 
-deseed {
-  truncate_event(type: exec) `TRUNCATE TABLE event`
-}
-
-down {
-  drop_event(type: exec) `DROP TABLE IF EXISTS event`
-}
-
 run {
   add_event(type: exec) `INSERT INTO event (region, payload)
     VALUES ($1, $2)` (
     { 'fra': 'eu-central-1', 'sin': 'ap-southeast-1' }[env('FLY_REGION')] ?? fail('bad region'),
     gen('sentence')
   )
+}
+
+deseed {
+  truncate_event(type: exec) `TRUNCATE TABLE event`
+}
+
+down {
+  drop_event(type: exec) `DROP TABLE IF EXISTS event`
 }

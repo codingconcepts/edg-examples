@@ -7,10 +7,6 @@ let items      = int(coalesce(env_nil('ITEMS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_warehouse `CREATE TABLE IF NOT EXISTS warehouse (
       w_id INT NOT NULL,
@@ -372,62 +368,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_order_line(type: exec) `TRUNCATE TABLE order_line`
-
-  truncate_new_order(type: exec) `TRUNCATE TABLE new_order`
-
-  truncate_oorder(type: exec) `TRUNCATE TABLE oorder`
-
-  truncate_history(type: exec) `TRUNCATE TABLE history`
-
-  truncate_stock(type: exec) `TRUNCATE TABLE stock`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-
-  truncate_district(type: exec) `TRUNCATE TABLE district`
-
-  truncate_warehouse(type: exec) `TRUNCATE TABLE warehouse`
-
-  truncate_item(type: exec) `TRUNCATE TABLE item`
-
-  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
-
-  truncate_nation(type: exec) `TRUNCATE TABLE nation`
-
-  truncate_region(type: exec) `TRUNCATE TABLE region`
-}
-
-down {
-  drop_order_line(type: exec) `DROP TABLE IF EXISTS order_line`
-
-  drop_new_order(type: exec) `DROP TABLE IF EXISTS new_order`
-
-  drop_oorder(type: exec) `DROP TABLE IF EXISTS oorder`
-
-  drop_history(type: exec) `DROP TABLE IF EXISTS history`
-
-  drop_stock(type: exec) `DROP TABLE IF EXISTS stock`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-
-  drop_district(type: exec) `DROP TABLE IF EXISTS district`
-
-  drop_warehouse(type: exec) `DROP TABLE IF EXISTS warehouse`
-
-  drop_item(type: exec) `DROP TABLE IF EXISTS item`
-
-  drop_supplier(type: exec) `DROP TABLE IF EXISTS supplier`
-
-  drop_nation(type: exec) `DROP TABLE IF EXISTS nation`
-
-  drop_region(type: exec) `DROP TABLE IF EXISTS region`
-}
-
-init {
-  fetch_warehouses(type: query) `SELECT w_id FROM warehouse`
-}
-
 weights {
   delivery               = 4
   new_order              = 36
@@ -438,6 +378,10 @@ weights {
   q1_pricing_summary     = 5
   q6_forecasting_revenue = 5
   stock_level            = 2
+}
+
+init {
+  fetch_warehouses(type: query) `SELECT w_id FROM warehouse`
 }
 
 run {
@@ -744,4 +688,60 @@ run {
     WHERE ol.ol_delivery_d IS NOT NULL
     GROUP BY o.o_ol_cnt
     ORDER BY o.o_ol_cnt`
+}
+
+deseed {
+  truncate_order_line(type: exec) `TRUNCATE TABLE order_line`
+
+  truncate_new_order(type: exec) `TRUNCATE TABLE new_order`
+
+  truncate_oorder(type: exec) `TRUNCATE TABLE oorder`
+
+  truncate_history(type: exec) `TRUNCATE TABLE history`
+
+  truncate_stock(type: exec) `TRUNCATE TABLE stock`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+
+  truncate_district(type: exec) `TRUNCATE TABLE district`
+
+  truncate_warehouse(type: exec) `TRUNCATE TABLE warehouse`
+
+  truncate_item(type: exec) `TRUNCATE TABLE item`
+
+  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
+
+  truncate_nation(type: exec) `TRUNCATE TABLE nation`
+
+  truncate_region(type: exec) `TRUNCATE TABLE region`
+}
+
+down {
+  drop_order_line(type: exec) `DROP TABLE IF EXISTS order_line`
+
+  drop_new_order(type: exec) `DROP TABLE IF EXISTS new_order`
+
+  drop_oorder(type: exec) `DROP TABLE IF EXISTS oorder`
+
+  drop_history(type: exec) `DROP TABLE IF EXISTS history`
+
+  drop_stock(type: exec) `DROP TABLE IF EXISTS stock`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_district(type: exec) `DROP TABLE IF EXISTS district`
+
+  drop_warehouse(type: exec) `DROP TABLE IF EXISTS warehouse`
+
+  drop_item(type: exec) `DROP TABLE IF EXISTS item`
+
+  drop_supplier(type: exec) `DROP TABLE IF EXISTS supplier`
+
+  drop_nation(type: exec) `DROP TABLE IF EXISTS nation`
+
+  drop_region(type: exec) `DROP TABLE IF EXISTS region`
+}
+
+expect {
+  error_rate < 1
 }

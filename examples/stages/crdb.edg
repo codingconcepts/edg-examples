@@ -2,11 +2,6 @@ let customers       = 100000
 let initial_balance = 10000
 let batch_size      = 10000
 
-stages {
-  ramp(workers: 1, duration: 10s, weights: { check_balance: 90, credit_account: 5, make_transfer: 5 })
-  steady(workers: 10, duration: 30s, qps: ramp(10, 100, 10s))
-}
-
 up {
   create_customer `CREATE TABLE IF NOT EXISTS customer (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -36,26 +31,19 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-}
-
-init {
-  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+stages {
+  ramp(workers: 1, duration: 10s, weights: { check_balance: 90, credit_account: 5, make_transfer: 5 })
+  steady(workers: 10, duration: 30s, qps: ramp(10, 100, 10s))
 }
 
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
 }
 
 run {
@@ -77,4 +65,16 @@ run {
     ref_diff('fetch_accounts').id,
     gen('number:1,100')
   )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }

@@ -2,11 +2,6 @@ let customers       = 100000
 let initial_balance = 10000
 let batch_size      = 10000
 
-stages {
-  ramp(workers: 1, duration: 10s)
-  steady(workers: 10, duration: 30s)
-}
-
 up {
   create_customer `CREATE TABLE IF NOT EXISTS customer (
       id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -36,26 +31,19 @@ seed {
   )
 }
 
-deseed {
-  delete_account(type: exec) `DELETE FROM account`
-
-  delete_customer(type: exec) `DELETE FROM customer`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-}
-
-init {
-  fetch_accounts(type: query) `SELECT id FROM account ORDER BY RAND()`
+stages {
+  ramp(workers: 1, duration: 10s)
+  steady(workers: 10, duration: 30s)
 }
 
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY RAND()`
 }
 
 run {
@@ -78,4 +66,16 @@ run {
     ref_diff('fetch_accounts').id,
     gen('number:1,100')
   )
+}
+
+deseed {
+  delete_account(type: exec) `DELETE FROM account`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }

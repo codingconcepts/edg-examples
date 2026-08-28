@@ -45,18 +45,6 @@ seed {
     OPTION (MAXRECURSION 0)` (products)
 }
 
-deseed {
-  delete_agg_snapshot(type: exec) `DELETE FROM agg_snapshot`
-
-  delete_product(type: exec) `DELETE FROM product`
-}
-
-down {
-  drop_agg_snapshot(type: exec) `DROP TABLE IF EXISTS agg_snapshot`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-}
-
 run {
   fetch_products(type: query) `SELECT id, category, price, stock_qty
     FROM product
@@ -82,4 +70,16 @@ run {
     median(list_prices),
     percentile(list_prices, 95)
   )
+}
+
+deseed {
+  delete_agg_snapshot(type: exec) `DELETE FROM agg_snapshot`
+
+  delete_product(type: exec) `DELETE FROM product`
+}
+
+down {
+  drop_agg_snapshot(type: exec) `DROP TABLE IF EXISTS agg_snapshot`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
 }

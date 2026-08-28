@@ -1,10 +1,6 @@
 let subscribers = int(coalesce(env_nil('SUBSCRIBERS'), 1000))
 let batch_size  = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_subscriber(type: exec) `{"create": "subscriber"}`
 
@@ -84,30 +80,6 @@ seed {
   )
 }
 
-deseed {
-  delete_call_forwarding(type: exec) `{"delete": "call_forwarding", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_special_facility(type: exec) `{"delete": "special_facility", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_access_info(type: exec) `{"delete": "access_info", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_subscriber(type: exec) `{"delete": "subscriber", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_call_forwarding(type: exec) `{"drop": "call_forwarding"}`
-
-  drop_special_facility(type: exec) `{"drop": "special_facility"}`
-
-  drop_access_info(type: exec) `{"drop": "access_info"}`
-
-  drop_subscriber(type: exec) `{"drop": "subscriber"}`
-}
-
-init {
-  fetch_subscribers(type: query) `{"find": "subscriber", "filter": {}, "projection": {"_id": 1, "sub_nbr": 1}}`
-}
-
 weights {
   delete_call_forwarding = 2
   get_access_data        = 35
@@ -116,6 +88,10 @@ weights {
   insert_call_forwarding = 2
   update_location        = 14
   update_subscriber_data = 2
+}
+
+init {
+  fetch_subscribers(type: query) `{"find": "subscriber", "filter": {}, "projection": {"_id": 1, "sub_nbr": 1}}`
 }
 
 run {
@@ -156,4 +132,28 @@ run {
     gen('number:1,4'),
     gen('number:0,23')
   )
+}
+
+deseed {
+  delete_call_forwarding(type: exec) `{"delete": "call_forwarding", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_special_facility(type: exec) `{"delete": "special_facility", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_access_info(type: exec) `{"delete": "access_info", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_subscriber(type: exec) `{"delete": "subscriber", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_call_forwarding(type: exec) `{"drop": "call_forwarding"}`
+
+  drop_special_facility(type: exec) `{"drop": "special_facility"}`
+
+  drop_access_info(type: exec) `{"drop": "access_info"}`
+
+  drop_subscriber(type: exec) `{"drop": "subscriber"}`
+}
+
+expect {
+  error_rate < 1
 }

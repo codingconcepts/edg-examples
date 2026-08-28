@@ -1,10 +1,6 @@
 let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_sbtest1(type: exec) `{"create": "sbtest1"}`
 }
@@ -20,6 +16,10 @@ seed {
   create_idx_k(type: exec) `{"createIndexes": "sbtest1", "indexes": [{"key": {"k": 1}, "name": "k_1"}]}`
 }
 
+run {
+  update_index(type: exec) `{"update": "sbtest1", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"k": 1}}}]}` (gen('number:1,' + string(records)))
+}
+
 deseed {
   delete_sbtest1(type: exec) `{"delete": "sbtest1", "deletes": [{"q": {}, "limit": 0}]}`
 }
@@ -28,6 +28,6 @@ down {
   drop_sbtest1(type: exec) `{"drop": "sbtest1"}`
 }
 
-run {
-  update_index(type: exec) `{"update": "sbtest1", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"k": 1}}}]}` (gen('number:1,' + string(records)))
+expect {
+  error_rate < 1
 }

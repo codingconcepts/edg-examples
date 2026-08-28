@@ -1,10 +1,6 @@
 let subscribers = int(coalesce(env_nil('SUBSCRIBERS'), 1000))
 let batch_size  = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_subscriber(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -247,46 +243,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_call_forwarding(type: exec) `TRUNCATE TABLE call_forwarding`
-
-  truncate_special_facility(type: exec) `TRUNCATE TABLE special_facility`
-
-  truncate_access_info(type: exec) `TRUNCATE TABLE access_info`
-
-  truncate_subscriber(type: exec) `TRUNCATE TABLE subscriber`
-}
-
-down {
-  drop_call_forwarding(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE call_forwarding CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_special_facility(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE special_facility CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_access_info(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE access_info CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_subscriber(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE subscriber CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
-init {
-  fetch_subscribers(type: query) `SELECT s_id, sub_nbr FROM subscriber`
-}
-
 weights {
   delete_call_forwarding = 2
   get_access_data        = 35
@@ -295,6 +251,10 @@ weights {
   insert_call_forwarding = 2
   update_location        = 14
   update_subscriber_data = 2
+}
+
+init {
+  fetch_subscribers(type: query) `SELECT s_id, sub_nbr FROM subscriber`
 }
 
 run {
@@ -352,4 +312,44 @@ run {
     gen('number:1,4'),
     gen('number:0,23')
   )
+}
+
+deseed {
+  truncate_call_forwarding(type: exec) `TRUNCATE TABLE call_forwarding`
+
+  truncate_special_facility(type: exec) `TRUNCATE TABLE special_facility`
+
+  truncate_access_info(type: exec) `TRUNCATE TABLE access_info`
+
+  truncate_subscriber(type: exec) `TRUNCATE TABLE subscriber`
+}
+
+down {
+  drop_call_forwarding(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE call_forwarding CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_special_facility(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE special_facility CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_access_info(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE access_info CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_subscriber(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE subscriber CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+expect {
+  error_rate < 1
 }

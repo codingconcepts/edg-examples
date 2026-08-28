@@ -129,48 +129,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_alert(type: exec) `TRUNCATE TABLE alert`
-
-  truncate_reading(type: exec) `TRUNCATE TABLE reading`
-
-  truncate_sensor(type: exec) `TRUNCATE TABLE sensor`
-
-  truncate_device(type: exec) `TRUNCATE TABLE device`
-}
-
-down {
-  drop_alert(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE alert CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_reading(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE reading CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_sensor(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE sensor CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_device(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE device CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
-init {
-  fetch_sensors(type: query) `SELECT id, device_id, min_threshold, max_threshold FROM sensor`
-
-  fetch_devices(type: query) `SELECT id FROM device`
-}
-
 weights {
   check_alerts     = 15
   detect_anomaly   = 5
@@ -178,6 +136,12 @@ weights {
   hourly_rollup    = 5
   ingest_reading   = 60
   update_threshold = 5
+}
+
+init {
+  fetch_sensors(type: query) `SELECT id, device_id, min_threshold, max_threshold FROM sensor`
+
+  fetch_devices(type: query) `SELECT id FROM device`
 }
 
 run {
@@ -239,4 +203,40 @@ run {
       AND recorded_at >= SYSTIMESTAMP - INTERVAL '1' HOUR
     ORDER BY recorded_at DESC
     FETCH FIRST 50 ROWS ONLY` (ref('fetch_sensors').id)
+}
+
+deseed {
+  truncate_alert(type: exec) `TRUNCATE TABLE alert`
+
+  truncate_reading(type: exec) `TRUNCATE TABLE reading`
+
+  truncate_sensor(type: exec) `TRUNCATE TABLE sensor`
+
+  truncate_device(type: exec) `TRUNCATE TABLE device`
+}
+
+down {
+  drop_alert(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE alert CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_reading(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE reading CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_sensor(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE sensor CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_device(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE device CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

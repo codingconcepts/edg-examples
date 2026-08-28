@@ -4,10 +4,6 @@ let num_rides       = int(coalesce(env_nil('NUM_RIDES'), 200))
 let num_promo_codes = int(coalesce(env_nil('NUM_PROMO_CODES'), 10))
 let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_users(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -159,38 +155,13 @@ seed {
     FROM DUAL CONNECT BY LEVEL <= $1` (num_promo_codes)
 }
 
-deseed {
-  truncate_user_promo_codes(type: exec) `TRUNCATE TABLE user_promo_codes`
-
-  truncate_vehicle_location_histories(type: exec) `TRUNCATE TABLE vehicle_location_histories`
-
-  truncate_rides(type: exec) `TRUNCATE TABLE rides`
-
-  truncate_vehicles(type: exec) `TRUNCATE TABLE vehicles`
-
-  truncate_promo_codes(type: exec) `TRUNCATE TABLE promo_codes`
-
-  truncate_users(type: exec) `TRUNCATE TABLE users`
-}
-
-down {
-  drop_user_promo_codes(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE user_promo_codes PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_vehicle_location_histories(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE vehicle_location_histories PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_rides(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE rides PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_vehicles(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE vehicles PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_promo_codes(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE promo_codes PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_users(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE users PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+weights {
+  add_vehicle_location = 15
+  apply_promo_code     = 10
+  create_ride          = 20
+  read_rides           = 20
+  read_vehicles        = 20
+  update_ride          = 15
 }
 
 init {
@@ -201,15 +172,6 @@ init {
   fetch_rides(type: query) `SELECT id, city FROM rides`
 
   fetch_promo_codes(type: query) `SELECT code FROM promo_codes`
-}
-
-weights {
-  add_vehicle_location = 15
-  apply_promo_code     = 10
-  create_ride          = 20
-  read_rides           = 20
-  read_vehicles        = 20
-  update_ride          = 15
 }
 
 run {
@@ -266,4 +228,42 @@ run {
     uniform.ref('fetch_users').id,
     uniform.ref('fetch_promo_codes').code
   )
+}
+
+deseed {
+  truncate_user_promo_codes(type: exec) `TRUNCATE TABLE user_promo_codes`
+
+  truncate_vehicle_location_histories(type: exec) `TRUNCATE TABLE vehicle_location_histories`
+
+  truncate_rides(type: exec) `TRUNCATE TABLE rides`
+
+  truncate_vehicles(type: exec) `TRUNCATE TABLE vehicles`
+
+  truncate_promo_codes(type: exec) `TRUNCATE TABLE promo_codes`
+
+  truncate_users(type: exec) `TRUNCATE TABLE users`
+}
+
+down {
+  drop_user_promo_codes(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE user_promo_codes PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_vehicle_location_histories(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE vehicle_location_histories PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_rides(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE rides PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_vehicles(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE vehicles PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_promo_codes(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE promo_codes PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_users(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE users PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+}
+
+expect {
+  error_rate < 1
 }

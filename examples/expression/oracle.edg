@@ -25,18 +25,6 @@ up {
     END;`
 }
 
-deseed {
-  truncate(type: exec) `TRUNCATE TABLE expr_demo`
-}
-
-down {
-  drop(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE expr_demo CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
 run {
   array_predicates(type: exec) `INSERT INTO expr_demo (label, result)
     SELECT 'all(# > 0)', TO_CHAR(:1) FROM DUAL UNION ALL
@@ -190,4 +178,16 @@ run {
     len('hello'),
     get({ a: 1, b: 2 }, 'c') ?? 'missing'
   )
+}
+
+deseed {
+  truncate(type: exec) `TRUNCATE TABLE expr_demo`
+}
+
+down {
+  drop(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE expr_demo CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

@@ -7,10 +7,6 @@ let items      = int(coalesce(env_nil('ITEMS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let ol_batch   = int(coalesce(env_nil('OL_BATCH'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_warehouse `CREATE TABLE IF NOT EXISTS warehouse (
       w_id INT64 NOT NULL,
@@ -352,60 +348,16 @@ seed {
   )
 }
 
-deseed {
-  delete_order_line(type: exec) `DELETE FROM order_line WHERE TRUE`
-
-  delete_new_order(type: exec) `DELETE FROM new_order WHERE TRUE`
-
-  delete_oorder(type: exec) `DELETE FROM oorder WHERE TRUE`
-
-  delete_history(type: exec) `DELETE FROM history WHERE TRUE`
-
-  delete_stock(type: exec) `DELETE FROM stock WHERE TRUE`
-
-  delete_customer(type: exec) `DELETE FROM customer WHERE TRUE`
-
-  delete_district(type: exec) `DELETE FROM district WHERE TRUE`
-
-  delete_warehouse(type: exec) `DELETE FROM warehouse WHERE TRUE`
-
-  delete_item(type: exec) `DELETE FROM item WHERE TRUE`
-}
-
-down {
-  drop_idx_oorder_customer(type: exec) `DROP INDEX IF EXISTS idx_oorder_customer`
-
-  drop_idx_customer_name(type: exec) `DROP INDEX IF EXISTS idx_customer_name`
-
-  drop_order_line(type: exec) `DROP TABLE IF EXISTS order_line`
-
-  drop_new_order(type: exec) `DROP TABLE IF EXISTS new_order`
-
-  drop_oorder(type: exec) `DROP TABLE IF EXISTS oorder`
-
-  drop_history(type: exec) `DROP TABLE IF EXISTS history`
-
-  drop_stock(type: exec) `DROP TABLE IF EXISTS stock`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-
-  drop_district(type: exec) `DROP TABLE IF EXISTS district`
-
-  drop_warehouse(type: exec) `DROP TABLE IF EXISTS warehouse`
-
-  drop_item(type: exec) `DROP TABLE IF EXISTS item`
-}
-
-init {
-  fetch_warehouses(type: query) `SELECT w_id FROM warehouse`
-}
-
 weights {
   delivery     = 4
   new_order    = 45
   order_status = 4
   payment      = 43
   stock_level  = 4
+}
+
+init {
+  fetch_warehouses(type: query) `SELECT w_id FROM warehouse`
 }
 
 run {
@@ -483,4 +435,52 @@ run {
     gen('number:1,10'),
     gen('number:10,20')
   )
+}
+
+deseed {
+  delete_order_line(type: exec) `DELETE FROM order_line WHERE TRUE`
+
+  delete_new_order(type: exec) `DELETE FROM new_order WHERE TRUE`
+
+  delete_oorder(type: exec) `DELETE FROM oorder WHERE TRUE`
+
+  delete_history(type: exec) `DELETE FROM history WHERE TRUE`
+
+  delete_stock(type: exec) `DELETE FROM stock WHERE TRUE`
+
+  delete_customer(type: exec) `DELETE FROM customer WHERE TRUE`
+
+  delete_district(type: exec) `DELETE FROM district WHERE TRUE`
+
+  delete_warehouse(type: exec) `DELETE FROM warehouse WHERE TRUE`
+
+  delete_item(type: exec) `DELETE FROM item WHERE TRUE`
+}
+
+down {
+  drop_idx_oorder_customer(type: exec) `DROP INDEX IF EXISTS idx_oorder_customer`
+
+  drop_idx_customer_name(type: exec) `DROP INDEX IF EXISTS idx_customer_name`
+
+  drop_order_line(type: exec) `DROP TABLE IF EXISTS order_line`
+
+  drop_new_order(type: exec) `DROP TABLE IF EXISTS new_order`
+
+  drop_oorder(type: exec) `DROP TABLE IF EXISTS oorder`
+
+  drop_history(type: exec) `DROP TABLE IF EXISTS history`
+
+  drop_stock(type: exec) `DROP TABLE IF EXISTS stock`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_district(type: exec) `DROP TABLE IF EXISTS district`
+
+  drop_warehouse(type: exec) `DROP TABLE IF EXISTS warehouse`
+
+  drop_item(type: exec) `DROP TABLE IF EXISTS item`
+}
+
+expect {
+  error_rate < 1
 }

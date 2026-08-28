@@ -54,26 +54,6 @@ seed {
     CONNECT BY LEVEL <= $1` (products)
 }
 
-deseed {
-  truncate_agg_snapshot(type: exec) `TRUNCATE TABLE agg_snapshot`
-
-  truncate_product(type: exec) `TRUNCATE TABLE product`
-}
-
-down {
-  drop_agg_snapshot(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE agg_snapshot CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_product(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE product CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
 run {
   fetch_products(type: query) `SELECT id, category, price, stock_qty
     FROM product
@@ -99,4 +79,24 @@ run {
     median(list_prices),
     percentile(list_prices, 95)
   )
+}
+
+deseed {
+  truncate_agg_snapshot(type: exec) `TRUNCATE TABLE agg_snapshot`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product`
+}
+
+down {
+  drop_agg_snapshot(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE agg_snapshot CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_product(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE product CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

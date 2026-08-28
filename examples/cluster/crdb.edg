@@ -18,14 +18,19 @@ seed {
     )
 }
 
-init {
-  fetch_users `SELECT id, email FROM users`
-}
-
 stages {
   warmup(workers: 2, duration: 30s, qps: 10)
   steady(workers: 5, duration: 1m, qps: 100)
   peak(workers: 10, duration: 30s, qps: 500)
+}
+
+weights {
+  read_user   = 80
+  insert_user = 20
+}
+
+init {
+  fetch_users `SELECT id, email FROM users`
 }
 
 run {
@@ -35,11 +40,6 @@ run {
     gen('email'),
     gen('name')
   )
-}
-
-weights {
-  read_user   = 80
-  insert_user = 20
 }
 
 down {

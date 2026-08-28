@@ -7,10 +7,6 @@ let customers    = int(coalesce(env_nil('CUSTOMERS'), 150))
 let orders       = int(coalesce(env_nil('ORDERS'), 1000))
 let batch_size   = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_region `CREATE TABLE IF NOT EXISTS region (
       r_regionkey INT NOT NULL PRIMARY KEY,
@@ -244,42 +240,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_lineitem(type: exec) `TRUNCATE TABLE lineitem`
-
-  truncate_orders(type: exec) `TRUNCATE TABLE orders`
-
-  truncate_partsupp(type: exec) `TRUNCATE TABLE partsupp`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-
-  truncate_part(type: exec) `TRUNCATE TABLE part`
-
-  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
-
-  truncate_nation(type: exec) `TRUNCATE TABLE nation`
-
-  truncate_region(type: exec) `TRUNCATE TABLE region`
-}
-
-down {
-  drop_lineitem(type: exec) `DROP TABLE IF EXISTS lineitem`
-
-  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
-
-  drop_partsupp(type: exec) `DROP TABLE IF EXISTS partsupp`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-
-  drop_part(type: exec) `DROP TABLE IF EXISTS part`
-
-  drop_supplier(type: exec) `DROP TABLE IF EXISTS supplier`
-
-  drop_nation(type: exec) `DROP TABLE IF EXISTS nation`
-
-  drop_region(type: exec) `DROP TABLE IF EXISTS region`
-}
-
 weights {
   q14_promotion_effect   = 25
   q1_pricing_summary     = 25
@@ -345,4 +305,44 @@ run {
     gen('number:1993,1997'),
     gen('number:1,12')
   )
+}
+
+deseed {
+  truncate_lineitem(type: exec) `TRUNCATE TABLE lineitem`
+
+  truncate_orders(type: exec) `TRUNCATE TABLE orders`
+
+  truncate_partsupp(type: exec) `TRUNCATE TABLE partsupp`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+
+  truncate_part(type: exec) `TRUNCATE TABLE part`
+
+  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
+
+  truncate_nation(type: exec) `TRUNCATE TABLE nation`
+
+  truncate_region(type: exec) `TRUNCATE TABLE region`
+}
+
+down {
+  drop_lineitem(type: exec) `DROP TABLE IF EXISTS lineitem`
+
+  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
+
+  drop_partsupp(type: exec) `DROP TABLE IF EXISTS partsupp`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+
+  drop_part(type: exec) `DROP TABLE IF EXISTS part`
+
+  drop_supplier(type: exec) `DROP TABLE IF EXISTS supplier`
+
+  drop_nation(type: exec) `DROP TABLE IF EXISTS nation`
+
+  drop_region(type: exec) `DROP TABLE IF EXISTS region`
+}
+
+expect {
+  error_rate < 1
 }

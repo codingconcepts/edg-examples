@@ -2,10 +2,6 @@ let keys       = int(coalesce(env_nil('KEYS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -23,16 +19,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_kv(type: exec) `TRUNCATE edg.kv`
-}
-
-down {
-  drop_kv(type: exec) `DROP TABLE IF EXISTS edg.kv`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
-}
-
 weights {
   read  = 50
   write = 50
@@ -45,4 +31,18 @@ run {
     gen('number:1,' + string(keys)),
     blob(value_size)
   )
+}
+
+deseed {
+  truncate_kv(type: exec) `TRUNCATE edg.kv`
+}
+
+down {
+  drop_kv(type: exec) `DROP TABLE IF EXISTS edg.kv`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+expect {
+  error_rate < 1
 }

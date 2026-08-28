@@ -1,6 +1,23 @@
 let jobs       = 500
 let batch_size = 100
 
+workers {
+  reap_expired(type: exec, rate: 1 / 5s) `UPDATE job
+    SET status = 'pending',
+        worker_id = NULL,
+        lease_expires_at = NULL
+    WHERE status = 'running'
+      AND lease_expires_at < now()
+      AND attempts < max_attempts`
+
+  fail_exhausted(type: exec, rate: 1 / 5s) `UPDATE job
+    SET status = 'failed',
+        completed_at = now()
+    WHERE status = 'running'
+      AND lease_expires_at < now()
+      AND attempts >= max_attempts`
+}
+
 up {
   create_job `CREATE TABLE IF NOT EXISTS job (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -34,18 +51,6 @@ seed {
     set(['email', 'report', 'sync', 'cleanup', 'notify'],[30, 20, 25, 10, 15]),
     json_obj('priority', set(['low', 'medium', 'high'],[50, 35, 15]), 'retryable', true)
   )
-}
-
-deseed {
-  delete_job_log(type: exec) `DELETE FROM job_log WHERE true`
-
-  delete_job(type: exec) `DELETE FROM job WHERE true`
-}
-
-down {
-  drop_job_log `DROP TABLE IF EXISTS job_log`
-
-  drop_job `DROP TABLE IF EXISTS job`
 }
 
 init {
@@ -88,19 +93,14 @@ run {
   }
 }
 
-workers {
-  reap_expired(type: exec, rate: 1 / 5s) `UPDATE job
-    SET status = 'pending',
-        worker_id = NULL,
-        lease_expires_at = NULL
-    WHERE status = 'running'
-      AND lease_expires_at < now()
-      AND attempts < max_attempts`
+deseed {
+  delete_job_log(type: exec) `DELETE FROM job_log WHERE true`
 
-  fail_exhausted(type: exec, rate: 1 / 5s) `UPDATE job
-    SET status = 'failed',
-        completed_at = now()
-    WHERE status = 'running'
-      AND lease_expires_at < now()
-      AND attempts >= max_attempts`
+  delete_job(type: exec) `DELETE FROM job WHERE true`
+}
+
+down {
+  drop_job_log `DROP TABLE IF EXISTS job_log`
+
+  drop_job `DROP TABLE IF EXISTS job`
 }

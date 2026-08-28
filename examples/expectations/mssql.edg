@@ -2,13 +2,6 @@ let customers       = 10000
 let initial_balance = 10000
 let batch_size      = 5000
 
-expect {
-  error_rate < 1
-  check_balance.p99 < 50
-  credit_account.p99 < 59
-  tpm > 1000
-}
-
 up {
   create_customer `IF OBJECT_ID('customer', 'U') IS NULL
     CREATE TABLE customer (
@@ -40,6 +33,25 @@ seed {
   )
 }
 
+weights {
+  check_balance  = 50
+  credit_account = 50
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY NEWID()`
+}
+
+run {
+  check_balance(type: query) `SELECT balance FROM account WHERE id = @p1` (ref('fetch_accounts').id)
+
+  credit_account(type: exec) `UPDATE account SET balance = balance + @p1
+    WHERE id = @p2` (
+    gen('number:1,1000'),
+    ref('fetch_accounts').id
+  )
+}
+
 deseed {
   delete_account(type: exec) `DELETE FROM account`
 
@@ -52,21 +64,9 @@ down {
   drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }
 
-init {
-  fetch_accounts(type: query) `SELECT id FROM account ORDER BY NEWID()`
-}
-
-weights {
-  check_balance  = 50
-  credit_account = 50
-}
-
-run {
-  check_balance(type: query) `SELECT balance FROM account WHERE id = @p1` (ref('fetch_accounts').id)
-
-  credit_account(type: exec) `UPDATE account SET balance = balance + @p1
-    WHERE id = @p2` (
-    gen('number:1,1000'),
-    ref('fetch_accounts').id
-  )
+expect {
+  error_rate < 1
+  check_balance.p99 < 50
+  credit_account.p99 < 59
+  tpm > 1000
 }

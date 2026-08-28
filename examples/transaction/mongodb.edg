@@ -22,25 +22,13 @@ seed {
   )
 }
 
-deseed {
-  delete_accounts(type: exec) `{"delete": "account", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_customers(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_account(type: exec) `{"drop": "account"}`
-
-  drop_customer(type: exec) `{"drop": "customer"}`
+weights {
+  check_balance = 50
+  make_transfer = 50
 }
 
 init {
   fetch_accounts(type: query) `{"find": "account", "filter": {}}`
-}
-
-weights {
-  check_balance = 50
-  make_transfer = 50
 }
 
 run {
@@ -60,4 +48,16 @@ run {
       local('amount')
     )
   }
+}
+
+deseed {
+  delete_accounts(type: exec) `{"delete": "account", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_customers(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_account(type: exec) `{"drop": "account"}`
+
+  drop_customer(type: exec) `{"drop": "customer"}`
 }

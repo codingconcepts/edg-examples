@@ -23,18 +23,18 @@ seed {
     `SADD customer:ids $1` (seq(1, 1))
 }
 
+weights {
+  read_customer  = 60
+  credit_balance = 30
+  random_member  = 10
+}
+
 init {
   # SCAN rather than KEYS, which would block the server for the whole
   # sweep. The Lua wrapper walks the cursor and returns just the keys,
   # which edg reads as one row each under a "value" column.
   fetch_customers(type: query)
     `EVAL "local c=0 local out={} repeat local r=redis.call('SCAN',c,'MATCH',ARGV[1],'COUNT',1000) c=tonumber(r[1]) for _,k in ipairs(r[2]) do out[#out+1]=k end until c==0 return out" 0 customer:[0-9]*`
-}
-
-weights {
-  read_customer  = 60
-  credit_balance = 30
-  random_member  = 10
 }
 
 run {

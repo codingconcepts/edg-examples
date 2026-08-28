@@ -51,30 +51,6 @@ up {
     )`
 }
 
-deseed {
-  truncate_product_views(type: exec) `TRUNCATE TABLE product_views`
-
-  truncate_price_history(type: exec) `TRUNCATE TABLE price_history`
-
-  truncate_traffic_log(type: exec) `TRUNCATE TABLE traffic_log`
-
-  truncate_error_events(type: exec) `TRUNCATE TABLE error_events`
-
-  truncate_sensor_calibration(type: exec) `TRUNCATE TABLE sensor_calibration`
-}
-
-down {
-  drop_product_views(type: exec) `DROP TABLE IF EXISTS product_views`
-
-  drop_price_history(type: exec) `DROP TABLE IF EXISTS price_history`
-
-  drop_traffic_log(type: exec) `DROP TABLE IF EXISTS traffic_log`
-
-  drop_error_events(type: exec) `DROP TABLE IF EXISTS error_events`
-
-  drop_sensor_calibration(type: exec) `DROP TABLE IF EXISTS sensor_calibration`
-}
-
 weights {
   insert_error   = 15
   insert_price   = 20
@@ -119,4 +95,28 @@ run {
     2.0 * atan(sqrt(global_iter()) / 100.0) / pi * 15.0,
     global_iter()
   )
+}
+
+deseed {
+  truncate_product_views(type: exec) `TRUNCATE TABLE product_views`
+
+  truncate_price_history(type: exec) `TRUNCATE TABLE price_history`
+
+  truncate_traffic_log(type: exec) `TRUNCATE TABLE traffic_log`
+
+  truncate_error_events(type: exec) `TRUNCATE TABLE error_events`
+
+  truncate_sensor_calibration(type: exec) `TRUNCATE TABLE sensor_calibration`
+}
+
+down {
+  drop_product_views(type: exec) `DROP TABLE IF EXISTS product_views`
+
+  drop_price_history(type: exec) `DROP TABLE IF EXISTS price_history`
+
+  drop_traffic_log(type: exec) `DROP TABLE IF EXISTS traffic_log`
+
+  drop_error_events(type: exec) `DROP TABLE IF EXISTS error_events`
+
+  drop_sensor_calibration(type: exec) `DROP TABLE IF EXISTS sensor_calibration`
 }

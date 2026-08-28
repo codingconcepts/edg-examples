@@ -23,14 +23,6 @@ seed {
   )
 }
 
-deseed {
-  delete_distributions(type: exec) `DELETE FROM distributions`
-}
-
-down {
-  drop_distributions(type: exec) `DROP TABLE IF EXISTS distributions`
-}
-
 weights {
   insert_uniform     = 10
   insert_zipfian     = 10
@@ -106,4 +98,12 @@ run {
       CONCAT('["', REPLACE(?, ',', '","'), '"]'),
       '$[*]' COLUMNS(val VARCHAR(20) PATH '$')
     ) j` (zipf.n(1.1, 1.0, 99, 3, 5))
+}
+
+deseed {
+  delete_distributions(type: exec) `DELETE FROM distributions`
+}
+
+down {
+  drop_distributions(type: exec) `DROP TABLE IF EXISTS distributions`
 }

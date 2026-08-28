@@ -1,10 +1,6 @@
 let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_sbtest1 `IF OBJECT_ID('sbtest1', 'U') IS NULL
     CREATE TABLE sbtest1 (
@@ -28,6 +24,10 @@ seed {
   )
 }
 
+run {
+  point_select(type: query) `SELECT c FROM sbtest1 WHERE id = @p1` (gen('number:1,' + string(records)))
+}
+
 deseed {
   delete_sbtest1(type: exec) `DELETE FROM sbtest1`
 }
@@ -36,6 +36,6 @@ down {
   drop_sbtest1(type: exec) `DROP TABLE IF EXISTS sbtest1`
 }
 
-run {
-  point_select(type: query) `SELECT c FROM sbtest1 WHERE id = @p1` (gen('number:1,' + string(records)))
+expect {
+  error_rate < 1
 }

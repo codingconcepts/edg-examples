@@ -2,10 +2,6 @@ let keys       = int(coalesce(env_nil('KEYS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 let value_size = int(coalesce(env_nil('VALUE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_kv(type: exec) `{"create": "kv"}`
 }
@@ -15,14 +11,6 @@ seed {
     seq(1, 1),
     blob(value_size)
   )
-}
-
-deseed {
-  delete_kv(type: exec) `{"delete": "kv", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_kv(type: exec) `{"drop": "kv"}`
 }
 
 weights {
@@ -37,4 +25,16 @@ run {
     gen('number:1,' + string(keys)),
     blob(value_size)
   )
+}
+
+deseed {
+  delete_kv(type: exec) `{"delete": "kv", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_kv(type: exec) `{"drop": "kv"}`
+}
+
+expect {
+  error_rate < 1
 }

@@ -1,9 +1,5 @@
 let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_events `CREATE TABLE IF NOT EXISTS events (
       id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -17,14 +13,6 @@ up {
       ttl_expire_after = '10 minutes',
       ttl_job_cron = '* * * * *'
     )`
-}
-
-deseed {
-  truncate_events(type: exec) `TRUNCATE TABLE events`
-}
-
-down {
-  drop_events(type: exec) `DROP TABLE IF EXISTS events`
 }
 
 weights {
@@ -52,4 +40,16 @@ run {
       AND created_at > now() - INTERVAL '5 minutes'
     ORDER BY created_at DESC
     LIMIT 20` (uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]))
+}
+
+deseed {
+  truncate_events(type: exec) `TRUNCATE TABLE events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+}
+
+expect {
+  error_rate < 1
 }

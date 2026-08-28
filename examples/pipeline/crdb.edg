@@ -45,22 +45,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_c(type: exec) `TRUNCATE TABLE c`
-
-  truncate_b(type: exec) `TRUNCATE TABLE b`
-
-  truncate_a(type: exec) `TRUNCATE TABLE a CASCADE`
-}
-
-down {
-  drop_c(type: exec) `DROP TABLE IF EXISTS c`
-
-  drop_b(type: exec) `DROP TABLE IF EXISTS b`
-
-  drop_a(type: exec) `DROP TABLE IF EXISTS a`
-}
-
 run {
   find_a(type: query) `SELECT id AS a_id, name
     FROM a
@@ -76,4 +60,20 @@ run {
     WHERE b_id = $1::UUID
       AND status = 'new'
     LIMIT 1` (ref('find_b').b_id)
+}
+
+deseed {
+  truncate_c(type: exec) `TRUNCATE TABLE c`
+
+  truncate_b(type: exec) `TRUNCATE TABLE b`
+
+  truncate_a(type: exec) `TRUNCATE TABLE a CASCADE`
+}
+
+down {
+  drop_c(type: exec) `DROP TABLE IF EXISTS c`
+
+  drop_b(type: exec) `DROP TABLE IF EXISTS b`
+
+  drop_a(type: exec) `DROP TABLE IF EXISTS a`
 }

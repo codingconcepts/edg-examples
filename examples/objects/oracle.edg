@@ -30,18 +30,6 @@ seed {
   populate_order(type: exec_batch, count: orders, size: 100, object: order) `INSERT ALL __values__(order_tbl(email, product, quantity, ordered_at))`
 }
 
-deseed {
-  truncate_order(type: exec) `TRUNCATE TABLE order_tbl`
-}
-
-down {
-  drop_order(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE order_tbl CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
 init {
   fetch_orders(type: query) `SELECT id FROM order_tbl`
 }
@@ -73,4 +61,16 @@ run {
     obj('order').quantity,
     obj('order').ordered_at
   )
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE order_tbl`
+}
+
+down {
+  drop_order(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE order_tbl CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

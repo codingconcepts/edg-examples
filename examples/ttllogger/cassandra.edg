@@ -1,9 +1,5 @@
 let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -16,16 +12,6 @@ up {
       created_at TIMESTAMP,
       PRIMARY KEY (level, created_at, id)
     ) WITH CLUSTERING ORDER BY (created_at DESC, id ASC)`
-}
-
-deseed {
-  truncate_events(type: exec) `TRUNCATE edg.events`
-}
-
-down {
-  drop_events(type: exec) `DROP TABLE IF EXISTS edg.events`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
 }
 
 weights {
@@ -55,4 +41,18 @@ run {
     WHERE level = $1
     ORDER BY created_at DESC
     LIMIT 20` (uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]))
+}
+
+deseed {
+  truncate_events(type: exec) `TRUNCATE edg.events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS edg.events`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+expect {
+  error_rate < 1
 }

@@ -30,14 +30,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_product(type: exec) `TRUNCATE TABLE product`
-}
-
-down {
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-}
-
 init {
   fetch_products(type: query) `SELECT id, name FROM product`
 }
@@ -54,4 +46,12 @@ run {
     FROM product
     ORDER BY embedding <=> $1::VECTOR
     LIMIT 10` (embed(ref('product_catalog').name))
+}
+
+deseed {
+  truncate_product(type: exec) `TRUNCATE TABLE product`
+}
+
+down {
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
 }

@@ -95,26 +95,6 @@ seed {
     CROSS JOIN (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3) AS nums` (products)
 }
 
-deseed {
-  delete_order_item(type: exec) `DELETE FROM order_item`
-
-  delete_purchase_order(type: exec) `DELETE FROM purchase_order`
-
-  delete_product(type: exec) `DELETE FROM product`
-
-  delete_customer(type: exec) `DELETE FROM customer`
-}
-
-down {
-  drop_order_item(type: exec) `DROP TABLE IF EXISTS order_item`
-
-  drop_purchase_order(type: exec) `DROP TABLE IF EXISTS purchase_order`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-}
-
 init {
   fetch_customers(type: query) `SELECT id FROM customer`
 }
@@ -153,4 +133,24 @@ run {
     set(['pending', 'shipped', 'delivered'],[]),
     uniform.float(100, 500, 2)
   )
+}
+
+deseed {
+  delete_order_item(type: exec) `DELETE FROM order_item`
+
+  delete_purchase_order(type: exec) `DELETE FROM purchase_order`
+
+  delete_product(type: exec) `DELETE FROM product`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_order_item(type: exec) `DROP TABLE IF EXISTS order_item`
+
+  drop_purchase_order(type: exec) `DROP TABLE IF EXISTS purchase_order`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }

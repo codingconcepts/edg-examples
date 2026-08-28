@@ -31,25 +31,13 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+weights {
+  check_balance = 50
+  make_transfer = 50
 }
 
 init {
   fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
-}
-
-weights {
-  check_balance = 50
-  make_transfer = 50
 }
 
 run {
@@ -71,4 +59,16 @@ run {
       local('amount')
     )
   }
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }

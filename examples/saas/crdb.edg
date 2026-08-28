@@ -113,32 +113,14 @@ seed {
   )
 }
 
-deseed {
-  truncate_task_comment(type: exec) `TRUNCATE TABLE task_comment`
-
-  truncate_task(type: exec) `TRUNCATE TABLE task`
-
-  truncate_project(type: exec) `TRUNCATE TABLE project`
-
-  truncate_billing_usage(type: exec) `TRUNCATE TABLE billing_usage`
-
-  truncate_app_user(type: exec) `TRUNCATE TABLE app_user`
-
-  truncate_tenant(type: exec) `TRUNCATE TABLE tenant CASCADE`
-}
-
-down {
-  drop_task_comment(type: exec) `DROP TABLE IF EXISTS task_comment`
-
-  drop_task(type: exec) `DROP TABLE IF EXISTS task`
-
-  drop_project(type: exec) `DROP TABLE IF EXISTS project`
-
-  drop_billing_usage(type: exec) `DROP TABLE IF EXISTS billing_usage`
-
-  drop_app_user(type: exec) `DROP TABLE IF EXISTS app_user`
-
-  drop_tenant(type: exec) `DROP TABLE IF EXISTS tenant`
+weights {
+  add_comment      = 10
+  admin_overview   = 10
+  create_task      = 15
+  list_tasks       = 30
+  soft_delete      = 5
+  tenant_dashboard = 15
+  update_task      = 15
 }
 
 init {
@@ -149,16 +131,6 @@ init {
   fetch_projects(type: query) `SELECT id, tenant_id FROM project ORDER BY random()`
 
   fetch_tasks(type: query) `SELECT id, tenant_id, project_id FROM task WHERE deleted_at IS NULL ORDER BY random()`
-}
-
-weights {
-  add_comment      = 10
-  admin_overview   = 10
-  create_task      = 15
-  list_tasks       = 30
-  soft_delete      = 5
-  tenant_dashboard = 15
-  update_task      = 15
 }
 
 run {
@@ -240,4 +212,32 @@ run {
     GROUP BY tn.id, tn.name, tn.plan, bu.api_calls
     ORDER BY bu.api_calls DESC
     LIMIT 20`
+}
+
+deseed {
+  truncate_task_comment(type: exec) `TRUNCATE TABLE task_comment`
+
+  truncate_task(type: exec) `TRUNCATE TABLE task`
+
+  truncate_project(type: exec) `TRUNCATE TABLE project`
+
+  truncate_billing_usage(type: exec) `TRUNCATE TABLE billing_usage`
+
+  truncate_app_user(type: exec) `TRUNCATE TABLE app_user`
+
+  truncate_tenant(type: exec) `TRUNCATE TABLE tenant CASCADE`
+}
+
+down {
+  drop_task_comment(type: exec) `DROP TABLE IF EXISTS task_comment`
+
+  drop_task(type: exec) `DROP TABLE IF EXISTS task`
+
+  drop_project(type: exec) `DROP TABLE IF EXISTS project`
+
+  drop_billing_usage(type: exec) `DROP TABLE IF EXISTS billing_usage`
+
+  drop_app_user(type: exec) `DROP TABLE IF EXISTS app_user`
+
+  drop_tenant(type: exec) `DROP TABLE IF EXISTS tenant`
 }

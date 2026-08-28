@@ -23,18 +23,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_distributions(type: exec) `TRUNCATE TABLE distributions`
-
-  truncate_orders(type: exec) `TRUNCATE TABLE orders`
-}
-
-down {
-  drop_distributions(type: exec) `DROP TABLE IF EXISTS distributions`
-
-  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
-}
-
 weights {
   insert_uniform     = 10
   insert_zipfian     = 10
@@ -109,4 +97,16 @@ run {
   insert_order(type: exec) `INSERT INTO orders (status) VALUES ($1)` (
     markov('order_status',['pending', 'processing', 'shipped', 'delivered', 'returned'],[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.7, 0.0, 0.0, 0.0, 0.0, 0.2, 0.8, 0.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 1.0])
   )
+}
+
+deseed {
+  truncate_distributions(type: exec) `TRUNCATE TABLE distributions`
+
+  truncate_orders(type: exec) `TRUNCATE TABLE orders`
+}
+
+down {
+  drop_distributions(type: exec) `DROP TABLE IF EXISTS distributions`
+
+  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
 }

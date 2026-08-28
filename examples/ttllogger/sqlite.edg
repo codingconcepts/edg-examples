@@ -1,9 +1,5 @@
 let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_events `CREATE TABLE IF NOT EXISTS events (
       id TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
@@ -18,14 +14,6 @@ up {
 
   create_idx_events_created `CREATE INDEX IF NOT EXISTS idx_events_created
     ON events (created_at DESC)`
-}
-
-deseed {
-  delete_events(type: exec) `DELETE FROM events`
-}
-
-down {
-  drop_events(type: exec) `DROP TABLE IF EXISTS events`
 }
 
 weights {
@@ -63,4 +51,16 @@ run {
       WHERE created_at < datetime('now', '-10 minutes')
       LIMIT 1000
     )`
+}
+
+deseed {
+  delete_events(type: exec) `DELETE FROM events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+}
+
+expect {
+  error_rate < 1
 }

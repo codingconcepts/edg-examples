@@ -31,25 +31,13 @@ seed {
   )
 }
 
-deseed {
-  delete_account(type: exec) `DELETE FROM account`
-
-  delete_customer(type: exec) `DELETE FROM customer`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+weights {
+  check_balance = 50
+  make_transfer = 50
 }
 
 init {
   fetch_accounts(type: query) `SELECT id FROM account ORDER BY RAND()`
-}
-
-weights {
-  check_balance = 50
-  make_transfer = 50
 }
 
 run {
@@ -69,4 +57,16 @@ run {
       gen('number:1,100')
     )
   }
+}
+
+deseed {
+  delete_account(type: exec) `DELETE FROM account`
+
+  delete_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }

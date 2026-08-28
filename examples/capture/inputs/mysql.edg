@@ -35,14 +35,14 @@ seed {
   )
 }
 
-init {
-  fetch_accounts(type: query) `SELECT id FROM account ORDER BY RAND()`
-}
-
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY RAND()`
 }
 
 run {

@@ -14,15 +14,15 @@ seed {
   __values__` (gen('email'))
 }
 
-init {
-  fetch_users `SELECT id FROM users ORDER BY random() LIMIT 500`
-}
-
 stages {
   warmup(workers: 5, duration: 10s)
   ramp(workers: 20, duration: 10s, qps: 200)
   sustain(workers: 20, duration: 10s, qps: 500)
   cool_down(workers: 5, duration: 10s)
+}
+
+init {
+  fetch_users `SELECT id FROM users ORDER BY random() LIMIT 500`
 }
 
 run {

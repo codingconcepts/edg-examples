@@ -1,9 +1,5 @@
 let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_events(type: exec) `{"create": "events"}`
 
@@ -12,14 +8,6 @@ up {
   create_level_index(type: exec) `{"createIndexes": "events", "indexes": [{"key": {"level": 1, "created_at": -1}, "name": "idx_events_level_created"}]}`
 
   create_created_index(type: exec) `{"createIndexes": "events", "indexes": [{"key": {"created_at": -1}, "name": "idx_events_created"}]}`
-}
-
-deseed {
-  delete_events(type: exec) `{"delete": "events", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_events(type: exec) `{"drop": "events"}`
 }
 
 weights {
@@ -43,4 +31,16 @@ run {
     uniform.set(['ERROR', 'WARN', 'FATAL'],[60, 30, 10]),
     date_offset('-5m')
   )
+}
+
+deseed {
+  delete_events(type: exec) `{"delete": "events", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_events(type: exec) `{"drop": "events"}`
+}
+
+expect {
+  error_rate < 1
 }

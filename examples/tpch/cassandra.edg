@@ -7,10 +7,6 @@ let customers    = int(coalesce(env_nil('CUSTOMERS'), 150))
 let orders       = int(coalesce(env_nil('ORDERS'), 1000))
 let batch_size   = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -236,6 +232,40 @@ seed {
   )
 }
 
+weights {
+  q14_promotion_effect   = 25
+  q1_pricing_summary     = 25
+  q3_shipping_priority   = 25
+  q6_forecasting_revenue = 25
+}
+
+run {
+  q1_pricing_summary(type: query) `SELECT l_returnflag, l_linestatus, l_quantity, l_extendedprice,
+      l_discount, l_tax
+    FROM edg.lineitem
+    WHERE l_shipdate <= '1998-09-01'
+    ALLOW FILTERING`
+
+  q3_shipping_priority(type: query) `SELECT o_orderkey, o_totalprice, o_orderdate, o_shippriority
+    FROM edg.orders
+    WHERE o_orderstatus = 'O'
+    ALLOW FILTERING`
+
+  q6_forecasting_revenue(type: query) `SELECT l_extendedprice, l_discount
+    FROM edg.lineitem
+    WHERE l_shipdate >= '$1-01-01' AND l_shipdate < '$1-12-31'
+      AND l_quantity < $3
+    ALLOW FILTERING` (
+    gen('number:1993,1997'),
+    uniform.float(0.02, 0.09, 2),
+    gen('number:24,25')
+  )
+
+  q14_promotion_effect(type: query) `SELECT p_partkey, p_type, p_retailprice
+    FROM edg.part
+    ALLOW FILTERING`
+}
+
 deseed {
   truncate_lineitem(type: exec) `TRUNCATE edg.lineitem`
 
@@ -274,36 +304,6 @@ down {
   drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
 }
 
-weights {
-  q14_promotion_effect   = 25
-  q1_pricing_summary     = 25
-  q3_shipping_priority   = 25
-  q6_forecasting_revenue = 25
-}
-
-run {
-  q1_pricing_summary(type: query) `SELECT l_returnflag, l_linestatus, l_quantity, l_extendedprice,
-      l_discount, l_tax
-    FROM edg.lineitem
-    WHERE l_shipdate <= '1998-09-01'
-    ALLOW FILTERING`
-
-  q3_shipping_priority(type: query) `SELECT o_orderkey, o_totalprice, o_orderdate, o_shippriority
-    FROM edg.orders
-    WHERE o_orderstatus = 'O'
-    ALLOW FILTERING`
-
-  q6_forecasting_revenue(type: query) `SELECT l_extendedprice, l_discount
-    FROM edg.lineitem
-    WHERE l_shipdate >= '$1-01-01' AND l_shipdate < '$1-12-31'
-      AND l_quantity < $3
-    ALLOW FILTERING` (
-    gen('number:1993,1997'),
-    uniform.float(0.02, 0.09, 2),
-    gen('number:24,25')
-  )
-
-  q14_promotion_effect(type: query) `SELECT p_partkey, p_type, p_retailprice
-    FROM edg.part
-    ALLOW FILTERING`
+expect {
+  error_rate < 1
 }

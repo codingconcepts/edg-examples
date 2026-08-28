@@ -47,33 +47,13 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE TABLE account`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-}
-
-down {
-  drop_account(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE account CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_customer(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
+weights {
+  check_balance = 50
+  make_transfer = 50
 }
 
 init {
   fetch_accounts(type: query) `SELECT id FROM account`
-}
-
-weights {
-  check_balance = 50
-  make_transfer = 50
 }
 
 run {
@@ -93,4 +73,24 @@ run {
       gen('number:1,100')
     )
   }
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+}
+
+down {
+  drop_account(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE account CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_customer(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

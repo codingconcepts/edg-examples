@@ -1,10 +1,6 @@
 let records    = int(coalesce(env_nil('RECORDS'), 1000))
 let batch_size = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_sbtest1(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -37,18 +33,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_sbtest1(type: exec) `TRUNCATE TABLE sbtest1`
-}
-
-down {
-  drop_sbtest1(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE sbtest1 CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
 run {
   insert(type: exec) `BEGIN
       INSERT INTO sbtest1 (id, k, c, pad)
@@ -61,4 +45,20 @@ run {
     regex('[a-zA-Z0-9]{120}'),
     regex('[a-zA-Z0-9]{60}')
   )
+}
+
+deseed {
+  truncate_sbtest1(type: exec) `TRUNCATE TABLE sbtest1`
+}
+
+down {
+  drop_sbtest1(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE sbtest1 CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}
+
+expect {
+  error_rate < 1
 }

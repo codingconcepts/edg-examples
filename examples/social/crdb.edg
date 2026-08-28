@@ -100,46 +100,6 @@ seed {
     ON CONFLICT DO NOTHING` (follows_per_user)
 }
 
-deseed {
-  truncate_post_tag(type: exec) `TRUNCATE TABLE post_tag`
-
-  truncate_comment(type: exec) `TRUNCATE TABLE comment`
-
-  truncate_post_like(type: exec) `TRUNCATE TABLE post_like`
-
-  truncate_follow(type: exec) `TRUNCATE TABLE follow`
-
-  truncate_post(type: exec) `TRUNCATE TABLE post`
-
-  truncate_tag(type: exec) `TRUNCATE TABLE tag`
-
-  truncate_user_profile(type: exec) `TRUNCATE TABLE user_profile CASCADE`
-}
-
-down {
-  drop_post_tag(type: exec) `DROP TABLE IF EXISTS post_tag`
-
-  drop_comment(type: exec) `DROP TABLE IF EXISTS comment`
-
-  drop_post_like(type: exec) `DROP TABLE IF EXISTS post_like`
-
-  drop_follow(type: exec) `DROP TABLE IF EXISTS follow`
-
-  drop_post(type: exec) `DROP TABLE IF EXISTS post`
-
-  drop_tag(type: exec) `DROP TABLE IF EXISTS tag`
-
-  drop_user_profile(type: exec) `DROP TABLE IF EXISTS user_profile`
-}
-
-init {
-  fetch_users(type: query) `SELECT id, username, display_name FROM user_profile ORDER BY random()`
-
-  fetch_posts(type: query) `SELECT id FROM post ORDER BY random()`
-
-  fetch_tags(type: query) `SELECT id, name FROM tag`
-}
-
 weights {
   add_comment    = 10
   create_post    = 10
@@ -148,6 +108,14 @@ weights {
   like_post      = 25
   mutual_friends = 10
   trending       = 10
+}
+
+init {
+  fetch_users(type: query) `SELECT id, username, display_name FROM user_profile ORDER BY random()`
+
+  fetch_posts(type: query) `SELECT id FROM post ORDER BY random()`
+
+  fetch_tags(type: query) `SELECT id, name FROM tag`
 }
 
 run {
@@ -221,4 +189,36 @@ run {
     ref_diff('fetch_users').id,
     ref_diff('fetch_users').id
   )
+}
+
+deseed {
+  truncate_post_tag(type: exec) `TRUNCATE TABLE post_tag`
+
+  truncate_comment(type: exec) `TRUNCATE TABLE comment`
+
+  truncate_post_like(type: exec) `TRUNCATE TABLE post_like`
+
+  truncate_follow(type: exec) `TRUNCATE TABLE follow`
+
+  truncate_post(type: exec) `TRUNCATE TABLE post`
+
+  truncate_tag(type: exec) `TRUNCATE TABLE tag`
+
+  truncate_user_profile(type: exec) `TRUNCATE TABLE user_profile CASCADE`
+}
+
+down {
+  drop_post_tag(type: exec) `DROP TABLE IF EXISTS post_tag`
+
+  drop_comment(type: exec) `DROP TABLE IF EXISTS comment`
+
+  drop_post_like(type: exec) `DROP TABLE IF EXISTS post_like`
+
+  drop_follow(type: exec) `DROP TABLE IF EXISTS follow`
+
+  drop_post(type: exec) `DROP TABLE IF EXISTS post`
+
+  drop_tag(type: exec) `DROP TABLE IF EXISTS tag`
+
+  drop_user_profile(type: exec) `DROP TABLE IF EXISTS user_profile`
 }

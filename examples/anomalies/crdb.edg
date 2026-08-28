@@ -3,21 +3,6 @@ let accounts        = 10000
 let doctors         = 200
 let initial_balance = 10000
 
-expect {
-  error_rate < 5
-  check_2 `SELECT COUNT(*) AS cnt FROM counter` cnt == counters
-  check_3 `SELECT SUM(value)::INT AS total FROM counter` total > 0
-  check_4 `SELECT COUNT(*) AS cnt FROM account` cnt == accounts
-  check_5 `SELECT COUNT(*) AS cnt FROM account WHERE balance < 0` cnt == 0
-  check_6 `SELECT COUNT(*) AS uncovered
-FROM (
-  SELECT shift_date
-  FROM on_call
-  GROUP BY shift_date
-  HAVING COUNT(*) FILTER (WHERE on_duty = true) = 0
-)` uncovered == 0
-}
-
 up {
   create_counter `CREATE TABLE IF NOT EXISTS counter (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,20 +42,11 @@ seed {
     FROM generate_series(1, $1::INT) AS s` (doctors)
 }
 
-deseed {
-  truncate_on_call(type: exec) `TRUNCATE TABLE on_call`
-
-  truncate_account(type: exec) `TRUNCATE TABLE account`
-
-  truncate_counter(type: exec) `TRUNCATE TABLE counter`
-}
-
-down {
-  drop_on_call(type: exec) `DROP TABLE IF EXISTS on_call`
-
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
+weights {
+  credit_account = 20
+  lost_update    = 30
+  stale_read     = 20
+  write_skew     = 30
 }
 
 init {
@@ -79,13 +55,6 @@ init {
   fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
 
   fetch_on_call(type: query) `SELECT id FROM on_call WHERE on_duty = true ORDER BY random()`
-}
-
-weights {
-  credit_account = 20
-  lost_update    = 30
-  stale_read     = 20
-  write_skew     = 30
 }
 
 run {
@@ -120,4 +89,35 @@ run {
     rollback_if ref_same('check_coverage').cnt <= 1
     go_off_duty(type: exec) `UPDATE on_call SET on_duty = false WHERE id = $1::UUID` (ref_same('read_doctor').id)
   }
+}
+
+deseed {
+  truncate_on_call(type: exec) `TRUNCATE TABLE on_call`
+
+  truncate_account(type: exec) `TRUNCATE TABLE account`
+
+  truncate_counter(type: exec) `TRUNCATE TABLE counter`
+}
+
+down {
+  drop_on_call(type: exec) `DROP TABLE IF EXISTS on_call`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
+}
+
+expect {
+  error_rate < 5
+  check_2 `SELECT COUNT(*) AS cnt FROM counter` cnt == counters
+  check_3 `SELECT SUM(value)::INT AS total FROM counter` total > 0
+  check_4 `SELECT COUNT(*) AS cnt FROM account` cnt == accounts
+  check_5 `SELECT COUNT(*) AS cnt FROM account WHERE balance < 0` cnt == 0
+  check_6 `SELECT COUNT(*) AS uncovered
+FROM (
+  SELECT shift_date
+  FROM on_call
+  GROUP BY shift_date
+  HAVING COUNT(*) FILTER (WHERE on_duty = true) = 0
+)` uncovered == 0
 }

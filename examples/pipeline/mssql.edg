@@ -48,6 +48,20 @@ seed {
   )
 }
 
+run {
+  find_a(type: query) `SELECT TOP 1 id AS a_id, name
+    FROM a
+    ORDER BY NEWID()`
+
+  find_b(type: query) `SELECT TOP 1 id AS b_id, value
+    FROM b
+    WHERE a_id = @p1` (ref('find_a').a_id)
+
+  update_c(type: exec) `UPDATE TOP (1) c SET status = 'processed'
+    WHERE b_id = @p1
+      AND status = 'new'` (ref('find_b').b_id)
+}
+
 deseed {
   delete_c(type: exec) `DELETE FROM c`
 
@@ -62,18 +76,4 @@ down {
   drop_b(type: exec) `DROP TABLE IF EXISTS b`
 
   drop_a(type: exec) `DROP TABLE IF EXISTS a`
-}
-
-run {
-  find_a(type: query) `SELECT TOP 1 id AS a_id, name
-    FROM a
-    ORDER BY NEWID()`
-
-  find_b(type: query) `SELECT TOP 1 id AS b_id, value
-    FROM b
-    WHERE a_id = @p1` (ref('find_a').a_id)
-
-  update_c(type: exec) `UPDATE TOP (1) c SET status = 'processed'
-    WHERE b_id = @p1
-      AND status = 'new'` (ref('find_b').b_id)
 }

@@ -1,9 +1,5 @@
 let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_events(type: exec) `BEGIN
       EXECUTE IMMEDIATE '
@@ -36,15 +32,6 @@ up {
     END;`
 }
 
-deseed {
-  truncate_events(type: exec) `TRUNCATE TABLE events`
-}
-
-down {
-  drop_events(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE events PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-}
-
 weights {
   delete_expired = 14
   read_by_level  = 13
@@ -75,4 +62,17 @@ run {
   delete_expired(type: exec) `DELETE FROM events
     WHERE created_at < SYSTIMESTAMP - INTERVAL '10' MINUTE
       AND ROWNUM <= 1000`
+}
+
+deseed {
+  truncate_events(type: exec) `TRUNCATE TABLE events`
+}
+
+down {
+  drop_events(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE events PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+}
+
+expect {
+  error_rate < 1
 }

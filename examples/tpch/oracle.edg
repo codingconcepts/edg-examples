@@ -7,10 +7,6 @@ let customers    = int(coalesce(env_nil('CUSTOMERS'), 150))
 let orders       = int(coalesce(env_nil('ORDERS'), 1000))
 let batch_size   = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_region(type: exec) `BEGIN EXECUTE IMMEDIATE '
       CREATE TABLE region (
@@ -249,50 +245,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_lineitem(type: exec) `TRUNCATE TABLE lineitem`
-
-  truncate_orders(type: exec) `TRUNCATE TABLE orders`
-
-  truncate_partsupp(type: exec) `TRUNCATE TABLE partsupp`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-
-  truncate_part(type: exec) `TRUNCATE TABLE part`
-
-  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
-
-  truncate_nation(type: exec) `TRUNCATE TABLE nation`
-
-  truncate_region(type: exec) `TRUNCATE TABLE region`
-}
-
-down {
-  drop_lineitem(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE lineitem PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_orders(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE orders PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_partsupp(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE partsupp PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_customer(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE customer PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_part(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE part PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_supplier(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE supplier PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_nation(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE nation PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-
-  drop_region(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE region PURGE';
-    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
-}
-
 weights {
   q14_promotion_effect   = 25
   q1_pricing_summary     = 25
@@ -354,4 +306,52 @@ run {
     gen('number:1993,1997'),
     gen('number:1,12')
   )
+}
+
+deseed {
+  truncate_lineitem(type: exec) `TRUNCATE TABLE lineitem`
+
+  truncate_orders(type: exec) `TRUNCATE TABLE orders`
+
+  truncate_partsupp(type: exec) `TRUNCATE TABLE partsupp`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+
+  truncate_part(type: exec) `TRUNCATE TABLE part`
+
+  truncate_supplier(type: exec) `TRUNCATE TABLE supplier`
+
+  truncate_nation(type: exec) `TRUNCATE TABLE nation`
+
+  truncate_region(type: exec) `TRUNCATE TABLE region`
+}
+
+down {
+  drop_lineitem(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE lineitem PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_orders(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE orders PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_partsupp(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE partsupp PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_customer(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE customer PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_part(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE part PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_supplier(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE supplier PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_nation(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE nation PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+
+  drop_region(type: exec) `BEGIN EXECUTE IMMEDIATE 'DROP TABLE region PURGE';
+    EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;`
+}
+
+expect {
+  error_rate < 1
 }

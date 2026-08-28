@@ -1,16 +1,6 @@
 let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
 let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 
-expect {
-  error_rate < 25
-  lost_update `SELECT SUM(value) AS counter_total FROM edg.counter` counter_total >= increment_counter.success_count
-  phantom_row `SELECT COUNT(*) AS n FROM edg.account` n == accounts
-  dirty_write `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts FROM edg.account` total == accounts * initial_balance
-  write_skew `SELECT SUM(version) AS total_versions FROM edg.cas` total_versions <= cas_update.success_count
-  dirty_read `SELECT COUNT(*) AS n FROM edg.blind_write` n == accounts
-  read_skew `SELECT COUNT(*) AS on_duty FROM edg.oncall WHERE on_duty = true ALLOW FILTERING` on_duty >= 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -63,49 +53,6 @@ seed {
   populate_blind_write(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.blind_write (id, value) VALUES ($1, 0)` (iter())
 
   populate_cas(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.cas (id, value, version) VALUES ($1, 0, 0)` (iter())
-}
-
-deseed {
-  truncate_ledger(type: exec) `TRUNCATE edg.ledger`
-
-  truncate_account(type: exec) `TRUNCATE edg.account`
-
-  truncate_counter(type: exec) `TRUNCATE edg.counter`
-
-  truncate_oncall(type: exec) `TRUNCATE edg.oncall`
-
-  truncate_blind_write(type: exec) `TRUNCATE edg.blind_write`
-
-  truncate_cas(type: exec) `TRUNCATE edg.cas`
-
-  reseed_accounts(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.account (id, balance, version) VALUES ($1, $2, 0)` (
-    iter(),
-    initial_balance
-  )
-
-  reseed_counters(type: exec_batch, count: 2, size: 2) `INSERT INTO edg.counter (id, value) VALUES ($1, 0)` (iter())
-
-  reseed_oncall(type: exec_batch, count: 3, size: 3) `INSERT INTO edg.oncall (doctor_id, on_duty) VALUES ($1, true)` (iter())
-
-  reseed_blind_write(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.blind_write (id, value) VALUES ($1, 0)` (iter())
-
-  reseed_cas(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.cas (id, value, version) VALUES ($1, 0, 0)` (iter())
-}
-
-down {
-  drop_ledger(type: exec) `DROP TABLE IF EXISTS edg.ledger`
-
-  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
-
-  drop_oncall(type: exec) `DROP TABLE IF EXISTS edg.oncall`
-
-  drop_counter(type: exec) `DROP TABLE IF EXISTS edg.counter`
-
-  drop_blind_write(type: exec) `DROP TABLE IF EXISTS edg.blind_write`
-
-  drop_cas(type: exec) `DROP TABLE IF EXISTS edg.cas`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
 }
 
 weights {
@@ -181,4 +128,57 @@ run {
     rollback_if ref_same('count_on_duty').n <= 1
     set_off_duty(type: exec) `UPDATE edg.oncall SET on_duty = false WHERE doctor_id = $1` (local('doctor_id'))
   }
+}
+
+deseed {
+  truncate_ledger(type: exec) `TRUNCATE edg.ledger`
+
+  truncate_account(type: exec) `TRUNCATE edg.account`
+
+  truncate_counter(type: exec) `TRUNCATE edg.counter`
+
+  truncate_oncall(type: exec) `TRUNCATE edg.oncall`
+
+  truncate_blind_write(type: exec) `TRUNCATE edg.blind_write`
+
+  truncate_cas(type: exec) `TRUNCATE edg.cas`
+
+  reseed_accounts(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.account (id, balance, version) VALUES ($1, $2, 0)` (
+    iter(),
+    initial_balance
+  )
+
+  reseed_counters(type: exec_batch, count: 2, size: 2) `INSERT INTO edg.counter (id, value) VALUES ($1, 0)` (iter())
+
+  reseed_oncall(type: exec_batch, count: 3, size: 3) `INSERT INTO edg.oncall (doctor_id, on_duty) VALUES ($1, true)` (iter())
+
+  reseed_blind_write(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.blind_write (id, value) VALUES ($1, 0)` (iter())
+
+  reseed_cas(type: exec_batch, count: accounts, size: accounts) `INSERT INTO edg.cas (id, value, version) VALUES ($1, 0, 0)` (iter())
+}
+
+down {
+  drop_ledger(type: exec) `DROP TABLE IF EXISTS edg.ledger`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS edg.account`
+
+  drop_oncall(type: exec) `DROP TABLE IF EXISTS edg.oncall`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS edg.counter`
+
+  drop_blind_write(type: exec) `DROP TABLE IF EXISTS edg.blind_write`
+
+  drop_cas(type: exec) `DROP TABLE IF EXISTS edg.cas`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+expect {
+  error_rate < 25
+  lost_update `SELECT SUM(value) AS counter_total FROM edg.counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM edg.account` n == accounts
+  dirty_write `SELECT SUM(balance) AS total, COUNT(*) AS num_accounts FROM edg.account` total == accounts * initial_balance
+  write_skew `SELECT SUM(version) AS total_versions FROM edg.cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM edg.blind_write` n == accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM edg.oncall WHERE on_duty = true ALLOW FILTERING` on_duty >= 1
 }

@@ -1,9 +1,5 @@
 let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_events `IF OBJECT_ID('events', 'U') IS NULL
     CREATE TABLE events (
@@ -19,14 +15,6 @@ up {
 
   create_idx_events_created `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_events_created')
     CREATE INDEX idx_events_created ON events (created_at DESC)`
-}
-
-deseed {
-  delete_events(type: exec) `DELETE FROM events`
-}
-
-down {
-  drop_events(type: exec) `DROP TABLE IF EXISTS events`
 }
 
 weights {
@@ -56,4 +44,16 @@ run {
 
   delete_expired(type: exec) `DELETE TOP(1000) FROM events
     WHERE created_at < DATEADD(MINUTE, -10, SYSUTCDATETIME())`
+}
+
+deseed {
+  delete_events(type: exec) `DELETE FROM events`
+}
+
+down {
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+}
+
+expect {
+  error_rate < 1
 }

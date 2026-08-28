@@ -129,46 +129,6 @@ seed {
     ) f` (follows_per_user)
 }
 
-deseed {
-  delete_post_tag(type: exec) `DELETE FROM post_tag`
-
-  delete_comment(type: exec) `DELETE FROM comment`
-
-  delete_post_like(type: exec) `DELETE FROM post_like`
-
-  delete_follow(type: exec) `DELETE FROM follow`
-
-  delete_post(type: exec) `DELETE FROM post`
-
-  delete_tag(type: exec) `DELETE FROM tag`
-
-  delete_user_profile(type: exec) `DELETE FROM user_profile`
-}
-
-down {
-  drop_post_tag(type: exec) `DROP TABLE IF EXISTS post_tag`
-
-  drop_comment(type: exec) `DROP TABLE IF EXISTS comment`
-
-  drop_post_like(type: exec) `DROP TABLE IF EXISTS post_like`
-
-  drop_follow(type: exec) `DROP TABLE IF EXISTS follow`
-
-  drop_post(type: exec) `DROP TABLE IF EXISTS post`
-
-  drop_tag(type: exec) `DROP TABLE IF EXISTS tag`
-
-  drop_user_profile(type: exec) `DROP TABLE IF EXISTS user_profile`
-}
-
-init {
-  fetch_users(type: query) `SELECT id, username, display_name FROM user_profile ORDER BY RAND()`
-
-  fetch_posts(type: query) `SELECT id FROM post ORDER BY RAND()`
-
-  fetch_tags(type: query) `SELECT id, name FROM tag`
-}
-
 weights {
   add_comment    = 10
   create_post    = 10
@@ -177,6 +137,14 @@ weights {
   like_post      = 25
   mutual_friends = 10
   trending       = 10
+}
+
+init {
+  fetch_users(type: query) `SELECT id, username, display_name FROM user_profile ORDER BY RAND()`
+
+  fetch_posts(type: query) `SELECT id FROM post ORDER BY RAND()`
+
+  fetch_tags(type: query) `SELECT id, name FROM tag`
 }
 
 run {
@@ -231,4 +199,36 @@ run {
     ref_diff('fetch_users').id,
     ref_diff('fetch_users').id
   )
+}
+
+deseed {
+  delete_post_tag(type: exec) `DELETE FROM post_tag`
+
+  delete_comment(type: exec) `DELETE FROM comment`
+
+  delete_post_like(type: exec) `DELETE FROM post_like`
+
+  delete_follow(type: exec) `DELETE FROM follow`
+
+  delete_post(type: exec) `DELETE FROM post`
+
+  delete_tag(type: exec) `DELETE FROM tag`
+
+  delete_user_profile(type: exec) `DELETE FROM user_profile`
+}
+
+down {
+  drop_post_tag(type: exec) `DROP TABLE IF EXISTS post_tag`
+
+  drop_comment(type: exec) `DROP TABLE IF EXISTS comment`
+
+  drop_post_like(type: exec) `DROP TABLE IF EXISTS post_like`
+
+  drop_follow(type: exec) `DROP TABLE IF EXISTS follow`
+
+  drop_post(type: exec) `DROP TABLE IF EXISTS post`
+
+  drop_tag(type: exec) `DROP TABLE IF EXISTS tag`
+
+  drop_user_profile(type: exec) `DROP TABLE IF EXISTS user_profile`
 }

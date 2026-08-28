@@ -26,14 +26,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_order(type: exec) `TRUNCATE TABLE print_order`
-}
-
-down {
-  drop_order(type: exec) `DROP TABLE IF EXISTS print_order`
-}
-
 run {
   insert_order(
     type:  exec,
@@ -56,4 +48,12 @@ run {
     print: { expr: ref_same('regions').name, agg: "join(map(sortBy(toPairs(freq), -#[1]), #[0] + '=' + string(#[1])), ' ')" },
     print: { expr: arg(0),                   agg: string(count) }
   ) `SELECT id, amount FROM print_order WHERE region = $1 LIMIT 1` (ref_same('regions').name)
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE print_order`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS print_order`
 }

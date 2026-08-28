@@ -22,14 +22,6 @@ seed {
     __values__`
 }
 
-deseed {
-  delete_order(type: exec) `DELETE FROM ``order```
-}
-
-down {
-  drop_order(type: exec) `DROP TABLE IF EXISTS ``order```
-}
-
 init {
   fetch_orders(type: query) `SELECT id FROM ``order```
 }
@@ -61,4 +53,12 @@ run {
     obj('order').quantity,
     obj('order').ordered_at
   )
+}
+
+deseed {
+  delete_order(type: exec) `DELETE FROM ``order```
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS ``order```
 }

@@ -1,9 +1,5 @@
 let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_ttlbench `CREATE TABLE IF NOT EXISTS ttlbench (
       id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -13,14 +9,6 @@ up {
       ttl_expire_after = '30 minutes',
       ttl_job_cron = '* * * * *'
     )`
-}
-
-deseed {
-  truncate_ttlbench(type: exec) `TRUNCATE TABLE ttlbench`
-}
-
-down {
-  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
 }
 
 weights {
@@ -36,4 +24,16 @@ run {
     WHERE inserted_at > now() - INTERVAL '5 minutes'
     ORDER BY inserted_at DESC
     LIMIT 10`
+}
+
+deseed {
+  truncate_ttlbench(type: exec) `TRUNCATE TABLE ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS ttlbench`
+}
+
+expect {
+  error_rate < 1
 }

@@ -1,9 +1,5 @@
 let message_size = int(coalesce(env_nil('MESSAGE_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_events `CREATE TABLE IF NOT EXISTS events (
       id STRING(36) NOT NULL DEFAULT (GENERATE_UUID()),
@@ -18,18 +14,6 @@ up {
 
   create_idx_events_created `CREATE INDEX IF NOT EXISTS idx_events_created
     ON events (created_at DESC)`
-}
-
-deseed {
-  delete_events(type: exec) `DELETE FROM events WHERE TRUE`
-}
-
-down {
-  drop_idx_events_level_created(type: exec) `DROP INDEX IF EXISTS idx_events_level_created`
-
-  drop_idx_events_created(type: exec) `DROP INDEX IF EXISTS idx_events_created`
-
-  drop_events(type: exec) `DROP TABLE IF EXISTS events`
 }
 
 weights {
@@ -61,4 +45,20 @@ run {
 
   cleanup_expired(type: exec) `DELETE FROM events
     WHERE created_at < TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 10 MINUTE)`
+}
+
+deseed {
+  delete_events(type: exec) `DELETE FROM events WHERE TRUE`
+}
+
+down {
+  drop_idx_events_level_created(type: exec) `DROP INDEX IF EXISTS idx_events_level_created`
+
+  drop_idx_events_created(type: exec) `DROP INDEX IF EXISTS idx_events_created`
+
+  drop_events(type: exec) `DROP TABLE IF EXISTS events`
+}
+
+expect {
+  error_rate < 1
 }

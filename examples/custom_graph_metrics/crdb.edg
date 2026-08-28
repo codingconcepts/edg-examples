@@ -22,14 +22,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE TABLE cgm_account`
-}
-
-down {
-  drop_account(type: exec) `DROP TABLE IF EXISTS cgm_account`
-}
-
 run {
   update_balance(type: exec) `UPDATE cgm_account
     SET balance = balance + $1
@@ -49,4 +41,12 @@ run {
       count(*)              AS account_count
     FROM cgm_account
     WHERE region = $1` (ref_same('regions').name)
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE cgm_account`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS cgm_account`
 }

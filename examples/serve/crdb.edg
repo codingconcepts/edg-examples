@@ -14,14 +14,6 @@ seed {
     __values__` (gen('email'))
 }
 
-deseed {
-  truncate_users(type: exec) `TRUNCATE TABLE users CASCADE`
-}
-
-down {
-  drop_users(type: exec) `DROP TABLE IF EXISTS users`
-}
-
 init {
   fetch_users `SELECT id, email FROM users LIMIT $1` (fetch_limit)
 }
@@ -33,4 +25,12 @@ run {
     ref('fetch_users').id,
     gen('email')
   )
+}
+
+deseed {
+  truncate_users(type: exec) `TRUNCATE TABLE users CASCADE`
+}
+
+down {
+  drop_users(type: exec) `DROP TABLE IF EXISTS users`
 }

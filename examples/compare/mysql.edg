@@ -39,26 +39,14 @@ seed {
   )
 }
 
-deseed {
-  delete_orders(type: exec) `DELETE FROM orders`
-
-  delete_users(type: exec) `DELETE FROM users`
-}
-
-down {
-  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
-
-  drop_users(type: exec) `DROP TABLE IF EXISTS users`
-}
-
-init {
-  fetch_users_run(type: query) `SELECT id FROM users`
-}
-
 weights {
   insert_order = 20
   list_orders  = 40
   lookup_user  = 40
+}
+
+init {
+  fetch_users_run(type: query) `SELECT id FROM users`
 }
 
 run {
@@ -80,4 +68,16 @@ run {
     uniform.float(10.00, 500.00, 2),
     set(['pending', 'shipped', 'delivered', 'cancelled'],[40, 35, 20, 5])
   )
+}
+
+deseed {
+  delete_orders(type: exec) `DELETE FROM orders`
+
+  delete_users(type: exec) `DELETE FROM users`
+}
+
+down {
+  drop_orders(type: exec) `DROP TABLE IF EXISTS orders`
+
+  drop_users(type: exec) `DROP TABLE IF EXISTS users`
 }

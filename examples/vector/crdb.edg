@@ -49,14 +49,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_article(type: exec) `TRUNCATE TABLE article`
-}
-
-down {
-  drop_article(type: exec) `DROP TABLE IF EXISTS article`
-}
-
 init {
   fetch_articles(type: query) `SELECT id FROM article`
 }
@@ -96,4 +88,12 @@ run {
     FROM article
     ORDER BY embedding_lognorm <=> $1::VECTOR
     LIMIT 10` (lognorm.vector(32, 5, 0.1, 1.0, 0.5))
+}
+
+deseed {
+  truncate_article(type: exec) `TRUNCATE TABLE article`
+}
+
+down {
+  drop_article(type: exec) `DROP TABLE IF EXISTS article`
 }

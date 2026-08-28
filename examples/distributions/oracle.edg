@@ -28,18 +28,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_distributions(type: exec) `TRUNCATE TABLE distributions`
-}
-
-down {
-  drop_distributions(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE distributions CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
 weights {
   insert_uniform     = 10
   insert_zipfian     = 10
@@ -109,4 +97,16 @@ run {
   insert_zipfian_n(type: exec) `INSERT INTO distributions (dist_type, value)
     SELECT 'zipfian_n', TO_NUMBER(column_value)
     FROM XMLTABLE(('"' || REPLACE('$1', ',', '","') || '"'))` (zipf.n(1.1, 1.0, 99, 3, 5))
+}
+
+deseed {
+  truncate_distributions(type: exec) `TRUNCATE TABLE distributions`
+}
+
+down {
+  drop_distributions(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE distributions CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

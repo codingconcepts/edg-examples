@@ -2,12 +2,6 @@ let rows       = 100000
 let batch_size = 5000
 let categories = 50
 
-expect {
-  error_rate < 1
-  lookup_with_index.avg < lookup_without_index.avg
-  lookup_with_index.p99 < lookup_without_index.p99
-}
-
 up {
   create_event_indexed `IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'event_indexed')
     CREATE TABLE event_indexed (
@@ -45,18 +39,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_event_indexed(type: exec) `TRUNCATE TABLE event_indexed`
-
-  truncate_event_unindexed(type: exec) `TRUNCATE TABLE event_unindexed`
-}
-
-down {
-  drop_event_indexed(type: exec) `DROP TABLE IF EXISTS event_indexed`
-
-  drop_event_unindexed(type: exec) `DROP TABLE IF EXISTS event_unindexed`
-}
-
 weights {
   lookup_with_index    = 50
   lookup_without_index = 50
@@ -70,4 +52,22 @@ run {
   lookup_without_index(type: query) `SELECT id, payload, created_at
     FROM event_unindexed
     WHERE category = @p1` (gen('number:1,' + string(categories)))
+}
+
+deseed {
+  truncate_event_indexed(type: exec) `TRUNCATE TABLE event_indexed`
+
+  truncate_event_unindexed(type: exec) `TRUNCATE TABLE event_unindexed`
+}
+
+down {
+  drop_event_indexed(type: exec) `DROP TABLE IF EXISTS event_indexed`
+
+  drop_event_unindexed(type: exec) `DROP TABLE IF EXISTS event_unindexed`
+}
+
+expect {
+  error_rate < 1
+  lookup_with_index.avg < lookup_without_index.avg
+  lookup_with_index.p99 < lookup_without_index.p99
 }

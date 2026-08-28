@@ -4,10 +4,6 @@ let num_rides       = int(coalesce(env_nil('NUM_RIDES'), 200))
 let num_promo_codes = int(coalesce(env_nil('NUM_PROMO_CODES'), 10))
 let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_users(type: exec) `{"create": "users"}`
 
@@ -64,32 +60,13 @@ seed {
   )
 }
 
-deseed {
-  delete_user_promo_codes(type: exec) `{"delete": "user_promo_codes", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_vehicle_location_histories(type: exec) `{"delete": "vehicle_location_histories", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_rides(type: exec) `{"delete": "rides", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_vehicles(type: exec) `{"delete": "vehicles", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_promo_codes(type: exec) `{"delete": "promo_codes", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_users(type: exec) `{"delete": "users", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_user_promo_codes(type: exec) `{"drop": "user_promo_codes"}`
-
-  drop_vehicle_location_histories(type: exec) `{"drop": "vehicle_location_histories"}`
-
-  drop_rides(type: exec) `{"drop": "rides"}`
-
-  drop_vehicles(type: exec) `{"drop": "vehicles"}`
-
-  drop_promo_codes(type: exec) `{"drop": "promo_codes"}`
-
-  drop_users(type: exec) `{"drop": "users"}`
+weights {
+  add_vehicle_location = 15
+  apply_promo_code     = 10
+  create_ride          = 20
+  read_rides           = 20
+  read_vehicles        = 20
+  update_ride          = 15
 }
 
 init {
@@ -100,15 +77,6 @@ init {
   fetch_rides(type: query) `{"find": "rides", "filter": {}}`
 
   fetch_promo_codes(type: query) `{"find": "promo_codes", "filter": {}, "projection": {"_id": 1}}`
-}
-
-weights {
-  add_vehicle_location = 15
-  apply_promo_code     = 10
-  create_ride          = 20
-  read_rides           = 20
-  read_vehicles        = 20
-  update_ride          = 15
 }
 
 run {
@@ -148,4 +116,36 @@ run {
     uniform.ref('fetch_users')._id,
     uniform.ref('fetch_promo_codes')._id
   )
+}
+
+deseed {
+  delete_user_promo_codes(type: exec) `{"delete": "user_promo_codes", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_vehicle_location_histories(type: exec) `{"delete": "vehicle_location_histories", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_rides(type: exec) `{"delete": "rides", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_vehicles(type: exec) `{"delete": "vehicles", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_promo_codes(type: exec) `{"delete": "promo_codes", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_users(type: exec) `{"delete": "users", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_user_promo_codes(type: exec) `{"drop": "user_promo_codes"}`
+
+  drop_vehicle_location_histories(type: exec) `{"drop": "vehicle_location_histories"}`
+
+  drop_rides(type: exec) `{"drop": "rides"}`
+
+  drop_vehicles(type: exec) `{"drop": "vehicles"}`
+
+  drop_promo_codes(type: exec) `{"drop": "promo_codes"}`
+
+  drop_users(type: exec) `{"drop": "users"}`
+}
+
+expect {
+  error_rate < 1
 }

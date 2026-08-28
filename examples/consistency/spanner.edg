@@ -1,16 +1,6 @@
 let accounts        = int(coalesce(env_nil('ACCOUNTS'), 10))
 let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 
-expect {
-  error_rate < 25
-  lost_update `SELECT COALESCE(SUM(value), 0) AS counter_total FROM counter` counter_total >= increment_counter.success_count
-  phantom_row `SELECT COUNT(*) AS n FROM account` n == accounts
-  dirty_write `SELECT COALESCE(SUM(balance), 0) AS total FROM account` total == accounts * initial_balance
-  write_skew `SELECT COALESCE(SUM(version), 0) AS total_versions FROM cas` total_versions <= cas_update.success_count
-  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n == accounts
-  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = true` on_duty >= 1
-}
-
 up {
   create_account `CREATE TABLE IF NOT EXISTS account (
       id INT64 NOT NULL,
@@ -69,34 +59,6 @@ seed {
     FROM UNNEST(GENERATE_ARRAY(1, $1)) AS s` (accounts)
 }
 
-deseed {
-  delete_ledger(type: exec) `DELETE FROM ledger WHERE TRUE`
-
-  reset_accounts(type: exec) `UPDATE account SET balance = $1, version = 0 WHERE TRUE` (initial_balance)
-
-  reset_counters(type: exec) `UPDATE counter SET value = 0 WHERE TRUE`
-
-  reset_oncall(type: exec) `UPDATE oncall SET on_duty = true WHERE TRUE`
-
-  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0 WHERE TRUE`
-
-  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0 WHERE TRUE`
-}
-
-down {
-  drop_ledger(type: exec) `DROP TABLE IF EXISTS ledger`
-
-  drop_account(type: exec) `DROP TABLE IF EXISTS account`
-
-  drop_oncall(type: exec) `DROP TABLE IF EXISTS oncall`
-
-  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
-
-  drop_blind_write(type: exec) `DROP TABLE IF EXISTS blind_write`
-
-  drop_cas(type: exec) `DROP TABLE IF EXISTS cas`
-}
-
 weights {
   blind_write         = 10
   cas_update          = 10
@@ -152,4 +114,42 @@ run {
   go_off_duty(type: exec) `UPDATE oncall SET on_duty = false
     WHERE doctor_id = $1
       AND (SELECT COUNT(*) FROM oncall WHERE on_duty = true) > 1` (gen('number:1,3'))
+}
+
+deseed {
+  delete_ledger(type: exec) `DELETE FROM ledger WHERE TRUE`
+
+  reset_accounts(type: exec) `UPDATE account SET balance = $1, version = 0 WHERE TRUE` (initial_balance)
+
+  reset_counters(type: exec) `UPDATE counter SET value = 0 WHERE TRUE`
+
+  reset_oncall(type: exec) `UPDATE oncall SET on_duty = true WHERE TRUE`
+
+  reset_blind_write(type: exec) `UPDATE blind_write SET value = 0 WHERE TRUE`
+
+  reset_cas(type: exec) `UPDATE cas SET value = 0, version = 0 WHERE TRUE`
+}
+
+down {
+  drop_ledger(type: exec) `DROP TABLE IF EXISTS ledger`
+
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_oncall(type: exec) `DROP TABLE IF EXISTS oncall`
+
+  drop_counter(type: exec) `DROP TABLE IF EXISTS counter`
+
+  drop_blind_write(type: exec) `DROP TABLE IF EXISTS blind_write`
+
+  drop_cas(type: exec) `DROP TABLE IF EXISTS cas`
+}
+
+expect {
+  error_rate < 25
+  lost_update `SELECT COALESCE(SUM(value), 0) AS counter_total FROM counter` counter_total >= increment_counter.success_count
+  phantom_row `SELECT COUNT(*) AS n FROM account` n == accounts
+  dirty_write `SELECT COALESCE(SUM(balance), 0) AS total FROM account` total == accounts * initial_balance
+  write_skew `SELECT COALESCE(SUM(version), 0) AS total_versions FROM cas` total_versions <= cas_update.success_count
+  dirty_read `SELECT COUNT(*) AS n FROM blind_write` n == accounts
+  read_skew `SELECT COUNT(*) AS on_duty FROM oncall WHERE on_duty = true` on_duty >= 1
 }

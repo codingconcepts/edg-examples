@@ -26,14 +26,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_order(type: exec) `TRUNCATE TABLE named_args_order`
-}
-
-down {
-  drop_order(type: exec) `DROP TABLE IF EXISTS named_args_order`
-}
-
 run {
   insert_order(type: exec, print: ref_same('regions').name, print: arg('amount')) `INSERT INTO named_args_order (email, region, city, amount)
     VALUES ($1, $2, $3, $4::DECIMAL)` (
@@ -44,4 +36,12 @@ run {
   )
 
   read_order `SELECT id, amount FROM named_args_order WHERE region = $1 LIMIT 1` (region: ref_same('regions').name)
+}
+
+deseed {
+  truncate_order(type: exec) `TRUNCATE TABLE named_args_order`
+}
+
+down {
+  drop_order(type: exec) `DROP TABLE IF EXISTS named_args_order`
 }

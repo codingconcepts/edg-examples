@@ -1,10 +1,6 @@
 let subscribers = int(coalesce(env_nil('SUBSCRIBERS'), 1000))
 let batch_size  = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_subscriber `CREATE TABLE IF NOT EXISTS subscriber (
       s_id INT64 NOT NULL,
@@ -151,32 +147,6 @@ seed {
   )
 }
 
-deseed {
-  delete_call_forwarding(type: exec) `DELETE FROM call_forwarding WHERE TRUE`
-
-  delete_special_facility(type: exec) `DELETE FROM special_facility WHERE TRUE`
-
-  delete_access_info(type: exec) `DELETE FROM access_info WHERE TRUE`
-
-  delete_subscriber(type: exec) `DELETE FROM subscriber WHERE TRUE`
-}
-
-down {
-  drop_call_forwarding(type: exec) `DROP TABLE IF EXISTS call_forwarding`
-
-  drop_special_facility(type: exec) `DROP TABLE IF EXISTS special_facility`
-
-  drop_access_info(type: exec) `DROP TABLE IF EXISTS access_info`
-
-  drop_subscriber_index(type: exec) `DROP INDEX IF EXISTS idx_subscriber_sub_nbr`
-
-  drop_subscriber(type: exec) `DROP TABLE IF EXISTS subscriber`
-}
-
-init {
-  fetch_subscribers(type: query) `SELECT s_id, sub_nbr FROM subscriber TABLESAMPLE RESERVOIR (100000 ROWS)`
-}
-
 weights {
   delete_call_forwarding = 2
   get_access_data        = 35
@@ -185,6 +155,10 @@ weights {
   insert_call_forwarding = 2
   update_location        = 14
   update_subscriber_data = 2
+}
+
+init {
+  fetch_subscribers(type: query) `SELECT s_id, sub_nbr FROM subscriber TABLESAMPLE RESERVOIR (100000 ROWS)`
 }
 
 run {
@@ -239,4 +213,30 @@ run {
     int(gen('number:1,4')),
     int(gen('number:0,23'))
   )
+}
+
+deseed {
+  delete_call_forwarding(type: exec) `DELETE FROM call_forwarding WHERE TRUE`
+
+  delete_special_facility(type: exec) `DELETE FROM special_facility WHERE TRUE`
+
+  delete_access_info(type: exec) `DELETE FROM access_info WHERE TRUE`
+
+  delete_subscriber(type: exec) `DELETE FROM subscriber WHERE TRUE`
+}
+
+down {
+  drop_call_forwarding(type: exec) `DROP TABLE IF EXISTS call_forwarding`
+
+  drop_special_facility(type: exec) `DROP TABLE IF EXISTS special_facility`
+
+  drop_access_info(type: exec) `DROP TABLE IF EXISTS access_info`
+
+  drop_subscriber_index(type: exec) `DROP INDEX IF EXISTS idx_subscriber_sub_nbr`
+
+  drop_subscriber(type: exec) `DROP TABLE IF EXISTS subscriber`
+}
+
+expect {
+  error_rate < 1
 }

@@ -19,17 +19,17 @@ seed {
   )
 }
 
-deseed {
-  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+weights {
+  check_balance  = 50
+  credit_account = 50
 }
 
 init {
   fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
 }
 
-weights {
-  check_balance  = 50
-  credit_account = 50
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
 }

@@ -157,74 +157,6 @@ seed {
     FROM XMLTABLE(('"' || REPLACE('$1', CHR(31), '","') || '"'))` (gen('email'))
 }
 
-deseed {
-  truncate_review(type: exec) `TRUNCATE TABLE review`
-
-  truncate_order_item(type: exec) `TRUNCATE TABLE order_item`
-
-  truncate_purchase_order(type: exec) `TRUNCATE TABLE purchase_order`
-
-  truncate_cart_item(type: exec) `TRUNCATE TABLE cart_item`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-
-  truncate_product(type: exec) `TRUNCATE TABLE product`
-
-  truncate_category(type: exec) `TRUNCATE TABLE category`
-}
-
-down {
-  drop_review(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE review CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_order_item(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE order_item CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_purchase_order(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE purchase_order CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_cart_item(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE cart_item CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_customer(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_product(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE product CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-
-  drop_category(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE category CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
-init {
-  fetch_products(type: query) `SELECT id, category_id, price FROM product`
-
-  fetch_customers(type: query) `SELECT id FROM customer`
-
-  fetch_categories(type: query) `SELECT id FROM category`
-}
-
 weights {
   add_to_cart      = 15
   browse_category  = 30
@@ -233,6 +165,14 @@ weights {
   search_products  = 10
   view_product     = 20
   write_review     = 10
+}
+
+init {
+  fetch_products(type: query) `SELECT id, category_id, price FROM product`
+
+  fetch_customers(type: query) `SELECT id FROM customer`
+
+  fetch_categories(type: query) `SELECT id FROM category`
 }
 
 run {
@@ -299,4 +239,64 @@ run {
       FROM XMLTABLE(('"' || REPLACE(:1, CHR(31), '","') || '"'))
     )
     GROUP BY p.id, p.name, p.price, p.stock_qty` (ref_n('fetch_products', 'id', 3, 8))
+}
+
+deseed {
+  truncate_review(type: exec) `TRUNCATE TABLE review`
+
+  truncate_order_item(type: exec) `TRUNCATE TABLE order_item`
+
+  truncate_purchase_order(type: exec) `TRUNCATE TABLE purchase_order`
+
+  truncate_cart_item(type: exec) `TRUNCATE TABLE cart_item`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product`
+
+  truncate_category(type: exec) `TRUNCATE TABLE category`
+}
+
+down {
+  drop_review(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE review CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_order_item(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE order_item CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_purchase_order(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE purchase_order CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_cart_item(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE cart_item CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_customer(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE customer CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_product(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE product CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_category(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE category CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }

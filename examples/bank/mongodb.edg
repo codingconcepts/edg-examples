@@ -2,10 +2,6 @@ let customers       = int(coalesce(env_nil('CUSTOMERS'), 1000))
 let initial_balance = int(coalesce(env_nil('INITIAL_BALANCE'), 1000))
 let batch_size      = int(coalesce(env_nil('BATCH_SIZE'), 100))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_customer(type: exec) `{"create": "customer"}`
 
@@ -27,26 +23,14 @@ seed {
   )
 }
 
-deseed {
-  delete_accounts(type: exec) `{"delete": "account", "deletes": [{"q": {}, "limit": 0}]}`
-
-  delete_customers(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
-}
-
-down {
-  drop_account(type: exec) `{"drop": "account"}`
-
-  drop_customer(type: exec) `{"drop": "customer"}`
-}
-
-init {
-  fetch_accounts(type: query) `{"find": "account", "filter": {}}`
-}
-
 weights {
   check_balance  = 50
   credit_account = 5
   make_transfer  = 45
+}
+
+init {
+  fetch_accounts(type: query) `{"find": "account", "filter": {}}`
 }
 
 run {
@@ -71,4 +55,20 @@ run {
       local('amount')
     )
   }
+}
+
+deseed {
+  delete_accounts(type: exec) `{"delete": "account", "deletes": [{"q": {}, "limit": 0}]}`
+
+  delete_customers(type: exec) `{"delete": "customer", "deletes": [{"q": {}, "limit": 0}]}`
+}
+
+down {
+  drop_account(type: exec) `{"drop": "account"}`
+
+  drop_customer(type: exec) `{"drop": "customer"}`
+}
+
+expect {
+  error_rate < 1
 }

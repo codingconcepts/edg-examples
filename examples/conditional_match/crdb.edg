@@ -2,27 +2,6 @@ let customers  = 1000
 let products   = 100
 let batch_size = 500
 
-expect {
-  check_1 `SELECT COUNT(DISTINCT check_type) AS cnt FROM compliance_log` cnt == 3
-  check_2 `SELECT COUNT(*) AS cnt
-FROM compliance_log cl
-JOIN customer c ON c.id = cl.customer_id
-WHERE (cl.check_type = 'gdpr'     AND c.market != 'uk')
-   OR (cl.check_type = 'ccpa'     AND c.market != 'us')
-   OR (cl.check_type = 'standard' AND c.market != 'eu')` cnt == 0
-  check_3 `SELECT COUNT(*) AS cnt
-FROM order_log
-WHERE (market = 'uk' AND currency != 'GBP')
-   OR (market = 'us' AND currency != 'USD')
-   OR (market = 'eu' AND currency != 'EUR')` cnt == 0
-  check_4 `SELECT COUNT(*) AS cnt
-FROM order_log
-WHERE (currency = 'GBP' AND abs(tax - subtotal * 0.20) > 0.01)
-   OR (currency = 'USD' AND abs(tax - subtotal * 0.10) > 0.01)
-   OR (currency = 'EUR' AND abs(tax - subtotal * 0.23) > 0.01)` cnt == 0
-  check_5 `SELECT COUNT(DISTINCT market) AS cnt FROM order_log` cnt == 3
-}
-
 up {
   create_customer `CREATE TABLE IF NOT EXISTS customer (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -70,26 +49,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_order_log(type: exec) `TRUNCATE TABLE order_log`
-
-  truncate_compliance_log(type: exec) `TRUNCATE TABLE compliance_log`
-
-  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
-
-  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
-}
-
-down {
-  drop_order_log(type: exec) `DROP TABLE IF EXISTS order_log`
-
-  drop_compliance_log(type: exec) `DROP TABLE IF EXISTS compliance_log`
-
-  drop_product(type: exec) `DROP TABLE IF EXISTS product`
-
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-}
-
 init {
   fetch_customers(type: query) `SELECT id FROM customer ORDER BY random()`
 
@@ -126,4 +85,45 @@ run {
       ref_same('read_buyer').market
     )
   }
+}
+
+deseed {
+  truncate_order_log(type: exec) `TRUNCATE TABLE order_log`
+
+  truncate_compliance_log(type: exec) `TRUNCATE TABLE compliance_log`
+
+  truncate_product(type: exec) `TRUNCATE TABLE product CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_order_log(type: exec) `DROP TABLE IF EXISTS order_log`
+
+  drop_compliance_log(type: exec) `DROP TABLE IF EXISTS compliance_log`
+
+  drop_product(type: exec) `DROP TABLE IF EXISTS product`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+expect {
+  check_1 `SELECT COUNT(DISTINCT check_type) AS cnt FROM compliance_log` cnt == 3
+  check_2 `SELECT COUNT(*) AS cnt
+FROM compliance_log cl
+JOIN customer c ON c.id = cl.customer_id
+WHERE (cl.check_type = 'gdpr'     AND c.market != 'uk')
+   OR (cl.check_type = 'ccpa'     AND c.market != 'us')
+   OR (cl.check_type = 'standard' AND c.market != 'eu')` cnt == 0
+  check_3 `SELECT COUNT(*) AS cnt
+FROM order_log
+WHERE (market = 'uk' AND currency != 'GBP')
+   OR (market = 'us' AND currency != 'USD')
+   OR (market = 'eu' AND currency != 'EUR')` cnt == 0
+  check_4 `SELECT COUNT(*) AS cnt
+FROM order_log
+WHERE (currency = 'GBP' AND abs(tax - subtotal * 0.20) > 0.01)
+   OR (currency = 'USD' AND abs(tax - subtotal * 0.10) > 0.01)
+   OR (currency = 'EUR' AND abs(tax - subtotal * 0.23) > 0.01)` cnt == 0
+  check_5 `SELECT COUNT(DISTINCT market) AS cnt FROM order_log` cnt == 3
 }

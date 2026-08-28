@@ -48,27 +48,15 @@ seed {
   )
 }
 
-deseed {
-  truncate_event(type: exec) `TRUNCATE TABLE event`
-
-  truncate_digest(type: exec) `TRUNCATE TABLE digest`
-}
-
-down {
-  drop_event(type: exec) `DROP TABLE IF EXISTS event`
-
-  drop_digest(type: exec) `DROP TABLE IF EXISTS digest`
-}
-
-init {
-  fetch_emails(type: query) `SELECT email FROM event LIMIT 1000`
-}
-
 weights {
   ingest_new      = 40
   ingest_replay   = 20
   lookup_by_email = 25
   scan_shard      = 15
+}
+
+init {
+  fetch_emails(type: query) `SELECT email FROM event LIMIT 1000`
 }
 
 run {
@@ -101,4 +89,16 @@ run {
     WHERE shard_key LIKE substr($1, 1, 1) || '%'
     ORDER BY id DESC
     LIMIT 50` (hash(ref('fetch_emails').email, 'crc32'))
+}
+
+deseed {
+  truncate_event(type: exec) `TRUNCATE TABLE event`
+
+  truncate_digest(type: exec) `TRUNCATE TABLE digest`
+}
+
+down {
+  drop_event(type: exec) `DROP TABLE IF EXISTS event`
+
+  drop_digest(type: exec) `DROP TABLE IF EXISTS digest`
 }

@@ -17,14 +17,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_customer(type: exec) `TRUNCATE TABLE customer`
-}
-
-down {
-  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
-}
-
 run {
   read_customer `SELECT id, email FROM customer WHERE region = $1 LIMIT 1` (set(['us', 'eu', 'ap'],[]))
 }
@@ -51,4 +43,12 @@ stats (rate: 1 / 1s) {
     type:       line,
     post_print: { key: 'rows', value: result().rows, window: 30s }
   ) `SELECT count(*) AS rows FROM customer`
+}
+
+deseed {
+  truncate_customer(type: exec) `TRUNCATE TABLE customer`
+}
+
+down {
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
 }

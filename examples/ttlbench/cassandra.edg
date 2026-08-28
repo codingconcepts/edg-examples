@@ -1,9 +1,5 @@
 let payload_size = int(coalesce(env_nil('PAYLOAD_SIZE'), 256))
 
-expect {
-  error_rate < 1
-}
-
 up {
   create_keyspace(type: exec) `CREATE KEYSPACE IF NOT EXISTS edg
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`
@@ -13,16 +9,6 @@ up {
       payload BLOB,
       inserted_at TIMESTAMP
     )`
-}
-
-deseed {
-  truncate_ttlbench(type: exec) `TRUNCATE edg.ttlbench`
-}
-
-down {
-  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS edg.ttlbench`
-
-  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
 }
 
 weights {
@@ -39,4 +25,18 @@ run {
   )
 
   read_recent(type: query) `SELECT id, inserted_at FROM edg.ttlbench LIMIT 10`
+}
+
+deseed {
+  truncate_ttlbench(type: exec) `TRUNCATE edg.ttlbench`
+}
+
+down {
+  drop_ttlbench(type: exec) `DROP TABLE IF EXISTS edg.ttlbench`
+
+  drop_keyspace(type: exec) `DROP KEYSPACE IF EXISTS edg`
+}
+
+expect {
+  error_rate < 1
 }

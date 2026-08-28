@@ -34,18 +34,6 @@ seed {
   )
 }
 
-deseed {
-  truncate_article(type: exec) `TRUNCATE TABLE article`
-}
-
-down {
-  drop_article(type: exec) `BEGIN
-      EXECUTE IMMEDIATE 'DROP TABLE article CASCADE CONSTRAINTS PURGE';
-    EXCEPTION WHEN OTHERS THEN
-      IF SQLCODE != -942 THEN RAISE; END IF;
-    END;`
-}
-
 run {
   insert_article(type: exec) `INSERT INTO article (title, embedding_uniform, embedding_zipf, embedding_norm, embedding_exp, embedding_lognorm)
     VALUES ($1, $2, $3, $4, $5, $6)` (
@@ -56,4 +44,16 @@ run {
     exp.vector(32, 5, 0.1, 0.5),
     lognorm.vector(32, 5, 0.1, 1.0, 0.5)
   )
+}
+
+deseed {
+  truncate_article(type: exec) `TRUNCATE TABLE article`
+}
+
+down {
+  drop_article(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE article CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
 }
