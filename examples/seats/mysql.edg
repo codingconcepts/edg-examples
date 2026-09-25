@@ -194,10 +194,10 @@ run {
   find_open_seats(type: query) `SELECT f_seats_left FROM flight WHERE f_id = ?` (uniform.ref('fetch_flights').f_id)
 
   transaction new_reservation {
-    let c_id = uniform.ref('fetch_customers').c_id
-    let f_id = uniform.ref('fetch_flights').f_id
+    let c_id  = uniform.ref('fetch_customers').c_id
+    let f_id  = uniform.ref('fetch_flights').f_id
     let price = gen('number:50,1000')
-    let seat = gen('number:1,150')
+    let seat  = gen('number:1,150')
     decr_seats(type: exec) `UPDATE flight SET f_seats_left = f_seats_left - 1
       WHERE f_id = ? AND f_seats_left > 0` (local('f_id'))
     insert_reservation(type: exec) `INSERT INTO reservation (r_c_id, r_f_id, r_seat, r_price,

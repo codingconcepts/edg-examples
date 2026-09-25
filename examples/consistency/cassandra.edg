@@ -86,9 +86,9 @@ run {
   }
 
   transaction transfer {
-    let amount = gen('number:1,100')
+    let amount  = gen('number:1,100')
     let from_id = gen('number:1,' + string(accounts))
-    let to_id = gen('number:1,' + string(accounts))
+    let to_id   = gen('number:1,' + string(accounts))
     rollback_if local('from_id') == local('to_id')
     read_from(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (local('from_id'))
     read_to(type: query) `SELECT id, balance FROM edg.account WHERE id = $1` (local('to_id'))
@@ -108,7 +108,7 @@ run {
   )
 
   transaction cas_update {
-    let amount = gen('number:1,100')
+    let amount       = gen('number:1,100')
     let overwrite_id = gen('number:1,' + string(accounts))
     read_version(type: query) `SELECT id, value, version FROM edg.cas WHERE id = $1` (local('overwrite_id'))
     update_if_match(type: exec) `UPDATE edg.cas SET value = $2, version = $3 WHERE id = $1 IF version = $4` (

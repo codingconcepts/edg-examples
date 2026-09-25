@@ -454,10 +454,10 @@ init {
 
 run {
   transaction new_order(wait: 18s) {
-    let c_id = nurand(1023, 1, customers / districts)
-    let d_id = gen('number:1,10')
+    let c_id   = nurand(1023, 1, customers / districts)
+    let d_id   = gen('number:1,10')
     let ol_cnt = gen('number:5,15')
-    let w_id = ref_perm('fetch_warehouses').w_id
+    let w_id   = ref_perm('fetch_warehouses').w_id
     get_next_o_id(type: query) `SELECT d_next_o_id FROM district
       WHERE d_w_id = ? AND d_id = ?
       FOR UPDATE` (

@@ -278,7 +278,7 @@ init {
 
 run {
   transaction new_order(wait: 180ms) {
-    let ol_cnt = gen('number:5,15')
+    let ol_cnt   = gen('number:5,15')
     let order_id = gen('number:3001,999999')
     read_district(type: query) `SELECT d_w_id, d_id, d_next_o_id FROM edg.district
       WHERE d_w_id = $1 AND d_id = $2` (
@@ -304,7 +304,7 @@ run {
 
   transaction payment(wait: 30ms) {
     let amount = gen('number:100,500000')
-    let w_id = ref_perm('fetch_warehouses').w_id
+    let w_id   = ref_perm('fetch_warehouses').w_id
     update_warehouse(type: exec) `UPDATE edg.warehouse SET w_ytd = $2 WHERE w_id = $1` (
       local('w_id'),
       local('amount')

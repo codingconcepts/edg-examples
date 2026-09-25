@@ -57,7 +57,7 @@ season saas(from: '2023-06-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket: '1
 season shutdown(from: '2024-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z') {
   weekdays = [0.3, 1, 1, 1, 1, 1, 0.3]
 
-  spikes   = [
+  spikes = [
     { at: '2024-08-10T00:00:00Z', width: '336h', mag: 0.2 },
     { at: '2024-12-25T00:00:00Z', width: '240h', mag: 0.1 }
   ]
@@ -98,12 +98,12 @@ season platform(from: '2023-01-01T00:00:00Z', to: '2025-01-01T00:00:00Z', bucket
   hours    = [0.3, 0.2, 0.2, 0.2, 0.3, 0.4, 0.6, 1, 1.4, 1.6, 1.6, 1.4, 1.2, 1.4, 1.6, 1.6, 1.4, 1.1, 0.8, 0.6, 0.5, 0.5, 0.4, 0.3]
   recency  = { half_life: '8760h' }
 
-  spikes   = [
+  spikes = [
     { at: '2024-05-14T00:00:00Z', width: '72h', mag: 8 },
     { at: '2024-09-03T12:00:00Z', width: '6h', mag: 0.05 }
   ]
 
-  weight   = (year > 2024 ||(year == 2024 && month >= 3) ? 2 : 1) *(day >= 28 ? 1.8 : 1)
+  weight = (year > 2024 ||(year == 2024 && month >= 3) ? 2 : 1) *(day >= 28 ? 1.8 : 1)
 }
 
 # Follow the sun: one season per region, chosen per row.

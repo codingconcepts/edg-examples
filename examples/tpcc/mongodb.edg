@@ -151,7 +151,7 @@ init {
 
 run {
   transaction new_order(wait: 180ms) {
-    let ol_cnt = gen('number:5,15')
+    let ol_cnt   = gen('number:5,15')
     let order_id = gen('number:3001,999999')
     read_district(type: query) `{"find": "district", "filter": {"d_w_id": $1, "d_id": $2}, "limit": 1}` (
       ref_perm('fetch_warehouses').w_id,
@@ -173,7 +173,7 @@ run {
 
   transaction payment(wait: 30ms) {
     let amount = gen('number:100,500000')
-    let w_id = ref_perm('fetch_warehouses').w_id
+    let w_id   = ref_perm('fetch_warehouses').w_id
     update_warehouse(type: exec) `{"update": "warehouse", "updates": [{"q": {"w_id": $1}, "u": {"$inc": {"w_ytd": $2}}}]}` (
       local('w_id'),
       local('amount')

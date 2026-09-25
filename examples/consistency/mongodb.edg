@@ -53,9 +53,9 @@ run {
   increment_counter(type: exec) `{"update": "counter", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"value": 1}}}]}` (gen('number:1,2'))
 
   transaction transfer {
-    let amount = gen('number:1,100')
+    let amount  = gen('number:1,100')
     let from_id = gen('number:1,' + string(accounts))
-    let to_id = gen('number:1,' + string(accounts))
+    let to_id   = gen('number:1,' + string(accounts))
     rollback_if local('from_id') == local('to_id')
     debit_from(type: exec) `{"update": "account", "updates": [{"q": {"_id": $1}, "u": {"$inc": {"balance": -$2}}}]}` (
       local('from_id'),
@@ -73,7 +73,7 @@ run {
   )
 
   transaction cas_update {
-    let amount = gen('number:1,100')
+    let amount       = gen('number:1,100')
     let overwrite_id = gen('number:1,' + string(accounts))
     read_version(type: query) `{"find": "cas", "filter": {"_id": $1}, "projection": {"version": 1}}` (local('overwrite_id'))
     update_if_match(type: exec) `{"update": "cas", "updates": [{"q": {"_id": $1, "version": $2}, "u": {"$inc": {"value": $3, "version": 1}}}]}` (

@@ -1,7 +1,7 @@
 services:
 
   node1:
-    image: cockroachdb/cockroach:v26.1.1
+    image: cockroachdb/cockroach:v26.3.0
     hostname: node1
     container_name: node1
     command: start --insecure --join=node1,node2,node3
@@ -11,7 +11,7 @@ services:
       - app-network
 
   node2:
-    image: cockroachdb/cockroach:v26.1.1
+    image: cockroachdb/cockroach:v26.3.0
     hostname: node2
     container_name: node2
     command: start --insecure --join=node1,node2,node3
@@ -21,7 +21,7 @@ services:
       - app-network
 
   node3:
-    image: cockroachdb/cockroach:v26.1.1
+    image: cockroachdb/cockroach:v26.3.0
     hostname: node3
     container_name: node3
     command: start --insecure --join=node1,node2,node3

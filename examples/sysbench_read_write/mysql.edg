@@ -70,10 +70,10 @@ run {
   )
 
   transaction delete_insert {
-    let new_c = regex('[a-zA-Z0-9]{120}')
-    let new_k = gen('number:0,10000')
+    let new_c   = regex('[a-zA-Z0-9]{120}')
+    let new_k   = gen('number:0,10000')
     let new_pad = regex('[a-zA-Z0-9]{60}')
-    let rid = gen('number:1,' + string(records))
+    let rid     = gen('number:1,' + string(records))
     delete_row(type: exec) `DELETE FROM sbtest1 WHERE id = ?` (local('rid'))
     insert_row(type: exec) `INSERT INTO sbtest1 (id, k, c, pad) VALUES (?, ?, ?, ?)` (
       local('rid'),

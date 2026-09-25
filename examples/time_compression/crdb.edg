@@ -1,0 +1,54 @@
+sim(period: '24h', in: '2m')
+
+workers {
+  # Written as once an hour of simulated time; fires every 5s of wall
+  # clock at the 720x factor this config compresses by.
+  hourly_rollup(type: exec, rate: 1 / 1h)
+    `INSERT INTO hourly_rollup (ts, event_count)
+     SELECT date_trunc('hour', $1::TIMESTAMPTZ), count(*)
+     FROM events
+     WHERE ts >= date_trunc('hour', $1::TIMESTAMPTZ)` (sim_time())
+}
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    ts TIMESTAMPTZ NOT NULL,
+    kind STRING NOT NULL,
+    amount DECIMAL(10,2) NOT NULL
+  )`
+
+  create_hourly_rollup `CREATE TABLE IF NOT EXISTS hourly_rollup (
+    ts TIMESTAMPTZ NOT NULL,
+    event_count INT NOT NULL
+  )`
+}
+
+stages {
+  overnight(workers: 2, duration: 6h, qps: 40)
+  morning_ramp(workers: 20, duration: 4h, ramp_duration: 2h, qps: ramp(40, 600, 2h))
+  midday(workers: 20, duration: 8h, qps: 600)
+  evening_peak(workers: 30, duration: 4h, qps: 1200)
+  wind_down(workers: 5, duration: 2h, qps: 100)
+}
+
+run {
+  insert_event(type: exec)
+    `INSERT INTO events (ts, kind, amount) VALUES ($1::TIMESTAMPTZ, $2, $3)` (
+      sim_time(),
+      set(['view', 'add_to_cart', 'checkout'],[70, 20, 10]),
+      uniform.float(1.0, 500.0, 2)
+    )
+}
+
+deseed {
+  truncate_hourly_rollup `TRUNCATE TABLE hourly_rollup`
+
+  truncate_events `TRUNCATE TABLE events`
+}
+
+down {
+  drop_hourly_rollup `DROP TABLE IF EXISTS hourly_rollup`
+
+  drop_events `DROP TABLE IF EXISTS events`
+}
