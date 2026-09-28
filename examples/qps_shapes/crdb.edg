@@ -1,0 +1,149 @@
+# One simulated day compressed into 6 minutes of wall clock: 240x, four
+# simulated hours per wall minute. The sim clock is anchored to the same
+# instant the signals are, so sim_time() and the curves agree on what
+# hour it is and the buffers start at index 0.
+#
+# Every signal below is 288 points, one per simulated 5 minutes, so
+# i / 12.0 is the hour of day. Unlike a stage-per-shape layout, all six
+# shapes are live for the whole day: a business that operates around the
+# clock has its nightly batch, its office traffic, its hourly crons and
+# its background integrations all running against the same database.
+sim(period: '24h', in: '6m', from: '2024-06-03T00:00:00Z')
+
+# Background integrations, health checks and monitoring. Flat, always on,
+# and the reason the database is never idle.
+signal steady(from: '2024-06-03T00:00:00Z', to: '2024-06-04T00:00:00Z', interval: '5m') {
+  0.3
+}
+
+# A square window. The nightly ETL runs flat out from 01:00 to 03:00 and
+# not at all outside it.
+signal etl(from: '2024-06-03T00:00:00Z', to: '2024-06-04T00:00:00Z', interval: '5m') {
+  cond ( i / 12.0 >= 1 && i / 12.0 < 3 , 1 , 0 )
+}
+
+# Office hours. A 5% floor with a sine hump from 08:00 to 18:00 peaking
+# at 13:00.
+signal workday(from: '2024-06-03T00:00:00Z', to: '2024-06-04T00:00:00Z', interval: '5m') {
+  cond ( i / 12.0 >= 8 && i / 12.0 < 18 , 0.05 + 0.95 * pow ( sin ( pi * ( i / 12.0 - 8 ) / 10 ) , 2 ) , 0.05 )
+}
+
+# Sharp bursts on the hour, every hour. mod(i, 12) is the position within
+# a simulated hour and cos^8 turns that into a narrow spike sitting on an
+# 8% baseline.
+signal spikes(from: '2024-06-03T00:00:00Z', to: '2024-06-04T00:00:00Z', interval: '5m') {
+  0.08 + 0.92 * pow ( cos ( pi * mod ( i , 12 ) / 12 ) , 8 )
+}
+
+# A deterministic shape carrying random noise. A broad hump across the
+# waking day multiplied by a jitter factor drawn from an empirical CDF of
+# four observed values, so the curve is recognisable but no two points
+# sit exactly on it. The buffer is drawn once at load time, so the noise
+# is fixed for the run rather than re-rolled on every tick.
+signal jitter(from: '2024-06-03T00:00:00Z', to: '2024-06-04T00:00:00Z', interval: '5m') {
+  ( 0.2 + 0.6 * pow ( sin ( pi * i / 288 ) , 2 ) ) * empirical.float ( [ 0.8 , 1.0 , 1.0 , 1.25 ] , 3 )
+}
+
+# A quadratic wind-down across the last two hours of the day.
+signal decay(from: '2024-06-03T00:00:00Z', to: '2024-06-04T00:00:00Z', interval: '5m') {
+  cond ( i / 12.0 >= 22 , pow ( ( 24 - i / 12.0 ) / 2 , 2 ) , 0 )
+}
+
+# The rate the database actually sees: every shape, summed. A signal can
+# read the signals declared above it, so the composite is a declaration
+# rather than a copy of the other six expressions. This is what drives
+# the limiter; the individual shapes decide how the arrivals are shared
+# out between them.
+signal total(from: '2024-06-03T00:00:00Z', to: '2024-06-04T00:00:00Z', interval: '5m') {
+  signal_at ( 'steady' , i ) + signal_at ( 'etl' , i ) + signal_at ( 'workday' , i ) + signal_at ( 'spikes' , i ) + signal_at ( 'jitter' , i ) + signal_at ( 'decay' , i )
+}
+
+# A shape's share of the current instant's total. Each run item fires
+# with this probability, so over many iterations the arrivals for a shape
+# trace that shape - while the arrivals for all shapes together trace the
+# composite the limiter is following.
+expr share = signal_at(args[0], int(sim_progress() * 288)) / signal_at('total', int(sim_progress() * 288))
+
+# The buffer value that set the rate, for the row to carry.
+expr load = signal_at(args[0], int(sim_progress() * 288))
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    ts TIMESTAMPTZ NOT NULL,
+    shape STRING NOT NULL,
+    load FLOAT NOT NULL
+  )`
+
+  create_events_idx `CREATE INDEX IF NOT EXISTS events_shape_ts_idx ON events (shape, ts)`
+}
+
+# One stage for the whole simulated day. Stages run one after another, so
+# concurrent shapes cannot come from a stage each; they come from one
+# stage whose rate follows the composite curve and whose run items each
+# fire with their own shape's share of it.
+stages {
+  day(workers: 16, duration: 24h, qps: signal('total', peak: 1000))
+}
+
+# One run item per shape, each gated on its own share of the total. An
+# iteration writes a row for whichever shapes win their draw, so a busy
+# instant for the workday hump produces workday rows without starving the
+# crons or the nightly batch.
+run {
+  if uniform.float(0.0, 1.0, 6) < share('steady') {
+    record_steady(type: exec)
+      `INSERT INTO events (ts, shape, load) VALUES ($1, 'steady', $2)` (
+        sim_time(),
+        load('steady')
+      )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('etl') {
+    record_etl(type: exec)
+      `INSERT INTO events (ts, shape, load) VALUES ($1, 'etl', $2)` (
+        sim_time(),
+        load('etl')
+      )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('workday') {
+    record_workday(type: exec)
+      `INSERT INTO events (ts, shape, load) VALUES ($1, 'workday', $2)` (
+        sim_time(),
+        load('workday')
+      )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('spikes') {
+    record_spikes(type: exec)
+      `INSERT INTO events (ts, shape, load) VALUES ($1, 'spikes', $2)` (
+        sim_time(),
+        load('spikes')
+      )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('jitter') {
+    record_jitter(type: exec)
+      `INSERT INTO events (ts, shape, load) VALUES ($1, 'jitter', $2)` (
+        sim_time(),
+        load('jitter')
+      )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('decay') {
+    record_decay(type: exec)
+      `INSERT INTO events (ts, shape, load) VALUES ($1, 'decay', $2)` (
+        sim_time(),
+        load('decay')
+      )
+  }
+}
+
+deseed {
+  truncate_events `TRUNCATE TABLE events CASCADE`
+}
+
+down {
+  drop_events `DROP TABLE IF EXISTS events`
+}
