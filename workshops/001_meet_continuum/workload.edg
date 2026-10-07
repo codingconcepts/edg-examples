@@ -1,0 +1,127 @@
+let customers       = 10000
+let initial_balance = 10000
+let batch_size      = 1000
+
+signal work_week(length: 2016) {
+  cond(floor(i / 288.0) < 5, 1.0, 0.35) * (0.15 + 0.85 * pow(sin(pi * mod(i / 288.0, 1)), 2))
+}
+
+object account {
+  balance = initial_balance
+}
+
+object customer {
+  id    = uuid_v4()
+  email = gen('email')
+  sub {
+    accounts = zipf.obj_n('account', 2.0, 1.0, 1, 5)
+  }
+}
+
+up {
+  create_customer `
+    CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL
+    )`
+
+  create_account `
+    CREATE TABLE IF NOT EXISTS account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      balance FLOAT NOT NULL,
+      customer_id UUID NOT NULL REFERENCES customer(id)
+    )`
+
+  create_make_transfer `
+    CREATE OR REPLACE FUNCTION make_transfer(from_id UUID, to_id UUID, amount FLOAT)
+    RETURNS VOID
+    LANGUAGE PLpgSQL
+    AS $$
+    BEGIN
+      UPDATE account SET
+        balance = CASE
+                    WHEN id = to_id THEN balance + amount
+                    WHEN id = from_id THEN balance - amount
+                  END
+      WHERE id IN (from_id, to_id);
+    END
+    $$`
+}
+
+seed {
+  populate_customer(count: customers, size: batch_size, object: customer) `
+    INSERT INTO customer __columns__
+    __values__` (
+    field('id'),
+    field('email')
+  )
+
+  populate_account(count: count(populate_customer__accounts), size: batch_size) `
+    INSERT INTO account __columns__
+    __values__` (
+    balance: ref_each(populate_customer__accounts).balance,
+    customer_id: ref_each(populate_customer__accounts).__parent__.id
+  )
+}
+
+stages {
+  sustain(
+    workers:  4,
+    duration: 30m,
+    qps:      signal('work_week', peak: 250),
+    weights:  {
+      get_accounts: 10,
+      check_balance: 40,
+      make_transfer: 40,
+      credit_account: 10
+    }
+  )
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+
+  fetch_customers(type: query) `SELECT id FROM customer ORDER BY random()`
+}
+
+run {
+  check_balance(type: query) `
+    SELECT balance FROM account WHERE id = $1` (
+    ref('fetch_accounts').id
+  )
+
+  credit_account `
+    UPDATE account SET balance = balance + $2
+    WHERE id = $1` (
+    ref('fetch_accounts').id,
+    gen('number:1,1000')
+  )
+
+  get_accounts(type: query) `
+    SELECT id, balance
+    FROM account
+    WHERE customer_id = $1` (
+    ref('fetch_customers').id
+  )
+
+  make_transfer `
+    SELECT make_transfer($1::UUID, $2::UUID, $3::FLOAT)` (
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
+  )
+}
+
+deseed {
+  truncate_account `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_make_transfer `DROP FUNCTION IF EXISTS make_transfer`
+
+  drop_account `DROP TABLE IF EXISTS account`
+
+  drop_customer `DROP TABLE IF EXISTS customer`
+}
