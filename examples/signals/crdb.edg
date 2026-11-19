@@ -1,0 +1,40 @@
+signal sinusoid(length: 120) {
+  0.1 + 0.9 * pow(sin(pi * i / 119), 2)
+}
+
+signal drawn_curve {
+  [71.43, 71.43, 71.43, 142.86, 142.86, 142.86, 214.29, 285.71, 357.14, 500.00, 571.43, 571.43, 571.43, 500.00, 428.57, 357.14, 357.14, 285.71, 285.71, 285.71, 214.29, 214.29, 214.29, 214.29, 214.29, 214.29, 214.29, 214.29, 285.71, 285.71, 285.71, 357.14, 357.14, 357.14, 428.57, 428.57, 500.00, 571.43, 642.86, 714.29, 785.71, 928.57, 1000.00, 1000.00, 928.57, 928.57, 785.71, 714.29, 642.86, 571.43, 500.00, 428.57, 428.57, 357.14, 285.71, 214.29, 214.29, 214.29, 142.86, 142.86, 71.43, 71.43, 71.43, 71.43, 71.43]
+}
+
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    ts TIMESTAMPTZ NOT NULL
+  )`
+}
+
+stages {
+  sinusoidal(
+    workers:  2,
+    duration: 30s,
+    qps:      signal('sinusoid', peak: 500)
+  )
+
+  drawnCurve(
+    workers:  2,
+    duration: 30s,
+    qps:      signal('drawn_curve', peak: 1000)
+  )
+}
+
+run {
+  record_event(type: exec) `INSERT INTO events (ts) VALUES (now())`
+}
+
+deseed {
+  truncate_events `TRUNCATE TABLE events CASCADE`
+}
+
+down {
+  drop_events `DROP TABLE IF EXISTS events`
+}

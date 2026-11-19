@@ -1,0 +1,30 @@
+up {
+  create_employees `CREATE TABLE IF NOT EXISTS employees (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL,
+      title STRING NOT NULL,
+      manager_id UUID REFERENCES employees(id)
+    )`
+}
+
+tree org(levels: [1, 5, 15, 50], id_column: id, parent_column: manager_id, type: query, size: 10)
+  `INSERT INTO employees (name, title, manager_id)
+   __values__
+   RETURNING id` (
+  name: gen('name'),
+  title: const(''),
+  manager_id: const(nil)
+) {
+  level 0 { title: const('CEO') }
+  level 1 { title: const('VP') }
+  level 2 { title: const('Director') }
+  level 3 { title: const('Manager') }
+}
+
+deseed {
+  truncate_employees(type: exec) `TRUNCATE TABLE employees CASCADE`
+}
+
+down {
+  drop_employees(type: exec) `DROP TABLE IF EXISTS employees`
+}

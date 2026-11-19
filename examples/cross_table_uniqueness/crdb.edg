@@ -1,5 +1,6 @@
 let users      = 100
 let admins     = 10
+let codes      = 50
 let batch_size = 50
 
 up {
@@ -12,6 +13,11 @@ up {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       email STRING NOT NULL UNIQUE
     )`
+
+  create_codes `CREATE TABLE IF NOT EXISTS codes (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      code STRING NOT NULL UNIQUE
+    )`
 }
 
 seed {
@@ -20,15 +26,22 @@ seed {
 
   populate_admins(type: exec_batch, count: admins, size: batch_size) `INSERT INTO admins (email)
     __values__` (uniq_across('emails', "gen('email')"))
+
+  populate_codes(type: exec_batch, count: codes, size: codes) `INSERT INTO codes (code)
+    __values__` (uniq(regex('[A-Z]{4}')))
 }
 
 deseed {
   truncate_users(type: exec) `TRUNCATE TABLE users CASCADE`
 
   truncate_admins(type: exec) `TRUNCATE TABLE admins CASCADE`
+
+  truncate_codes(type: exec) `TRUNCATE TABLE codes CASCADE`
 }
 
 down {
+  drop_codes(type: exec) `DROP TABLE IF EXISTS codes`
+
   drop_admins(type: exec) `DROP TABLE IF EXISTS admins`
 
   drop_users(type: exec) `DROP TABLE IF EXISTS users`

@@ -71,6 +71,7 @@ edg all \
 | [Objects](examples/objects/) | Reusable arg templates shared across queries |
 | [Org Tree](examples/org_tree/) | Hierarchical org chart using seed capture |
 | [Tree](examples/tree/) | Recursive tree structure generation |
+| [Tree Returning](examples/tree_returning/) | Tree whose levels chain on ids the database generates, using `type: query` |
 
 ## Application Workloads
 
@@ -106,9 +107,13 @@ edg all \
 | [Environment](examples/environment/) | Fetching and using environment variables |
 | [Expectations](examples/expectations/) | Post-run assertions for CI/CD gating |
 | [Failing](examples/failing/) | Map lookup with `fail()` to validate and stop workers |
+| [Mutations](examples/mutations/) | Injecting data-quality bugs to prove constraints are enforced |
 | [Pipeline](examples/pipeline/) | Multi-table sequential reads and writes |
 | [Prepared](examples/prepared/) | Prepared statements for reduced parse overhead |
 | [Print](examples/print/) | Live aggregated stats with `print` expressions |
+| [Retries](examples/retries/) | Per-query and per-transaction retry policies |
+| [Signals: Basic](examples/signals/basic/) | Driving a stage's QPS from a signal curve |
+| [Signals: Cluster](examples/signals/cluster/) | The same signal-driven curve shared across cluster agents |
 | [Stages](examples/stages/) | Staged execution with varying worker counts and durations |
 | [Stats](examples/stats/) | Periodic observability queries with bar, line, and per-value charts |
 | [Stages Run Weights](examples/stages_run_weights/) | Per-stage `run_weights` overrides |
@@ -128,6 +133,7 @@ edg all \
 | [Serve](examples/serve/) | Job server with HTTP API |
 | [SQLite](examples/sqlite/) | Embedded SQLite, including single-writer concurrency settings |
 | [Sync](examples/sync/) | Dual-write consistency testing across databases |
+| [Test driver](examples/test/) | In-memory cache - run a config end to end with no database |
 
 ## Complete Examples
 

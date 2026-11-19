@@ -1,0 +1,27 @@
+# A manifest: it names the databases to compare and nothing else.
+#
+# Each target points at its own workload file, which is what lets one run
+# drive databases that need different SQL. postgres.edg and mysql.edg are
+# ordinary configs - they declare no targets, and either still runs on its
+# own against --url.
+#
+# cockroach reuses postgres.edg, because CockroachDB speaks the Postgres
+# wire protocol and the same queries work unchanged. Two targets sharing a
+# config is how you compare same-dialect databases.
+target postgres(
+  url:    env('PG_URL'),
+  driver: 'pgx',
+  config: 'postgres.edg'
+)
+
+target mysql(
+  url:    env('MY_URL'),
+  driver: 'mysql',
+  config: 'mysql.edg'
+)
+
+target cockroach(
+  url:    env('CRDB_URL'),
+  driver: 'pgx',
+  config: 'postgres.edg'
+)

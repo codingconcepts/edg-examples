@@ -1,0 +1,8 @@
+# The databases the run drives, kept in their own file so the workload
+# config and the connection details stay separable.
+#
+# url and driver are expressions, not bare text, so a target can be
+# pointed at a database by its environment. String literals must be
+# quoted; anything unquoted is read as an expression.
+target crdb(url: env('CRDB_URL'))
+target postgres(url: env('POSTGRES_URL'))

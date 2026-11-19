@@ -1,0 +1,78 @@
+let customers = 200
+
+up {
+  create_customer(type: exec) `CREATE TABLE IF NOT EXISTS customer (
+      id    INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE
+    )`
+
+  create_account(type: exec) `CREATE TABLE IF NOT EXISTS account (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER NOT NULL REFERENCES customer(id),
+      balance     REAL NOT NULL CHECK (balance >= 0)
+    )`
+}
+
+seed {
+  insert_customer(type: exec_batch, count: customers, size: 100)
+    `INSERT INTO customer (email) __values__` (
+      uniq(gen('email'))
+    )
+}
+
+weights {
+  open_account = 80
+  add_customer = 20
+}
+
+init {
+  load_customers `SELECT id FROM customer`
+}
+
+run {
+  # Every column here is protected by a constraint, so each mutation
+  # below should bounce off the one it targets.
+  open_account(type: exec)
+    `INSERT INTO account (customer_id, balance) VALUES (?, ?)` (
+      ref('load_customers').id,
+      uniform.float(1, 1000, 2)
+    )
+
+  add_customer(type: exec)
+    `INSERT INTO customer (email) VALUES (?)` (
+      uniq_across('emails', "gen('email')")
+    )
+}
+
+deseed {
+  clean_account(type: exec) `DELETE FROM account`
+
+  clean_customer(type: exec) `DELETE FROM customer`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+expect {
+  # Twelve probes - four mutations, three each - and every one of them
+  # should have been refused, so the run's errors are exactly the bugs
+  # that were injected on purpose.
+  error_count >= 12
+}
+
+mutate {
+  # NOT NULL and the foreign key on account.
+  open_account.customer_id { fk_break(count: 3) }
+
+  # CHECK (balance >= 0).
+  open_account.balance { range(count: 3) }
+
+  # NOT NULL and UNIQUE on customer.email.
+  add_customer.email {
+    null(count: 3)
+    dup(count: 3)
+  }
+}

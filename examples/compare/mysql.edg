@@ -70,6 +70,20 @@ run {
   )
 }
 
+# Both configs declare the same stats queries, so the TUI's stats view can
+# show each database's table and charts in its own column, side by side.
+stats (rate: 1 / 2s) {
+  order_rows(
+    type:       line,
+    post_print: { key: 'orders', value: result().orders, window: 30s }
+  ) `SELECT count(*) AS orders FROM orders`
+
+  order_mix(
+    type:       bar,
+    post_print: { key: 'status', value: result().status, window: 10s }
+  ) `SELECT status FROM orders ORDER BY RAND() LIMIT 1`
+}
+
 deseed {
   delete_orders(type: exec) `DELETE FROM orders`
 

@@ -87,7 +87,7 @@ seed {
         -74.0060 + (random()::FLOAT8 - 0.5) * 0.3,
         40.7128 + (random()::FLOAT8 - 0.5) * 0.3
       ), 4326)::GEOGRAPHY
-    FROM unnest(string_to_array('$1', __sep__)) AS n` (gen_batch(users, batch_size, 'first_name'))
+    FROM unnest(string_to_array('$1', __sep__)) AS n` (gen_batch(users, batch_size, 'firstname'))
 
   populate_zone `INSERT INTO zone (name, boundary)
     VALUES ($1::STRING, ST_SetSRID(ST_GeomFromText($2::STRING), 4326)::GEOGRAPHY)` (

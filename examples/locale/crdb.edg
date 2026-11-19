@@ -22,13 +22,13 @@ seed {
     __values__` (
     id: uuid_v4(),
     region: const('JP'),
-    first_name: gen_locale('first_name', 'ja_JP'),
-    last_name: gen_locale('last_name', 'ja_JP'),
+    first_name: gen_locale('ja_JP', 'first_name'),
+    last_name: gen_locale('ja_JP', 'last_name'),
     full_name: last_name + first_name,
     email: gen('email'),
-    phone: gen_locale('phone', 'ja_JP'),
-    city: gen_locale('city', 'ja_JP'),
-    address: gen_locale('address', 'ja_JP'),
+    phone: gen_locale('ja_JP', 'phone'),
+    city: gen_locale('ja_JP', 'city'),
+    address: gen_locale('ja_JP', 'address'),
     masked_name: mask('key', full_name),
     masked_email: mask('key', email)
   )
@@ -37,13 +37,13 @@ seed {
     __values__` (
     id: uuid_v4(),
     region: const('DE'),
-    first_name: gen_locale('first_name', 'de_DE'),
-    last_name: gen_locale('last_name', 'de_DE'),
+    first_name: gen_locale('de_DE', 'first_name'),
+    last_name: gen_locale('de_DE', 'last_name'),
     full_name: first_name + ' ' + last_name,
     email: gen('email'),
-    phone: gen_locale('phone', 'de_DE'),
-    city: gen_locale('city', 'de_DE'),
-    address: gen_locale('address', 'de_DE'),
+    phone: gen_locale('de_DE', 'phone'),
+    city: gen_locale('de_DE', 'city'),
+    address: gen_locale('de_DE', 'address'),
     masked_name: mask('key', full_name),
     masked_email: mask('key', email)
   )

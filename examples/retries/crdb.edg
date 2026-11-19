@@ -1,0 +1,86 @@
+let accounts        = 1000
+let initial_balance = 10000
+let batch_size      = 1000
+
+up {
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      balance FLOAT NOT NULL
+    )`
+
+  create_ledger `CREATE TABLE IF NOT EXISTS ledger (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      reference STRING NOT NULL UNIQUE,
+      amount FLOAT NOT NULL
+    )`
+}
+
+seed {
+  populate_account(type: exec_batch, count: accounts, size: batch_size) `INSERT INTO account (balance)
+    __values__` (initial_balance)
+}
+
+weights {
+  credit_account = 40
+  write_ledger   = 30
+  transfer       = 30
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+}
+
+run {
+  # A hot row under contention returns a serialization failure, which
+  # clears on its own. Retrying as fast as the database will take the
+  # attempts is the right answer when the contention is brief.
+  credit_account(type: exec, retries: { max: 5 }) `UPDATE account SET balance = balance + $2::FLOAT
+    WHERE id = $1::UUID` (
+    ref('fetch_accounts').id,
+    gen('number:1,100')
+  )
+
+  # A duplicate reference is not retryable by default - the database
+  # answered, and it will answer the same way forever. on: [retryable,
+  # constraint] opts into retrying it anyway, which only makes sense
+  # paired with args: regenerate: each attempt draws a fresh reference,
+  # so the retry is not doomed to collide the way the first one did.
+  write_ledger(type: exec, retries: { max: 5, on: [retryable, constraint], backoff: 1ms, cap: 100ms, args: regenerate }) `INSERT INTO ledger (reference, amount)
+    VALUES ($1, $2::FLOAT)` (
+    uniq("gen('uuid')"),
+    gen('number:1,1000')
+  )
+
+  # retries belongs on the transaction, not on the statements inside
+  # it: the first failing statement has already aborted the
+  # transaction, so retrying that statement alone has nothing to run
+  # in. Each attempt re-runs the transaction from BEGIN.
+  transaction transfer(retries: { max: 10, backoff: 1ms, cap: 500ms }) {
+    let amount = gen('number:1,100')
+
+    read_source(type: query) `SELECT id, balance FROM account WHERE id = $1::UUID` (ref_diff('fetch_accounts').id)
+
+    rollback_if ref_same('read_source').balance < local('amount')
+
+    read_target(type: query) `SELECT id, balance FROM account WHERE id = $1::UUID` (ref_diff('fetch_accounts').id)
+
+    debit_source(type: exec) `UPDATE account SET balance = balance - $2::FLOAT
+      WHERE id = $1::UUID` (
+      ref_same('read_source').id,
+      local('amount')
+    )
+
+    credit_target(type: exec) `UPDATE account SET balance = balance + $2::FLOAT
+      WHERE id = $1::UUID` (
+      ref_same('read_target').id,
+      local('amount')
+    )
+  }
+}
+
+expect {
+  # A workload only keeping up by retrying hard passes every other
+  # check, so gate on the retry rate as well as the error rate.
+  low_errors error_rate < 1
+  low_retries retry_rate < 25
+}

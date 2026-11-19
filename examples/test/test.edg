@@ -1,0 +1,66 @@
+let customers  = 1000
+let batch_size = 100
+
+up {
+  # A map has to exist before anything can read or write it, so the up
+  # section is what makes the config runnable.
+  create(type: exec) `CREATE customer`
+}
+
+seed {
+  # A map holds flat strings, so the non-key columns are passed as
+  # separate arguments and SET joins them into one value. GET returns
+  # the whole row, not its fields - that's the trade for having no
+  # record type. They're unquoted on purpose: batch expansion skips
+  # anything inside quotes, so a quoted group would write every row
+  # the same value.
+  insert_customer(type: exec_batch, count: customers, size: batch_size)
+    `SET customer $1 $2 $3` (
+      seq(1, 1),
+      gen('email'),
+      int(uniform.int(1, 10000))
+    )
+}
+
+weights {
+  read_customer  = 60
+  write_customer = 30
+  credit_balance = 10
+}
+
+init {
+  # LIST returns one row per key in the map, sorted, under a "value"
+  # column. Keys are bare: the map is named separately.
+  fetch_customers(type: query) `LIST customer`
+}
+
+run {
+  read_customer(type: query) `GET customer ${ref('fetch_customers').value}`
+
+  # $1 appears twice: placeholders are inlined into the command text,
+  # so repeating one is fine.
+  write_customer(type: exec) `SET customer $1 $2 $1` (
+    int(uniform.int(1, customers)),
+    gen('email')
+  )
+
+  # Transactions apply writes immediately and reverse them from an undo
+  # log on rollback, so the read below sees the write above it, and
+  # rollback_if genuinely undoes it. Redis can't do this: MULTI queues
+  # writes until EXEC, so a transaction there can't read its own.
+  transaction credit_balance {
+    overwrite(type: exec) `SET customer $1 pending 0` (int(uniform.int(1, customers)))
+    confirm(type: query) `GET customer 1`
+    rollback_if ref_same('confirm').value == 'pending 0'
+  }
+}
+
+deseed {
+  # Empty the map but leave it in place, so a reseed doesn't need up.
+  delete_customers(type: exec) `DEL customer *`
+}
+
+down {
+  # DROP removes the map itself.
+  drop(type: exec) `DROP customer`
+}

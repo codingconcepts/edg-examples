@@ -1,0 +1,124 @@
+# Every shape edg ships with, running at once across one simulated day
+# compressed into five minutes of wall clock. Nothing here declares a
+# curve: the only signals defined below are a resample and a composite.
+sim(period: '24h', in: '5m', from: '2024-06-03T00:00:00Z')
+
+# The buffer index for the current instant. The run covers one simulated
+# day and every shape is 288 points long, so progress through the run is
+# progress through the buffer.
+expr at = int(sim_progress() * 288)
+
+# A shape's share of the current instant's total, and its raw value.
+expr share = signal_at(args[0], int(sim_progress() * 288)) / signal_at('total', int(sim_progress() * 288))
+
+expr load = signal_at(args[0], int(sim_progress() * 288))
+
+# edg-week spans seven days at 2016 points, so reading it one point at a
+# time would only ever show the first day. Sampling every seventh point
+# folds the whole week into the same 288-point day as everything else,
+# weekend dip included.
+signal week(length: 288) {
+  signal_at('edg-week', i * 7)
+}
+
+# Stages run one after another and a stage has one qps, so ten concurrent
+# shapes cannot come from a stage each. They come from one limiter driven
+# by their sum, which is a signal like any other.
+signal total(length: 288) {
+  signal_at('edg-ramp', i) + signal_at('edg-staircase', i) + signal_at('edg-ramp-hold', i) + signal_at('edg-business-hours', i) + signal_at('edg-two-peaks', i) + signal_at('week', i) + signal_at('edg-spike', i) + signal_at('edg-batch', i) + signal_at('edg-backlog', i) + signal_at('edg-outage', i)
+}
+
+up {
+  create_shapes(type: exec) `CREATE shapes`
+}
+
+stages {
+  day(
+    workers:  8,
+    duration: 24h,
+    qps:      signal('total', peak: 400)
+  )
+}
+
+# The shares sum to 1, so an iteration writes one row on average and the
+# limiter's rate is the row rate. Each shape's expected rate is
+# peak x share, which is the shape itself, scaled.
+run {
+  if uniform.float(0.0, 1.0, 6) < share('edg-ramp') {
+    record_ramp(type: exec) `SET shapes $1 $2` (
+      template('ramp-%d', at()),
+      load('edg-ramp')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-staircase') {
+    record_staircase(type: exec) `SET shapes $1 $2` (
+      template('staircase-%d', at()),
+      load('edg-staircase')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-ramp-hold') {
+    record_ramp_hold(type: exec) `SET shapes $1 $2` (
+      template('ramp_hold-%d', at()),
+      load('edg-ramp-hold')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-business-hours') {
+    record_business_hours(type: exec) `SET shapes $1 $2` (
+      template('business_hours-%d', at()),
+      load('edg-business-hours')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-two-peaks') {
+    record_two_peaks(type: exec) `SET shapes $1 $2` (
+      template('two_peaks-%d', at()),
+      load('edg-two-peaks')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('week') {
+    record_week(type: exec) `SET shapes $1 $2` (
+      template('week-%d', at()),
+      load('week')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-spike') {
+    record_spike(type: exec) `SET shapes $1 $2` (
+      template('spike-%d', at()),
+      load('edg-spike')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-batch') {
+    record_batch(type: exec) `SET shapes $1 $2` (
+      template('batch-%d', at()),
+      load('edg-batch')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-backlog') {
+    record_backlog(type: exec) `SET shapes $1 $2` (
+      template('backlog-%d', at()),
+      load('edg-backlog')
+    )
+  }
+
+  if uniform.float(0.0, 1.0, 6) < share('edg-outage') {
+    record_outage(type: exec) `SET shapes $1 $2` (
+      template('outage-%d', at()),
+      load('edg-outage')
+    )
+  }
+}
+
+deseed {
+  clear_shapes(type: exec) `DEL shapes *`
+}
+
+down {
+  drop_shapes(type: exec) `DROP shapes`
+}

@@ -1,0 +1,50 @@
+up {
+  create_events `CREATE TABLE IF NOT EXISTS events (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    stage STRING NOT NULL,
+    ts TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`
+}
+
+# None of these shapes are declared anywhere: edg ships with them. Run
+# 'edg signals' to see the rest, or 'edg signals --show edg-staircase' to
+# print one as a signal block you can paste in and edit.
+stages {
+  # Five flat steps up to 1,000 QPS. Each one holds long enough to read a
+  # stable p99 off it, which a linear ramp does not give you.
+  find_the_knee(
+    workers:  16,
+    duration: 2m,
+    qps:      signal('edg-staircase', peak: 1000)
+  )
+
+  # Flat at a fifth of peak, then one short burst of 1,000 QPS. Tests
+  # whether the system absorbs a flash crowd or queues behind it.
+  flash_crowd(
+    workers:  16,
+    duration: 2m,
+    qps:      signal('edg-spike', peak: 1000)
+  )
+
+  # Steady at half of peak, then almost nothing, then a catch-up surge
+  # that settles back. Tests recovery: retry storms and cold caches.
+  recovery(
+    workers:  16,
+    duration: 2m,
+    qps:      signal('edg-outage', peak: 1000)
+  )
+}
+
+run {
+  record_event(type: exec) `INSERT INTO events (stage) VALUES ($1)` (
+    'shaped'
+  )
+}
+
+deseed {
+  truncate_events `TRUNCATE TABLE events CASCADE`
+}
+
+down {
+  drop_events `DROP TABLE IF EXISTS events`
+}

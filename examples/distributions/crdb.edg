@@ -24,23 +24,24 @@ seed {
 }
 
 weights {
-  insert_uniform     = 10
-  insert_zipfian     = 10
-  insert_normal      = 10
-  insert_exponential = 10
-  insert_lognormal   = 10
-  insert_pareto      = 10
-  insert_pareto_f    = 10
-  insert_beta        = 10
-  insert_gamma       = 10
-  insert_weibull     = 10
-  insert_poisson     = 10
-  insert_binomial    = 10
-  insert_empirical   = 10
-  insert_rwalk       = 10
-  insert_uniform_n   = 10
-  insert_zipfian_n   = 10
-  insert_order       = 10
+  insert_uniform       = 10
+  insert_zipfian       = 10
+  insert_normal        = 10
+  insert_exponential   = 10
+  insert_lognormal     = 10
+  insert_pareto        = 10
+  insert_pareto_f      = 10
+  insert_beta          = 10
+  insert_gamma         = 10
+  insert_weibull       = 10
+  insert_poisson       = 10
+  insert_binomial      = 10
+  insert_empirical     = 10
+  insert_rwalk         = 10
+  insert_uniform_n     = 10
+  insert_uniform_n_one = 10
+  insert_zipfian_n     = 10
+  insert_order         = 10
 }
 
 run {
@@ -90,12 +91,17 @@ run {
     SELECT 'uniform_n', v::FLOAT8
     FROM unnest(string_to_array($1, ',')) AS v` (uniform.n(0, 100, 3, 5))
 
+  # Indexing the list takes one of its values without the SQL having
+  # to split the rendered string back apart.
+  insert_uniform_n_one(type: exec) `INSERT INTO distributions (dist_type, value)
+    VALUES ('uniform_n_one', $1::FLOAT8)` (uniform.n(0, 100, 3, 5)[0])
+
   insert_zipfian_n(type: exec) `INSERT INTO distributions (dist_type, value)
     SELECT 'zipfian_n', v::FLOAT8
     FROM unnest(string_to_array($1, ',')) AS v` (zipf.n(1.1, 1.0, 99, 3, 5))
 
   insert_order(type: exec) `INSERT INTO orders (status) VALUES ($1)` (
-    markov('order_status',['pending', 'processing', 'shipped', 'delivered', 'returned'],[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.7, 0.0, 0.0, 0.0, 0.0, 0.2, 0.8, 0.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 1.0])
+    markov('order_status', ['pending', 'processing', 'shipped', 'delivered', 'returned'], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.7, 0.0, 0.0, 0.0, 0.0, 0.2, 0.8, 0.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 1.0])
   )
 }
 

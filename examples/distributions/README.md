@@ -37,7 +37,7 @@ Pick from a predefined set of values using a distribution to control which items
 
 ### Unique picks
 
-Every distribution also has an `.n` domain, which draws N *distinct* values and returns them as a comma-separated string. The last two arguments are always `minN` and `maxN`; a count is chosen uniformly in `[minN, maxN]` and that many distinct values are drawn from the distribution. The canonical use is picking the item IDs for a multi-line order, where the same item must not appear twice.
+Every distribution also has an `.n` domain, which draws N *distinct* values and returns them as a list. The last two arguments are always `minN` and `maxN`; a count is chosen uniformly in `[minN, maxN]` and that many distinct values are drawn from the distribution. The canonical use is picking the item IDs for a multi-line order, where the same item must not appear twice.
 
 | Function | Signature |
 |---|---|
@@ -54,12 +54,27 @@ Every distribution also has an `.n` domain, which draws N *distinct* values and 
 | `weibull.n` | `weibull.n(shape, scale, min, max, minN, maxN)` |
 | `zipf.n` | `zipf.n(s, v, max, minN, maxN)` |
 
-The example uses `uniform.n` and `zipf.n`, splitting the string back into rows so each unique pick lands in its own row:
+A list can be used two ways. Pass it whole and it reaches the database comma-separated, which is what the example does to land each unique pick in its own row:
 
 ```edg
 insert_uniform_n(type: exec) `INSERT INTO distributions (dist_type, value)
   SELECT 'uniform_n', v::FLOAT8
   FROM unnest(string_to_array($1, ',')) AS v` (uniform.n(0, 100, 3, 5))
+```
+
+Or index it, which takes one value out of the list without the SQL having to split the string back apart - the same expression on every driver, with no `string_to_array`, `STRING_SPLIT`, `JSON_TABLE` or `XMLTABLE` in sight:
+
+```edg
+insert_uniform_n_one(type: exec) `INSERT INTO distributions (dist_type, value)
+  VALUES ('uniform_n_one', $1::FLOAT8)` (uniform.n(0, 100, 3, 5)[0])
+```
+
+`len(list)` gives the element count and `string(list)` gives the comma-separated form. `ref_n`, `weighted_sample_n`, `nurand_n`, `distribute_sum` and `distribute_weighted` all return lists too, so a config needing two distinct rows can bind them separately:
+
+```edg
+let pair   = ref_n('fetch_accounts', 'id', 2, 2)
+let source = local('pair')[0]
+let target = local('pair')[1]
 ```
 
 Widening the range relative to `maxN` matters. A distribution that concentrates its mass on a handful of values (for example `poisson.n(1, 5, 10)`) may not be able to produce enough distinct draws, and the run will fail rather than return duplicates.

@@ -43,6 +43,52 @@ stats (rate: 1 / 1s) {
     type:       line,
     post_print: { key: 'rows', value: result().rows, window: 30s }
   ) `SELECT count(*) AS rows FROM customer`
+
+  # Gauge chart: one bar per expression, sized by its latest value, so the
+  # bars rise and fall with the numbers rather than counting how often each
+  # one was seen. Both share a y-axis, so keep magnitudes comparable.
+  ranges(
+    type:       gauge,
+    post_print: { key: 'under',       value: result().under },
+    post_print: { key: 'unavailable', value: result().unavailable }
+  ) `SELECT
+      sum(under_replicated_ranges)::INT8 AS under,
+      sum(unavailable_ranges)::INT8 AS unavailable
+    FROM system.replication_stats`
+}
+
+# A second block, laid out side-by-side rather than paged. Both queries show
+# at once, drawn to one shared scale, so the two counts can be read against
+# each other instead of each filling its own axis. Keep the magnitudes close:
+# a metric orders of magnitude larger would squash its neighbour. Widen the
+# terminal if it falls back to paging.
+stats (rate: 1 / 5s, layout: split) {
+  customer_ranges(
+    type:       gauge,
+    post_print: { key: 'ranges', value: result().n }
+  ) `SELECT count(*) AS n
+     FROM crdb_internal.ranges
+     WHERE table_name = 'customer'`
+
+  customer_leaseholders(
+    type:       gauge,
+    post_print: { key: 'leaseholders', value: result().n }
+  ) `SELECT count(DISTINCT lease_holder) AS n
+     FROM crdb_internal.ranges
+     WHERE table_name = 'customer'`
+}
+
+# Charts smooth a per-interval rate by default, averaging each point with the
+# ones around it, because a rate sampled once a second is noise on top of a
+# trend. This is the same per-node rate as node_over_time above, with the
+# smoothing turned off - page between the two to see what it buys. Use
+# smooth: max instead when the spike is the point, or a duration such as 10s
+# to set the averaging window yourself.
+stats (rate: 20 / 1s, smooth: none) {
+  node_over_time_raw(
+    type:       line,
+    post_print: { key: 'node', value: result().node_id, series: value, window: 5s }
+  ) `SHOW node_id`
 }
 
 deseed {
