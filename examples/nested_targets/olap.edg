@@ -1,0 +1,36 @@
+# Scans and aggregates over a separate table, so the two workloads in a
+# group don't contend with each other on the database they share.
+let events     = 100000
+let batch_size = 1000
+
+up {
+  create_olap_events `CREATE TABLE IF NOT EXISTS olap_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      region TEXT NOT NULL,
+      amount NUMERIC NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL
+    )`
+}
+
+seed {
+  populate_olap_events(type: exec_batch, count: events, size: batch_size) `INSERT INTO olap_events (region, amount, created_at)
+    __values__` (
+    uniform.set(['emea', 'amer', 'apac']),
+    uniform.float(1, 1000),
+    timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z')
+  )
+}
+
+run {
+  revenue_by_region `SELECT region, SUM(amount) FROM olap_events GROUP BY region`
+
+  recent_total `SELECT COUNT(*) FROM olap_events WHERE created_at > $1` (timestamp('2024-01-01T00:00:00Z', '2025-01-01T00:00:00Z'))
+}
+
+deseed {
+  clear_olap_events(type: exec) `DELETE FROM olap_events`
+}
+
+down {
+  drop_olap_events(type: exec) `DROP TABLE IF EXISTS olap_events`
+}

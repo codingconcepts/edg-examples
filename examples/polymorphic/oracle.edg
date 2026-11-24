@@ -1,0 +1,145 @@
+let posts      = 500
+let videos     = 200
+let comments   = 5000
+let reactions  = 5000
+let batch_size = 100
+
+seq post_id(start: 1, step: 1)
+
+seq video_id(start: 1, step: 1)
+
+up {
+  create_post `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE post (
+          id NUMBER PRIMARY KEY,
+          title VARCHAR2(255) NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_video `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE video (
+          id NUMBER PRIMARY KEY,
+          title VARCHAR2(255) NOT NULL
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_comment `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE comment_log (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          commentable_type VARCHAR2(20) NOT NULL,
+          commentable_id NUMBER NOT NULL,
+          body VARCHAR2(1000) NOT NULL,
+          PRIMARY KEY (id)
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_comment_index `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE INDEX ix_commentable ON comment_log (commentable_type, commentable_id)
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+
+  create_reaction `BEGIN
+      EXECUTE IMMEDIATE '
+        CREATE TABLE reaction (
+          id NUMBER GENERATED ALWAYS AS IDENTITY,
+          target_type VARCHAR2(20) NOT NULL,
+          post_id NUMBER REFERENCES post(id),
+          video_id NUMBER REFERENCES video(id),
+          kind VARCHAR2(20) NOT NULL,
+          PRIMARY KEY (id),
+          CHECK (
+            (target_type = ''post'' AND post_id IS NOT NULL AND video_id IS NULL) OR
+            (target_type = ''video'' AND post_id IS NULL AND video_id IS NOT NULL)
+          )
+        )
+      ';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -955 THEN RAISE; END IF;
+    END;`
+}
+
+seed {
+  populate_post(type: exec_batch, count: posts, size: batch_size) `INSERT ALL __values__(post(id, title))` (
+    id: seq_global('post_id'),
+    title: gen('loremipsumsentence:5')
+  )
+
+  populate_video(type: exec_batch, count: videos, size: batch_size) `INSERT ALL __values__(video(id, title))` (
+    id: seq_global('video_id'),
+    title: gen('loremipsumsentence:5')
+  )
+
+  populate_comment(type: exec_batch, count: comments, size: batch_size) `INSERT ALL __values__(comment_log(commentable_type, commentable_id, body))` (
+    commentable_type: uniform.set(['post', 'video'], [70, 30]),
+    commentable_id: cond(arg('commentable_type') == 'post', ref('populate_post').id, ref('populate_video').id),
+    body: gen('loremipsumsentence:12')
+  )
+
+  populate_reaction(type: exec_batch, count: reactions, size: batch_size) `INSERT ALL __values__(reaction(target_type, post_id, video_id, kind))` (
+    target_type: uniform.set(['post', 'video'], [70, 30]),
+    post_id: cond(arg('target_type') == 'post', ref('populate_post').id, nil),
+    video_id: cond(arg('target_type') == 'video', ref('populate_video').id, nil),
+    kind: uniform.set(['like', 'love', 'celebrate'], [60, 30, 10])
+  )
+}
+
+run {
+  comments_for_post `SELECT * FROM comment_log WHERE commentable_type = 'post' AND commentable_id = :1` (
+    ref('populate_post').id
+  )
+
+  reactions_for_video `SELECT * FROM reaction WHERE video_id = :1` (
+    ref('populate_video').id
+  )
+}
+
+deseed {
+  delete_reaction(type: exec) `DELETE FROM reaction`
+
+  delete_comment(type: exec) `DELETE FROM comment_log`
+
+  delete_video(type: exec) `DELETE FROM video`
+
+  delete_post(type: exec) `DELETE FROM post`
+}
+
+down {
+  drop_reaction(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE reaction CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_comment(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE comment_log CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_video(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE video CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+
+  drop_post(type: exec) `BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE post CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+    END;`
+}

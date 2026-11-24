@@ -20,14 +20,16 @@ mutate {
 }
 ```
 
+The block is opt-in: a run only applies it when passed `--mutate`, so an ordinary run of this config writes clean data.
+
 Every mutation reports its own verdict after the run, and edg exits non-zero if any of them failed - no `expect` block needed:
 
 ```
 mutations
-  v open_account.customer_id.fk_break  3 applied, 3 rejected (foreign_key_violation)
-  v open_account.balance.range         3 applied, 3 rejected (check_violation)
-  v add_customer.email.null            3 applied, 3 rejected (not_null_violation)
-  v add_customer.email.dup             3 applied, 3 rejected (unique_violation)
+  ✔ open_account.customer_id.fk_break  3 applied, 3 rejected (foreign_key_violation)
+  ✔ open_account.balance.range  3 applied, 3 rejected (check_violation)
+  ✔ add_customer.email.null  3 applied, 3 rejected (not_null_violation)
+  ✔ add_customer.email.dup  3 applied, 3 rejected (unique_violation)
 ```
 
 ## Seeing it fail
@@ -36,7 +38,7 @@ The point of the feature is the run where a constraint *isn't* there. Drop SQLit
 
 ```sh
 # ...&_pragma=foreign_keys(0)
-  x open_account.customer_id.fk_break  3 applied, 3 accepted - no foreign_key_violation is enforcing this
+  ✘ open_account.customer_id.fk_break  3 applied, 3 accepted - no foreign_key_violation is enforcing this
 ```
 
 The run exits 1. That is the same signal you would get from a migration that quietly dropped a constraint, which is otherwise close to invisible.
@@ -51,12 +53,17 @@ The run exits 1. That is the same signal you would get from a migration that qui
 
 ## Ad-hoc and random mutations
 
-Mutations can also come from flags, which replace the config's block for that run:
+Mutations are opt-in, so the `mutate` block above sits dormant until `--mutate` asks for it. Two other flags bring their own mutations instead, replacing the config's block for that run:
 
 ```sh
-edg run --config examples/mutations/sqlite.edg --mutate 'null:add_customer.email,count=3'
+# the config's block
+edg run --config examples/mutations/sqlite.edg --mutate
+
+# one ad-hoc mutation instead
+edg run --config examples/mutations/sqlite.edg --mutate-spec 'null:add_customer.email,count=3'
+
+# three random ones instead
 edg run --config examples/mutations/sqlite.edg --mutate-random 3 --rng-seed 42
-edg run --config examples/mutations/sqlite.edg --no-mutate
 ```
 
 ## SQLite
@@ -71,6 +78,7 @@ edg all \
 --config examples/mutations/sqlite.edg \
 --url "file:edg.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_txlock=immediate" \
 --pool-size 1 \
+--mutate \
 -w 1 -d 10s
 ```
 
@@ -90,5 +98,6 @@ edg all \
 --driver pgx \
 --config examples/mutations/crdb.edg \
 --url "postgres://root@localhost:26257?sslmode=disable" \
+--mutate \
 -w 4 -d 10s
 ```

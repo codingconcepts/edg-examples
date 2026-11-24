@@ -1,0 +1,37 @@
+# Point reads and writes. An ordinary config: it declares no targets, so
+# it runs standalone against --url just as well as it does in the tree.
+let users      = 10000
+let batch_size = 1000
+
+up {
+  create_oltp_users `CREATE TABLE IF NOT EXISTS oltp_users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT NOT NULL
+    )`
+}
+
+seed {
+  populate_oltp_users(type: exec_batch, count: users, size: batch_size) `INSERT INTO oltp_users (email)
+    __values__` (gen('email'))
+}
+
+init {
+  fetch_oltp_users `SELECT id FROM oltp_users LIMIT $1` (batch_size)
+}
+
+run {
+  get_user `SELECT * FROM oltp_users WHERE id = $1` (ref('fetch_oltp_users').id)
+
+  update_email `UPDATE oltp_users SET email = $2 WHERE id = $1` (
+    ref('fetch_oltp_users').id,
+    gen('email')
+  )
+}
+
+deseed {
+  clear_oltp_users(type: exec) `DELETE FROM oltp_users`
+}
+
+down {
+  drop_oltp_users(type: exec) `DROP TABLE IF EXISTS oltp_users`
+}

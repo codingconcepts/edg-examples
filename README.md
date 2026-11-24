@@ -48,6 +48,7 @@ edg all \
 | [Global Sequences](examples/global_sequences/) | Auto-incrementing sequences shared across all workers |
 | [Identifiers](examples/identifiers/) | Sortable `ulid()` keys and deterministic `hash()` digests |
 | [Locale](examples/locale/) | Locale-aware PII generation with deterministic masking |
+| [Markov String](examples/markov_string/) | New names learned from a table, a gofakeit list or an inline list with `markov_string()` |
 | [Normal](examples/normal/) | Product reviews with normal distribution ratings |
 | [Nullable](examples/nullable/) | `nullable(expr, probability)` for injecting NULLs |
 | [Reference Data](examples/reference_data/) | Static reference datasets without database queries |
@@ -70,6 +71,7 @@ edg all \
 | [Named Args](examples/named_args/) | Map-style args with `arg('name')` |
 | [Objects](examples/objects/) | Reusable arg templates shared across queries |
 | [Org Tree](examples/org_tree/) | Hierarchical org chart using seed capture |
+| [Polymorphic](examples/polymorphic/) | Polymorphic associations (STI and MTI) where a type column picks the parent table |
 | [Tree](examples/tree/) | Recursive tree structure generation |
 | [Tree Returning](examples/tree_returning/) | Tree whose levels chain on ids the database generates, using `type: query` |
 
@@ -127,6 +129,7 @@ edg all \
 |---|---|
 | [Cassandra](examples/cassandra/) | Cassandra with keyspaces, tables, and batch inserts |
 | [MongoDB](examples/mongodb/) | MongoDB with BSON/JSON command syntax |
+| [Nested Targets](examples/nested_targets/) | Groups of workloads driven against several databases from one manifest |
 | [Observability](examples/observability/) | Prometheus metrics and Grafana dashboard |
 | [Output](examples/output/) | `stage` output formats (SQL, JSON, CSV, Parquet, stdout) |
 | [Redis](examples/redis/) | Redis commands, hashes, and cursored SCAN reads |

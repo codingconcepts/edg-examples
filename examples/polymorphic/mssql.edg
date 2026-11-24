@@ -1,0 +1,104 @@
+let posts      = 500
+let videos     = 200
+let comments   = 5000
+let reactions  = 5000
+let batch_size = 1000
+
+seq post_id(start: 1, step: 1)
+
+seq video_id(start: 1, step: 1)
+
+up {
+  create_post `IF OBJECT_ID('post', 'U') IS NULL
+    CREATE TABLE post (
+      id INT PRIMARY KEY,
+      title NVARCHAR(255) NOT NULL
+    )`
+
+  create_video `IF OBJECT_ID('video', 'U') IS NULL
+    CREATE TABLE video (
+      id INT PRIMARY KEY,
+      title NVARCHAR(255) NOT NULL
+    )`
+
+  create_comment `IF OBJECT_ID('comment', 'U') IS NULL
+    CREATE TABLE comment (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      commentable_type NVARCHAR(20) NOT NULL,
+      commentable_id INT NOT NULL,
+      body NVARCHAR(1000) NOT NULL,
+      INDEX ix_commentable (commentable_type, commentable_id)
+    )`
+
+  create_reaction `IF OBJECT_ID('reaction', 'U') IS NULL
+    CREATE TABLE reaction (
+      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      target_type NVARCHAR(20) NOT NULL,
+      post_id INT REFERENCES post(id),
+      video_id INT REFERENCES video(id),
+      kind NVARCHAR(20) NOT NULL,
+      CHECK (
+        (target_type = 'post' AND post_id IS NOT NULL AND video_id IS NULL) OR
+        (target_type = 'video' AND post_id IS NULL AND video_id IS NOT NULL)
+      )
+    )`
+}
+
+seed {
+  populate_post(type: exec_batch, count: posts, size: batch_size) `INSERT INTO post (id, title)
+    __values__` (
+    id: seq_global('post_id'),
+    title: gen('loremipsumsentence:5')
+  )
+
+  populate_video(type: exec_batch, count: videos, size: batch_size) `INSERT INTO video (id, title)
+    __values__` (
+    id: seq_global('video_id'),
+    title: gen('loremipsumsentence:5')
+  )
+
+  populate_comment(type: exec_batch, count: comments, size: batch_size) `INSERT INTO comment (commentable_type, commentable_id, body)
+    __values__` (
+    commentable_type: uniform.set(['post', 'video'], [70, 30]),
+    commentable_id: cond(arg('commentable_type') == 'post', ref('populate_post').id, ref('populate_video').id),
+    body: gen('loremipsumsentence:12')
+  )
+
+  populate_reaction(type: exec_batch, count: reactions, size: batch_size) `INSERT INTO reaction (target_type, post_id, video_id, kind)
+    __values__` (
+    target_type: uniform.set(['post', 'video'], [70, 30]),
+    post_id: cond(arg('target_type') == 'post', ref('populate_post').id, nil),
+    video_id: cond(arg('target_type') == 'video', ref('populate_video').id, nil),
+    kind: uniform.set(['like', 'love', 'celebrate'], [60, 30, 10])
+  )
+}
+
+run {
+  comments_for_post `SELECT * FROM comment WHERE commentable_type = 'post' AND commentable_id = @p1` (
+    ref('populate_post').id
+  )
+
+  reactions_for_video `SELECT * FROM reaction WHERE video_id = @p1` (
+    ref('populate_video').id
+  )
+}
+
+deseed {
+  delete_reaction(type: exec) `DELETE FROM reaction`
+
+  delete_comment(type: exec) `DELETE FROM comment`
+
+  delete_video(type: exec) `DELETE FROM video`
+
+  delete_post(type: exec) `DELETE FROM post`
+}
+
+down {
+  drop_reaction(type: exec) `DROP TABLE IF EXISTS reaction`
+
+  drop_comment(type: exec) `DROP TABLE IF EXISTS comment`
+
+  drop_video(type: exec) `DROP TABLE IF EXISTS video`
+
+  drop_post(type: exec) `DROP TABLE IF EXISTS post`
+}

@@ -1,0 +1,7 @@
+# The top of the tree: one group of workloads per database.
+#
+# Each target here points at a config that declares targets of its own,
+# so it stands for every target that config declares. url and driver are
+# given once, here, and inherited by everything below.
+target cockroach(url: env('CRDB_URL'), driver: 'pgx', config: 'group.edg')
+target postgres(url: env('POSTGRES_URL'), driver: 'pgx', config: 'group.edg')

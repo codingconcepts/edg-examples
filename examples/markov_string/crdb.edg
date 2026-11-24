@@ -1,0 +1,93 @@
+let real_cities = 500
+let batch_size  = 250
+
+seq sku_code(start: 1, step: 1)
+
+up {
+  # Real city names, which the init query below reads back as training
+  # data for a chain.
+  create_real_city `CREATE TABLE IF NOT EXISTS real_city (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name STRING NOT NULL
+    )`
+
+  create_place `CREATE TABLE IF NOT EXISTS place (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      learned_city STRING NOT NULL,
+      gofakeit_city STRING NOT NULL,
+      resident STRING NOT NULL,
+      company STRING NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+
+  create_sku `CREATE TABLE IF NOT EXISTS sku (
+      code STRING PRIMARY KEY,
+      line STRING NOT NULL
+    )`
+}
+
+seed {
+  populate_real_city(type: exec_batch, count: real_cities, size: batch_size) `INSERT INTO real_city (name)
+    __values__` (
+    name: gen('city')
+  )
+}
+
+weights {
+  insert_place = 80
+  insert_sku   = 20
+}
+
+init {
+  fetch_real_cities(type: query) `SELECT name FROM real_city`
+}
+
+run {
+  # Three sources, one function:
+  #
+  #   learned_city  - the name column of the fetch_real_cities dataset
+  #   gofakeit_city - gofakeit's static address.city list
+  #   resident      - gofakeit's static person.first list
+  #   company       - gofakeit's static company.name list
+  #
+  # Each chain is trained on the first row that reaches it and shared by
+  # every worker from then on, so the arguments must not vary per row.
+  insert_place(type: exec) `INSERT INTO place (learned_city, gofakeit_city, resident, company)
+    VALUES ($1, $2, $3, $4)` (
+    markov_string('fetch_real_cities.name', 3, 4, 14),
+    markov_string('address.city', 3, 4, 14),
+    markov_string('person.first'),
+    markov_string('company.name', 3, 4, 16)
+  )
+
+  # An inline list as the source. The three families give the chain
+  # enough overlap to recombine - 45 possible words, against the 1 that
+  # eight same-sounding words would have managed. `edg doctor` counts
+  # this for you.
+  #
+  # markov_string excludes its training data, not its own output, so
+  # two rows can still draw the same word. The sequence carries the
+  # uniqueness the primary key needs; the chain only has to make the
+  # code look like a product line.
+  insert_sku(type: exec) `INSERT INTO sku (code, line)
+    VALUES ($1, $2)` (
+    code: template('%s-%05d', markov_string(['orbit', 'orion', 'oracle', 'onyx', 'opal', 'omega', 'optix', 'oasis', 'vertex', 'vector', 'vista', 'vantage', 'velocity', 'verona', 'quantum', 'quartz', 'quasar', 'quiver', 'quorum'], 2, 4, 10), seq_global('sku_code')),
+    line: set(['consumer', 'industrial', 'research'])
+  )
+}
+
+deseed {
+  truncate_place(type: exec) `TRUNCATE TABLE place`
+
+  truncate_sku(type: exec) `TRUNCATE TABLE sku`
+
+  truncate_real_city(type: exec) `TRUNCATE TABLE real_city`
+}
+
+down {
+  drop_place(type: exec) `DROP TABLE IF EXISTS place`
+
+  drop_sku(type: exec) `DROP TABLE IF EXISTS sku`
+
+  drop_real_city(type: exec) `DROP TABLE IF EXISTS real_city`
+}

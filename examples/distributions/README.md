@@ -493,7 +493,7 @@ ORDER BY 1;
 
 ### Markov chain
 
-The `markov` function produces string states rather than numeric values, so it uses a separate table:
+The `markov_chain` function produces string states rather than numeric values, so it uses a separate table:
 
 ```edg
 up {
@@ -506,7 +506,7 @@ up {
 run {
   insert_order(type: exec)
     `INSERT INTO orders (status) VALUES ($1)` (
-    markov('order_status',
+    markov_chain('order_status',
       ['pending', 'processing', 'shipped', 'delivered', 'returned'],
       [
         0.2, 0.8, 0.0, 0.0, 0.0,

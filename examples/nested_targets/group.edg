@@ -1,0 +1,7 @@
+# One group: the two workloads every database in this comparison runs.
+#
+# Neither target names a url or a driver - both are inherited from the
+# target that pointed at this file, which is what lets one group be
+# aimed at several databases without repeating it.
+target oltp(config: 'oltp.edg')
+target olap(config: 'olap.edg')
