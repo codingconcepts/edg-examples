@@ -1,0 +1,98 @@
+let customers       = 100000
+let initial_balance = 10000
+let batch_size      = 10000
+
+up {
+  create_customer `CREATE TABLE IF NOT EXISTS customer (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email STRING NOT NULL
+    )`
+
+  create_account `CREATE TABLE IF NOT EXISTS account (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      balance FLOAT NOT NULL,
+      customer_id UUID NOT NULL REFERENCES customer(id)
+    )`
+}
+
+seed {
+  populate_customer(type: exec_batch, count: customers, size: batch_size) `INSERT INTO customer (email)
+    __values__` (gen('email'))
+
+  populate_account `INSERT INTO account (balance, customer_id)
+    SELECT $2::FLOAT, c.id
+    FROM customer c
+    ORDER BY c.id
+    OFFSET $1::INT * $3::INT
+    LIMIT $3::INT` (
+    batch(customers / batch_size),
+    initial_balance,
+    batch_size
+  )
+}
+
+# Stages run one after another; the groups inside a stage run at the
+# same time, each with its own worker count, rate, ramp, and weights.
+stages {
+  warmup(duration: 10s) {
+    shoppers(workers: 2, qps: 500, weights: { check_balance: 100 })
+  }
+
+  peak(duration: 30s) {
+    shoppers(workers: 20, qps: 500, ramp_duration: 5s, weights: { check_balance: 60, make_transfer: 40 })
+    analysts(workers: 2, qps: 5, weights: { daily_totals: 100 })
+    reaper(workers: 1, qps: 1, weights: { credit_account: 100 })
+  }
+
+  cooldown(duration: 10s) {
+    shoppers(workers: 2, weights: { check_balance: 100 })
+  }
+}
+
+init {
+  fetch_accounts(type: query) `SELECT id FROM account ORDER BY random()`
+}
+
+run {
+  check_balance(type: query) `SELECT balance FROM account WHERE id = $1::UUID` (ref('fetch_accounts').id)
+
+  daily_totals(type: query) `SELECT count(*) AS accounts, sum(balance) AS total
+    FROM account`
+
+  credit_account(type: exec) `UPDATE account SET balance = balance + $2::FLOAT
+    WHERE id = $1::UUID` (
+    ref('fetch_accounts').id,
+    gen('number:1,1000')
+  )
+
+  make_transfer(type: exec) `UPDATE account SET
+      balance = CASE
+                  WHEN id = $2::UUID THEN balance + $3::FLOAT
+                  WHEN id = $1::UUID THEN balance - $3::FLOAT
+                END
+    WHERE id IN ($1::UUID, $2::UUID)` (
+    ref_diff('fetch_accounts').id,
+    ref_diff('fetch_accounts').id,
+    gen('number:1,100')
+  )
+}
+
+deseed {
+  truncate_account(type: exec) `TRUNCATE TABLE account CASCADE`
+
+  truncate_customer(type: exec) `TRUNCATE TABLE customer CASCADE`
+}
+
+down {
+  drop_account(type: exec) `DROP TABLE IF EXISTS account`
+
+  drop_customer(type: exec) `DROP TABLE IF EXISTS customer`
+}
+
+# A grouped query is reported as group.query, and an expectation
+# addresses it by the same name.
+expect {
+  oltp_is_fast shoppers.check_balance.p99 < 100
+  reports_finish analysts.daily_totals.p99 < 5000
+  reaper_keeps_up reaper.credit_account.success_count > 10
+}

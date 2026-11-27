@@ -114,8 +114,10 @@ edg all \
 | [Prepared](examples/prepared/) | Prepared statements for reduced parse overhead |
 | [Print](examples/print/) | Live aggregated stats with `print` expressions |
 | [Retries](examples/retries/) | Per-query and per-transaction retry policies |
+| [Run Until](examples/run_until/) | A drain loop that ends its stage when the work runs out, measured under live traffic |
 | [Signals: Basic](examples/signals/basic/) | Driving a stage's QPS from a signal curve |
 | [Signals: Cluster](examples/signals/cluster/) | The same signal-driven curve shared across cluster agents |
+| [Stage Groups](examples/stage_groups/) | Concurrent lanes within a stage, each with its own workers, rate and mix |
 | [Stages](examples/stages/) | Staged execution with varying worker counts and durations |
 | [Stats](examples/stats/) | Periodic observability queries with bar, line, and per-value charts |
 | [Stages Run Weights](examples/stages_run_weights/) | Per-stage `run_weights` overrides |
@@ -128,6 +130,7 @@ edg all \
 | Example | Description |
 |---|---|
 | [Cassandra](examples/cassandra/) | Cassandra with keyspaces, tables, and batch inserts |
+| [libSQL / Turso](examples/libsql/) | libSQL over HTTP: SQLite SQL against a remote server |
 | [MongoDB](examples/mongodb/) | MongoDB with BSON/JSON command syntax |
 | [Nested Targets](examples/nested_targets/) | Groups of workloads driven against several databases from one manifest |
 | [Observability](examples/observability/) | Prometheus metrics and Grafana dashboard |

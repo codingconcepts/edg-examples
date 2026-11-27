@@ -1,0 +1,82 @@
+let events      = 500000
+let batch_size  = 10000
+let purge_batch = 5000
+
+up {
+  create_event `CREATE TABLE IF NOT EXISTS event (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      created_at TIMESTAMPTZ NOT NULL,
+      payload STRING NOT NULL
+    )`
+
+  create_event_created_at `CREATE INDEX IF NOT EXISTS event_created_at_idx
+    ON event (created_at)`
+}
+
+# Half the rows land outside the retention window, so the purge has
+# roughly 250k rows to clear at 5k a batch - about 50 iterations.
+seed {
+  populate_event(type: exec_batch, count: events, size: batch_size) `INSERT INTO event (created_at, payload)
+    __values__` (
+    gen('timestamp:2025-01-01T00:00:00Z,2026-11-25T00:00:00Z'),
+    gen('sentence:12')
+  )
+}
+
+# The drain lane purges while the traffic lane measures the latency
+# that purge causes. drain carries the until, so it is the lane the
+# stage is waiting on: once it fires, the stage ends and traffic is
+# cancelled with it rather than running out the remaining hour.
+#
+# duration is a cap, not a fixed length. A purge that never finishes -
+# because something else keeps writing old rows - ends the stage no
+# later than it would have ended anyway.
+stages {
+  backfill(duration: 1h) {
+    drain(workers: 1, weights: { purge_events: 100 })
+    traffic(workers: 20, qps: 500, weights: { read_event: 100 })
+  }
+}
+
+init {
+  fetch_recent(type: query) `SELECT id FROM event
+    WHERE created_at >= now() - INTERVAL '30 days'
+    ORDER BY random()
+    LIMIT 10000`
+}
+
+run {
+  # helper keeps this out of the implicit mix: without it, a stage
+  # declaring no weights would run it in turn with read_event, and a
+  # weighted stage would draw it at random. It runs only where a
+  # stage's weights name it.
+  #
+  # until is evaluated after each execution. affected() is the number
+  # of rows the DELETE touched, so a batch that comes back short means
+  # there is nothing left to purge.
+  purge_events(type: exec, helper: true, until: affected() < purge_batch)
+    `DELETE FROM event
+     WHERE id IN (
+       SELECT id FROM event
+       WHERE created_at < now() - INTERVAL '30 days'
+       LIMIT $1::INT
+     )` (purge_batch)
+
+  read_event(type: query) `SELECT payload FROM event WHERE id = $1::UUID` (ref('fetch_recent').id)
+}
+
+deseed {
+  truncate_event(type: exec) `TRUNCATE TABLE event CASCADE`
+}
+
+down {
+  drop_event(type: exec) `DROP TABLE IF EXISTS event`
+}
+
+expect {
+  # The purge ran to completion rather than being cut off by the cap.
+  purge_finished drain.purge_events.success_count > 1
+
+  # Reads stayed serviceable while it did.
+  reads_are_fast traffic.read_event.p99 < 250
+}

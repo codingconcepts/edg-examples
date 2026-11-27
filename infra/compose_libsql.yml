@@ -1,0 +1,15 @@
+services:
+
+  libsql:
+    image: ghcr.io/tursodatabase/libsql-server:v0.24.33
+    hostname: libsql
+    container_name: libsql
+    environment:
+      # A standalone primary needs no replication peers, and no auth
+      # token keeps the example URL free of credentials.
+      SQLD_NODE: primary
+    # sqld serves on 8080 inside the container, but 8080 on the host is
+    # contested - a local k3s/k3d, a dev server or any other HTTP tool
+    # will have taken it - so publish somewhere quieter.
+    ports:
+      - 8090:8080

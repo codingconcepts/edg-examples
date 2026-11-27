@@ -1,0 +1,54 @@
+let articles   = 10000
+let batch_size = 500
+let dims       = 32
+# k must match the LIMIT in the search query below: recall compares
+# the index's top-k against the brute-force top-k, so the two have to
+# ask for the same number of rows.
+let k          = 10
+
+up {
+  create_article `CREATE TABLE IF NOT EXISTS article (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      title STRING NOT NULL,
+      embedding VECTOR(32) NOT NULL
+    )`
+
+  create_index `CREATE VECTOR INDEX IF NOT EXISTS idx_article_embedding
+    ON article (embedding)`
+}
+
+seed {
+  populate_article(type: exec_batch, count: articles, size: batch_size) `INSERT INTO article (title, embedding)
+    SELECT t, e::VECTOR
+    FROM unnest(ARRAY[$1], ARRAY[$2]) AS t(t, e)` (
+    gen('sentence:3'),
+    vector(dims, 5, 0.1)
+  )
+}
+
+init {
+  # The ground truth corpus. knn() scans these rows in Go, so no
+  # planner hint is needed and the same config works on any driver.
+  all_articles(type: query) `SELECT id, embedding FROM article`
+}
+
+run {
+  # The index-backed search, asserted against the brute-force answer
+  # for the very same query vector. Holding the vector in a local is
+  # what keeps the two searches comparable.
+  search(type: query, assert: recall(knn('all_articles', 'embedding', local('q'), k), results(), 'id') >= 0.8)
+    `SELECT id
+     FROM article
+     ORDER BY embedding <=> $1::VECTOR
+     LIMIT 10`
+    let q = vector(dims, 5, 0.1)
+    (local('q'))
+}
+
+deseed {
+  truncate_article(type: exec) `TRUNCATE TABLE article`
+}
+
+down {
+  drop_article(type: exec) `DROP TABLE IF EXISTS article`
+}
